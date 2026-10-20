@@ -1,0 +1,21 @@
+using FeederCopy.Core.Models.Feeders;
+
+namespace FeederCopy.Core.Presenters.Feeders
+{
+    public interface IFeedersView
+    {
+        void ShowFeeders(IReadOnlyList<FeederSummary> feeders, long? selectedId);
+        void ShowNoFeeders();
+        void ShowConsumers(FeederSummary feeder, IReadOnlyList<ConsumerRow> rows, IReadOnlyList<string> buses, IReadOnlyList<FeederSummary> otherFeeders);
+        void ShowPreview(FeederPreview preview);
+        void HidePreview();
+        void SetBusy(bool busy, string? message);
+        void ClearAddForm();
+        void ShowAddError(string? message);
+        void SelectConsumer(string consumerId);
+        void ShowSearchResult(string? message);
+        string? PickOpenFile(string title, string filter);
+        bool Confirm(string title, string message);
+        void ShowError(string message);
+    }
+}
