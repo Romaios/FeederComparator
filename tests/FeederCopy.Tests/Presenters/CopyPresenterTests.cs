@@ -108,7 +108,7 @@ namespace FeederCopy.Tests.Presenters
             Assert.Empty(_view.Confirms);
             Assert.Equal("Jul 2026 · 2 feeders · 2 problems", _view.Heading);
             Assert.Equal(["New York Feeder", "Washington Feeder"], _view.Totals!.Select(t => t.Name));
-            Assert.Equal(10, _view.Totals[0].TotalKwh);
+            Assert.Equal(10, _view.Totals![0].TotalKwh);
             Assert.Equal(["c2", "c3"], _view.Problems!.Select(p => p.ConsumerId));
             Assert.True(_view.ExportEnabled);
         }

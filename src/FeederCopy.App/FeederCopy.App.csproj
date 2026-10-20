@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\FeederCopy.Core\FeederCopy.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Forms\Shell\MainForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Forms\Feeders\FeedersView.cs;Forms\Copy\CopyView.cs;Forms\Settings\SettingsView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>FeederCopy</AssemblyName>
+    <Version>1.0.0</Version>
+    <Product>Feeder kWh Copy</Product>
+  </PropertyGroup>
+
+</Project>

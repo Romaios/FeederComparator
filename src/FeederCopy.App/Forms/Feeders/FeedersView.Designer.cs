@@ -1,0 +1,673 @@
+namespace FeederCopy.App.Forms.Feeders
+{
+    partial class FeedersView
+    {
+        private System.ComponentModel.IContainer components = null;
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing && (components != null))
+                components.Dispose();
+            base.Dispose(disposing);
+        }
+
+        private void InitializeComponent()
+        {
+            tlpRoot = new TableLayoutPanel();
+            tlpLeft = new TableLayoutPanel();
+            lblFeedersTitle = new Label();
+            btnImport = new Button();
+            btnUpdate = new Button();
+            lstFeeders = new ListBox();
+            tlpRight = new TableLayoutPanel();
+            tlpPreview = new TableLayoutPanel();
+            lblPreviewTitle = new Label();
+            lblPreviewName = new Label();
+            txtPreviewName = new TextBox();
+            lblPreviewSummary = new Label();
+            lstPreviewProblems = new ListBox();
+            flpPreviewButtons = new FlowLayoutPanel();
+            btnSavePreview = new Button();
+            btnCancelPreview = new Button();
+            pnlWorkspace = new Panel();
+            tlpWorkspace = new TableLayoutPanel();
+            tlpFeederHeader = new TableLayoutPanel();
+            lblFeederName = new Label();
+            txtRename = new TextBox();
+            btnRename = new Button();
+            btnDelete = new Button();
+            tlpAdd = new TableLayoutPanel();
+            lblAddTitle = new Label();
+            lblAddBus = new Label();
+            cboAddBus = new ComboBox();
+            lblAddConsumer = new Label();
+            txtAddConsumer = new TextBox();
+            btnAdd = new Button();
+            lblAddError = new Label();
+            tlpSearch = new TableLayoutPanel();
+            lblSearch = new Label();
+            txtSearch = new TextBox();
+            btnSearch = new Button();
+            lblSearchResult = new Label();
+            dgvConsumers = new DataGridView();
+            colCount = new DataGridViewTextBoxColumn();
+            colBus = new DataGridViewTextBoxColumn();
+            colConsumer = new DataGridViewTextBoxColumn();
+            tlpSelected = new TableLayoutPanel();
+            lblSelected = new Label();
+            cboSetBus = new ComboBox();
+            btnSetBus = new Button();
+            cboMoveTo = new ComboBox();
+            btnMove = new Button();
+            btnRemove = new Button();
+            lblEmpty = new Label();
+            tlpRoot.SuspendLayout();
+            tlpLeft.SuspendLayout();
+            tlpRight.SuspendLayout();
+            tlpPreview.SuspendLayout();
+            flpPreviewButtons.SuspendLayout();
+            pnlWorkspace.SuspendLayout();
+            tlpWorkspace.SuspendLayout();
+            tlpFeederHeader.SuspendLayout();
+            tlpAdd.SuspendLayout();
+            tlpSearch.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)dgvConsumers).BeginInit();
+            tlpSelected.SuspendLayout();
+            SuspendLayout();
+            //
+            // tlpRoot
+            //
+            tlpRoot.ColumnCount = 2;
+            tlpRoot.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 290F));
+            tlpRoot.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            tlpRoot.Controls.Add(tlpLeft, 0, 0);
+            tlpRoot.Controls.Add(tlpRight, 1, 0);
+            tlpRoot.Dock = DockStyle.Fill;
+            tlpRoot.Name = "tlpRoot";
+            tlpRoot.Padding = new Padding(12);
+            tlpRoot.RowCount = 1;
+            tlpRoot.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+            tlpRoot.Size = new Size(1100, 680);
+            tlpRoot.TabIndex = 0;
+            //
+            // tlpLeft
+            //
+            tlpLeft.ColumnCount = 1;
+            tlpLeft.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            tlpLeft.Controls.Add(lblFeedersTitle, 0, 0);
+            tlpLeft.Controls.Add(btnImport, 0, 1);
+            tlpLeft.Controls.Add(btnUpdate, 0, 2);
+            tlpLeft.Controls.Add(lstFeeders, 0, 3);
+            tlpLeft.Dock = DockStyle.Fill;
+            tlpLeft.Margin = new Padding(3, 3, 9, 3);
+            tlpLeft.Name = "tlpLeft";
+            tlpLeft.Padding = new Padding(10);
+            tlpLeft.RowCount = 4;
+            tlpLeft.RowStyles.Add(new RowStyle());
+            tlpLeft.RowStyles.Add(new RowStyle());
+            tlpLeft.RowStyles.Add(new RowStyle());
+            tlpLeft.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+            tlpLeft.TabIndex = 0;
+            //
+            // lblFeedersTitle
+            //
+            lblFeedersTitle.AutoSize = true;
+            lblFeedersTitle.Margin = new Padding(3, 0, 3, 8);
+            lblFeedersTitle.Name = "lblFeedersTitle";
+            lblFeedersTitle.Text = "Feeders";
+            //
+            // btnImport
+            //
+            btnImport.Dock = DockStyle.Fill;
+            btnImport.Margin = new Padding(3, 0, 3, 6);
+            btnImport.MinimumSize = new Size(0, 34);
+            btnImport.Name = "btnImport";
+            btnImport.TabIndex = 0;
+            btnImport.Text = "Import feeder list…";
+            btnImport.Click += btnImport_Click;
+            //
+            // btnUpdate
+            //
+            btnUpdate.Dock = DockStyle.Fill;
+            btnUpdate.Enabled = false;
+            btnUpdate.Margin = new Padding(3, 0, 3, 10);
+            btnUpdate.MinimumSize = new Size(0, 34);
+            btnUpdate.Name = "btnUpdate";
+            btnUpdate.TabIndex = 1;
+            btnUpdate.Text = "Update from list…";
+            btnUpdate.Click += btnUpdate_Click;
+            //
+            // lstFeeders
+            //
+            lstFeeders.Dock = DockStyle.Fill;
+            lstFeeders.ItemHeight = 17;
+            lstFeeders.Name = "lstFeeders";
+            lstFeeders.TabIndex = 2;
+            lstFeeders.SelectedIndexChanged += lstFeeders_SelectedIndexChanged;
+            //
+            // tlpRight
+            //
+            tlpRight.ColumnCount = 1;
+            tlpRight.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            tlpRight.Controls.Add(tlpPreview, 0, 0);
+            tlpRight.Controls.Add(pnlWorkspace, 0, 1);
+            tlpRight.Dock = DockStyle.Fill;
+            tlpRight.Margin = new Padding(0);
+            tlpRight.Name = "tlpRight";
+            tlpRight.RowCount = 2;
+            tlpRight.RowStyles.Add(new RowStyle());
+            tlpRight.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+            tlpRight.TabIndex = 1;
+            //
+            // tlpPreview
+            //
+            tlpPreview.AutoSize = true;
+            tlpPreview.ColumnCount = 2;
+            tlpPreview.ColumnStyles.Add(new ColumnStyle());
+            tlpPreview.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            tlpPreview.Controls.Add(lblPreviewTitle, 0, 0);
+            tlpPreview.Controls.Add(lblPreviewName, 0, 1);
+            tlpPreview.Controls.Add(txtPreviewName, 1, 1);
+            tlpPreview.Controls.Add(lblPreviewSummary, 0, 2);
+            tlpPreview.Controls.Add(lstPreviewProblems, 0, 3);
+            tlpPreview.Controls.Add(flpPreviewButtons, 0, 4);
+            tlpPreview.Dock = DockStyle.Fill;
+            tlpPreview.Margin = new Padding(3, 3, 3, 10);
+            tlpPreview.Name = "tlpPreview";
+            tlpPreview.Padding = new Padding(14, 12, 14, 12);
+            tlpPreview.RowCount = 5;
+            tlpPreview.RowStyles.Add(new RowStyle());
+            tlpPreview.RowStyles.Add(new RowStyle());
+            tlpPreview.RowStyles.Add(new RowStyle());
+            tlpPreview.RowStyles.Add(new RowStyle());
+            tlpPreview.RowStyles.Add(new RowStyle());
+            tlpPreview.TabIndex = 0;
+            tlpPreview.Visible = false;
+            //
+            // lblPreviewTitle
+            //
+            lblPreviewTitle.AutoSize = true;
+            tlpPreview.SetColumnSpan(lblPreviewTitle, 2);
+            lblPreviewTitle.Margin = new Padding(3, 0, 3, 8);
+            lblPreviewTitle.Name = "lblPreviewTitle";
+            //
+            // lblPreviewName
+            //
+            lblPreviewName.Anchor = AnchorStyles.Left;
+            lblPreviewName.AutoSize = true;
+            lblPreviewName.Name = "lblPreviewName";
+            lblPreviewName.Text = "Feeder name";
+            //
+            // txtPreviewName
+            //
+            txtPreviewName.Anchor = AnchorStyles.Left;
+            txtPreviewName.Margin = new Padding(8, 4, 3, 4);
+            txtPreviewName.Name = "txtPreviewName";
+            txtPreviewName.Size = new Size(320, 25);
+            txtPreviewName.TabIndex = 0;
+            txtPreviewName.TextChanged += txtPreviewName_TextChanged;
+            //
+            // lblPreviewSummary
+            //
+            lblPreviewSummary.AutoSize = true;
+            tlpPreview.SetColumnSpan(lblPreviewSummary, 2);
+            lblPreviewSummary.Margin = new Padding(3, 8, 3, 6);
+            lblPreviewSummary.Name = "lblPreviewSummary";
+            //
+            // lstPreviewProblems
+            //
+            tlpPreview.SetColumnSpan(lstPreviewProblems, 2);
+            lstPreviewProblems.Dock = DockStyle.Fill;
+            lstPreviewProblems.ItemHeight = 17;
+            lstPreviewProblems.MinimumSize = new Size(0, 90);
+            lstPreviewProblems.Name = "lstPreviewProblems";
+            lstPreviewProblems.Size = new Size(600, 90);
+            lstPreviewProblems.TabIndex = 1;
+            //
+            // flpPreviewButtons
+            //
+            flpPreviewButtons.AutoSize = true;
+            tlpPreview.SetColumnSpan(flpPreviewButtons, 2);
+            flpPreviewButtons.Controls.Add(btnSavePreview);
+            flpPreviewButtons.Controls.Add(btnCancelPreview);
+            flpPreviewButtons.Margin = new Padding(0, 8, 0, 0);
+            flpPreviewButtons.Name = "flpPreviewButtons";
+            flpPreviewButtons.TabIndex = 2;
+            flpPreviewButtons.WrapContents = false;
+            //
+            // btnSavePreview
+            //
+            btnSavePreview.AutoSize = true;
+            btnSavePreview.MinimumSize = new Size(120, 34);
+            btnSavePreview.Name = "btnSavePreview";
+            btnSavePreview.TabIndex = 0;
+            btnSavePreview.Click += btnSavePreview_Click;
+            //
+            // btnCancelPreview
+            //
+            btnCancelPreview.AutoSize = true;
+            btnCancelPreview.MinimumSize = new Size(100, 34);
+            btnCancelPreview.Name = "btnCancelPreview";
+            btnCancelPreview.TabIndex = 1;
+            btnCancelPreview.Text = "Cancel";
+            btnCancelPreview.Click += btnCancelPreview_Click;
+            //
+            // pnlWorkspace
+            //
+            pnlWorkspace.Controls.Add(tlpWorkspace);
+            pnlWorkspace.Controls.Add(lblEmpty);
+            pnlWorkspace.Dock = DockStyle.Fill;
+            pnlWorkspace.Margin = new Padding(0);
+            pnlWorkspace.Name = "pnlWorkspace";
+            pnlWorkspace.TabIndex = 1;
+            //
+            // tlpWorkspace
+            //
+            tlpWorkspace.ColumnCount = 1;
+            tlpWorkspace.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            tlpWorkspace.Controls.Add(tlpFeederHeader, 0, 0);
+            tlpWorkspace.Controls.Add(tlpAdd, 0, 1);
+            tlpWorkspace.Controls.Add(tlpSearch, 0, 2);
+            tlpWorkspace.Controls.Add(dgvConsumers, 0, 3);
+            tlpWorkspace.Controls.Add(tlpSelected, 0, 4);
+            tlpWorkspace.Dock = DockStyle.Fill;
+            tlpWorkspace.Name = "tlpWorkspace";
+            tlpWorkspace.RowCount = 5;
+            tlpWorkspace.RowStyles.Add(new RowStyle());
+            tlpWorkspace.RowStyles.Add(new RowStyle());
+            tlpWorkspace.RowStyles.Add(new RowStyle());
+            tlpWorkspace.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+            tlpWorkspace.RowStyles.Add(new RowStyle());
+            tlpWorkspace.TabIndex = 0;
+            tlpWorkspace.Visible = false;
+            //
+            // tlpFeederHeader
+            //
+            tlpFeederHeader.AutoSize = true;
+            tlpFeederHeader.ColumnCount = 5;
+            tlpFeederHeader.ColumnStyles.Add(new ColumnStyle());
+            tlpFeederHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            tlpFeederHeader.ColumnStyles.Add(new ColumnStyle());
+            tlpFeederHeader.ColumnStyles.Add(new ColumnStyle());
+            tlpFeederHeader.ColumnStyles.Add(new ColumnStyle());
+            tlpFeederHeader.Controls.Add(lblFeederName, 0, 0);
+            tlpFeederHeader.Controls.Add(txtRename, 2, 0);
+            tlpFeederHeader.Controls.Add(btnRename, 3, 0);
+            tlpFeederHeader.Controls.Add(btnDelete, 4, 0);
+            tlpFeederHeader.Dock = DockStyle.Fill;
+            tlpFeederHeader.Margin = new Padding(0, 0, 0, 8);
+            tlpFeederHeader.Name = "tlpFeederHeader";
+            tlpFeederHeader.RowCount = 1;
+            tlpFeederHeader.RowStyles.Add(new RowStyle());
+            tlpFeederHeader.TabIndex = 0;
+            //
+            // lblFeederName
+            //
+            lblFeederName.Anchor = AnchorStyles.Left;
+            lblFeederName.AutoSize = true;
+            lblFeederName.Name = "lblFeederName";
+            //
+            // txtRename
+            //
+            txtRename.Anchor = AnchorStyles.Right;
+            txtRename.Name = "txtRename";
+            txtRename.Size = new Size(240, 25);
+            txtRename.TabIndex = 0;
+            //
+            // btnRename
+            //
+            btnRename.AutoSize = true;
+            btnRename.MinimumSize = new Size(90, 32);
+            btnRename.Name = "btnRename";
+            btnRename.TabIndex = 1;
+            btnRename.Text = "Rename";
+            btnRename.Click += btnRename_Click;
+            //
+            // btnDelete
+            //
+            btnDelete.AutoSize = true;
+            btnDelete.MinimumSize = new Size(110, 32);
+            btnDelete.Name = "btnDelete";
+            btnDelete.TabIndex = 2;
+            btnDelete.Text = "Delete feeder";
+            btnDelete.Click += btnDelete_Click;
+            //
+            // tlpAdd
+            //
+            tlpAdd.AutoSize = true;
+            tlpAdd.ColumnCount = 6;
+            tlpAdd.ColumnStyles.Add(new ColumnStyle());
+            tlpAdd.ColumnStyles.Add(new ColumnStyle());
+            tlpAdd.ColumnStyles.Add(new ColumnStyle());
+            tlpAdd.ColumnStyles.Add(new ColumnStyle());
+            tlpAdd.ColumnStyles.Add(new ColumnStyle());
+            tlpAdd.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            tlpAdd.Controls.Add(lblAddTitle, 0, 0);
+            tlpAdd.Controls.Add(lblAddBus, 0, 1);
+            tlpAdd.Controls.Add(cboAddBus, 1, 1);
+            tlpAdd.Controls.Add(lblAddConsumer, 2, 1);
+            tlpAdd.Controls.Add(txtAddConsumer, 3, 1);
+            tlpAdd.Controls.Add(btnAdd, 4, 1);
+            tlpAdd.Controls.Add(lblAddError, 0, 2);
+            tlpAdd.Dock = DockStyle.Fill;
+            tlpAdd.Margin = new Padding(3, 0, 3, 8);
+            tlpAdd.Name = "tlpAdd";
+            tlpAdd.Padding = new Padding(12, 10, 12, 8);
+            tlpAdd.RowCount = 3;
+            tlpAdd.RowStyles.Add(new RowStyle());
+            tlpAdd.RowStyles.Add(new RowStyle());
+            tlpAdd.RowStyles.Add(new RowStyle());
+            tlpAdd.TabIndex = 1;
+            //
+            // lblAddTitle
+            //
+            lblAddTitle.AutoSize = true;
+            tlpAdd.SetColumnSpan(lblAddTitle, 6);
+            lblAddTitle.Margin = new Padding(3, 0, 3, 6);
+            lblAddTitle.Name = "lblAddTitle";
+            lblAddTitle.Text = "Add a new consumer (goes inside its bus block; leave Bus ID blank if not known yet)";
+            //
+            // lblAddBus
+            //
+            lblAddBus.Anchor = AnchorStyles.Left;
+            lblAddBus.AutoSize = true;
+            lblAddBus.Name = "lblAddBus";
+            lblAddBus.Text = "Bus ID";
+            //
+            // cboAddBus
+            //
+            cboAddBus.Anchor = AnchorStyles.Left;
+            cboAddBus.Margin = new Padding(6, 4, 16, 4);
+            cboAddBus.Name = "cboAddBus";
+            cboAddBus.Size = new Size(200, 25);
+            cboAddBus.TabIndex = 0;
+            //
+            // lblAddConsumer
+            //
+            lblAddConsumer.Anchor = AnchorStyles.Left;
+            lblAddConsumer.AutoSize = true;
+            lblAddConsumer.Name = "lblAddConsumer";
+            lblAddConsumer.Text = "Consumer ID";
+            //
+            // txtAddConsumer
+            //
+            txtAddConsumer.Anchor = AnchorStyles.Left;
+            txtAddConsumer.Margin = new Padding(6, 4, 12, 4);
+            txtAddConsumer.Name = "txtAddConsumer";
+            txtAddConsumer.Size = new Size(200, 25);
+            txtAddConsumer.TabIndex = 1;
+            txtAddConsumer.KeyDown += txtAddConsumer_KeyDown;
+            //
+            // btnAdd
+            //
+            btnAdd.AutoSize = true;
+            btnAdd.MinimumSize = new Size(110, 32);
+            btnAdd.Name = "btnAdd";
+            btnAdd.TabIndex = 2;
+            btnAdd.Text = "Add consumer";
+            btnAdd.Click += btnAdd_Click;
+            //
+            // lblAddError
+            //
+            lblAddError.AutoSize = true;
+            tlpAdd.SetColumnSpan(lblAddError, 6);
+            lblAddError.Name = "lblAddError";
+            //
+            // tlpSearch
+            //
+            tlpSearch.AutoSize = true;
+            tlpSearch.ColumnCount = 4;
+            tlpSearch.ColumnStyles.Add(new ColumnStyle());
+            tlpSearch.ColumnStyles.Add(new ColumnStyle());
+            tlpSearch.ColumnStyles.Add(new ColumnStyle());
+            tlpSearch.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            tlpSearch.Controls.Add(lblSearch, 0, 0);
+            tlpSearch.Controls.Add(txtSearch, 1, 0);
+            tlpSearch.Controls.Add(btnSearch, 2, 0);
+            tlpSearch.Controls.Add(lblSearchResult, 3, 0);
+            tlpSearch.Dock = DockStyle.Fill;
+            tlpSearch.Margin = new Padding(0, 0, 0, 6);
+            tlpSearch.Name = "tlpSearch";
+            tlpSearch.RowCount = 1;
+            tlpSearch.RowStyles.Add(new RowStyle());
+            tlpSearch.TabIndex = 2;
+            //
+            // lblSearch
+            //
+            lblSearch.Anchor = AnchorStyles.Left;
+            lblSearch.AutoSize = true;
+            lblSearch.Name = "lblSearch";
+            lblSearch.Text = "Find consumer ID";
+            //
+            // txtSearch
+            //
+            txtSearch.Anchor = AnchorStyles.Left;
+            txtSearch.Margin = new Padding(6, 4, 6, 4);
+            txtSearch.Name = "txtSearch";
+            txtSearch.Size = new Size(200, 25);
+            txtSearch.TabIndex = 0;
+            txtSearch.KeyDown += txtSearch_KeyDown;
+            //
+            // btnSearch
+            //
+            btnSearch.AutoSize = true;
+            btnSearch.MinimumSize = new Size(80, 30);
+            btnSearch.Name = "btnSearch";
+            btnSearch.TabIndex = 1;
+            btnSearch.Text = "Find";
+            btnSearch.Click += btnSearch_Click;
+            //
+            // lblSearchResult
+            //
+            lblSearchResult.Anchor = AnchorStyles.Left;
+            lblSearchResult.AutoSize = true;
+            lblSearchResult.Margin = new Padding(10, 0, 3, 0);
+            lblSearchResult.Name = "lblSearchResult";
+            //
+            // dgvConsumers
+            //
+            dgvConsumers.AllowUserToAddRows = false;
+            dgvConsumers.AllowUserToDeleteRows = false;
+            dgvConsumers.AllowUserToResizeRows = false;
+            dgvConsumers.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+            dgvConsumers.Columns.AddRange(new DataGridViewColumn[] { colCount, colBus, colConsumer });
+            dgvConsumers.Dock = DockStyle.Fill;
+            dgvConsumers.MultiSelect = false;
+            dgvConsumers.Name = "dgvConsumers";
+            dgvConsumers.ReadOnly = true;
+            dgvConsumers.RowHeadersVisible = false;
+            dgvConsumers.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+            dgvConsumers.TabIndex = 3;
+            dgvConsumers.VirtualMode = true;
+            dgvConsumers.CellFormatting += dgvConsumers_CellFormatting;
+            dgvConsumers.CellValueNeeded += dgvConsumers_CellValueNeeded;
+            dgvConsumers.SelectionChanged += dgvConsumers_SelectionChanged;
+            //
+            // colCount
+            //
+            colCount.FillWeight = 15F;
+            colCount.HeaderText = "Count";
+            colCount.Name = "colCount";
+            colCount.ReadOnly = true;
+            colCount.SortMode = DataGridViewColumnSortMode.NotSortable;
+            //
+            // colBus
+            //
+            colBus.FillWeight = 40F;
+            colBus.HeaderText = "Bus ID";
+            colBus.Name = "colBus";
+            colBus.ReadOnly = true;
+            colBus.SortMode = DataGridViewColumnSortMode.NotSortable;
+            //
+            // colConsumer
+            //
+            colConsumer.FillWeight = 45F;
+            colConsumer.HeaderText = "Consumer ID";
+            colConsumer.Name = "colConsumer";
+            colConsumer.ReadOnly = true;
+            colConsumer.SortMode = DataGridViewColumnSortMode.NotSortable;
+            //
+            // tlpSelected
+            //
+            tlpSelected.AutoSize = true;
+            tlpSelected.ColumnCount = 7;
+            tlpSelected.ColumnStyles.Add(new ColumnStyle());
+            tlpSelected.ColumnStyles.Add(new ColumnStyle());
+            tlpSelected.ColumnStyles.Add(new ColumnStyle());
+            tlpSelected.ColumnStyles.Add(new ColumnStyle());
+            tlpSelected.ColumnStyles.Add(new ColumnStyle());
+            tlpSelected.ColumnStyles.Add(new ColumnStyle());
+            tlpSelected.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            tlpSelected.Controls.Add(lblSelected, 0, 0);
+            tlpSelected.Controls.Add(cboSetBus, 1, 0);
+            tlpSelected.Controls.Add(btnSetBus, 2, 0);
+            tlpSelected.Controls.Add(cboMoveTo, 3, 0);
+            tlpSelected.Controls.Add(btnMove, 4, 0);
+            tlpSelected.Controls.Add(btnRemove, 5, 0);
+            tlpSelected.Dock = DockStyle.Fill;
+            tlpSelected.Margin = new Padding(0, 8, 0, 0);
+            tlpSelected.Name = "tlpSelected";
+            tlpSelected.RowCount = 1;
+            tlpSelected.RowStyles.Add(new RowStyle());
+            tlpSelected.TabIndex = 4;
+            //
+            // lblSelected
+            //
+            lblSelected.Anchor = AnchorStyles.Left;
+            lblSelected.AutoSize = true;
+            lblSelected.Name = "lblSelected";
+            lblSelected.Text = "Selected consumer:";
+            //
+            // cboSetBus
+            //
+            cboSetBus.Anchor = AnchorStyles.Left;
+            cboSetBus.Margin = new Padding(8, 4, 4, 4);
+            cboSetBus.Name = "cboSetBus";
+            cboSetBus.Size = new Size(180, 25);
+            cboSetBus.TabIndex = 0;
+            //
+            // btnSetBus
+            //
+            btnSetBus.AutoSize = true;
+            btnSetBus.MinimumSize = new Size(100, 32);
+            btnSetBus.Margin = new Padding(3, 3, 16, 3);
+            btnSetBus.Name = "btnSetBus";
+            btnSetBus.TabIndex = 1;
+            btnSetBus.Text = "Set bus ID";
+            btnSetBus.Click += btnSetBus_Click;
+            //
+            // cboMoveTo
+            //
+            cboMoveTo.Anchor = AnchorStyles.Left;
+            cboMoveTo.DropDownStyle = ComboBoxStyle.DropDownList;
+            cboMoveTo.Margin = new Padding(3, 4, 4, 4);
+            cboMoveTo.Name = "cboMoveTo";
+            cboMoveTo.Size = new Size(200, 25);
+            cboMoveTo.TabIndex = 2;
+            //
+            // btnMove
+            //
+            btnMove.AutoSize = true;
+            btnMove.MinimumSize = new Size(120, 32);
+            btnMove.Margin = new Padding(3, 3, 16, 3);
+            btnMove.Name = "btnMove";
+            btnMove.TabIndex = 3;
+            btnMove.Text = "Move to feeder";
+            btnMove.Click += btnMove_Click;
+            //
+            // btnRemove
+            //
+            btnRemove.AutoSize = true;
+            btnRemove.MinimumSize = new Size(100, 32);
+            btnRemove.Name = "btnRemove";
+            btnRemove.TabIndex = 4;
+            btnRemove.Text = "Remove";
+            btnRemove.Click += btnRemove_Click;
+            //
+            // lblEmpty
+            //
+            lblEmpty.Dock = DockStyle.Fill;
+            lblEmpty.Name = "lblEmpty";
+            lblEmpty.Text = "No feeders yet. Click Import feeder list… to add one.";
+            //
+            // FeedersView
+            //
+            AutoScaleDimensions = new SizeF(96F, 96F);
+            AutoScaleMode = AutoScaleMode.Dpi;
+            Controls.Add(tlpRoot);
+            Name = "FeedersView";
+            Size = new Size(1100, 680);
+            tlpRoot.ResumeLayout(false);
+            tlpLeft.ResumeLayout(false);
+            tlpLeft.PerformLayout();
+            tlpRight.ResumeLayout(false);
+            tlpRight.PerformLayout();
+            tlpPreview.ResumeLayout(false);
+            tlpPreview.PerformLayout();
+            flpPreviewButtons.ResumeLayout(false);
+            flpPreviewButtons.PerformLayout();
+            pnlWorkspace.ResumeLayout(false);
+            tlpWorkspace.ResumeLayout(false);
+            tlpWorkspace.PerformLayout();
+            tlpFeederHeader.ResumeLayout(false);
+            tlpFeederHeader.PerformLayout();
+            tlpAdd.ResumeLayout(false);
+            tlpAdd.PerformLayout();
+            tlpSearch.ResumeLayout(false);
+            tlpSearch.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)dgvConsumers).EndInit();
+            tlpSelected.ResumeLayout(false);
+            tlpSelected.PerformLayout();
+            ResumeLayout(false);
+        }
+
+        private TableLayoutPanel tlpRoot;
+        private TableLayoutPanel tlpLeft;
+        private Label lblFeedersTitle;
+        private Button btnImport;
+        private Button btnUpdate;
+        private ListBox lstFeeders;
+        private TableLayoutPanel tlpRight;
+        private TableLayoutPanel tlpPreview;
+        private Label lblPreviewTitle;
+        private Label lblPreviewName;
+        private TextBox txtPreviewName;
+        private Label lblPreviewSummary;
+        private ListBox lstPreviewProblems;
+        private FlowLayoutPanel flpPreviewButtons;
+        private Button btnSavePreview;
+        private Button btnCancelPreview;
+        private Panel pnlWorkspace;
+        private TableLayoutPanel tlpWorkspace;
+        private TableLayoutPanel tlpFeederHeader;
+        private Label lblFeederName;
+        private TextBox txtRename;
+        private Button btnRename;
+        private Button btnDelete;
+        private TableLayoutPanel tlpAdd;
+        private Label lblAddTitle;
+        private Label lblAddBus;
+        private ComboBox cboAddBus;
+        private Label lblAddConsumer;
+        private TextBox txtAddConsumer;
+        private Button btnAdd;
+        private Label lblAddError;
+        private TableLayoutPanel tlpSearch;
+        private Label lblSearch;
+        private TextBox txtSearch;
+        private Button btnSearch;
+        private Label lblSearchResult;
+        private DataGridView dgvConsumers;
+        private DataGridViewTextBoxColumn colCount;
+        private DataGridViewTextBoxColumn colBus;
+        private DataGridViewTextBoxColumn colConsumer;
+        private TableLayoutPanel tlpSelected;
+        private Label lblSelected;
+        private ComboBox cboSetBus;
+        private Button btnSetBus;
+        private ComboBox cboMoveTo;
+        private Button btnMove;
+        private Button btnRemove;
+        private Label lblEmpty;
+    }
+}

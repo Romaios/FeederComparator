@@ -1,0 +1,230 @@
+namespace FeederCopy.App.Forms.Shell
+{
+    partial class MainForm
+    {
+        private System.ComponentModel.IContainer components = null;
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing && (components != null))
+                components.Dispose();
+            base.Dispose(disposing);
+        }
+
+        private void InitializeComponent()
+        {
+            tlpShell = new TableLayoutPanel();
+            tlpHeader = new TableLayoutPanel();
+            lblAppTitle = new Label();
+            rdoFeeders = new RadioButton();
+            rdoCopy = new RadioButton();
+            rdoSettings = new RadioButton();
+            tlpWarning = new TableLayoutPanel();
+            lblWarning = new Label();
+            btnDismissWarning = new Button();
+            pnlContent = new Panel();
+            feedersView = new FeederCopy.App.Forms.Feeders.FeedersView();
+            copyView = new FeederCopy.App.Forms.Copy.CopyView();
+            settingsView = new FeederCopy.App.Forms.Settings.SettingsView();
+            statusStrip = new StatusStrip();
+            lblStatus = new ToolStripStatusLabel();
+            tlpShell.SuspendLayout();
+            tlpHeader.SuspendLayout();
+            tlpWarning.SuspendLayout();
+            pnlContent.SuspendLayout();
+            statusStrip.SuspendLayout();
+            SuspendLayout();
+            //
+            // tlpShell
+            //
+            tlpShell.ColumnCount = 1;
+            tlpShell.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            tlpShell.Controls.Add(tlpHeader, 0, 0);
+            tlpShell.Controls.Add(tlpWarning, 0, 1);
+            tlpShell.Controls.Add(pnlContent, 0, 2);
+            tlpShell.Dock = DockStyle.Fill;
+            tlpShell.Location = new Point(0, 0);
+            tlpShell.Margin = new Padding(0);
+            tlpShell.Name = "tlpShell";
+            tlpShell.RowCount = 3;
+            tlpShell.RowStyles.Add(new RowStyle(SizeType.Absolute, 56F));
+            tlpShell.RowStyles.Add(new RowStyle());
+            tlpShell.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+            tlpShell.Size = new Size(1200, 738);
+            tlpShell.TabIndex = 0;
+            //
+            // tlpHeader
+            //
+            tlpHeader.ColumnCount = 5;
+            tlpHeader.ColumnStyles.Add(new ColumnStyle());
+            tlpHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 130F));
+            tlpHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 130F));
+            tlpHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 130F));
+            tlpHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            tlpHeader.Controls.Add(lblAppTitle, 0, 0);
+            tlpHeader.Controls.Add(rdoFeeders, 1, 0);
+            tlpHeader.Controls.Add(rdoCopy, 2, 0);
+            tlpHeader.Controls.Add(rdoSettings, 3, 0);
+            tlpHeader.Dock = DockStyle.Fill;
+            tlpHeader.Margin = new Padding(0);
+            tlpHeader.Name = "tlpHeader";
+            tlpHeader.Padding = new Padding(16, 0, 16, 1);
+            tlpHeader.RowCount = 1;
+            tlpHeader.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+            tlpHeader.TabIndex = 0;
+            //
+            // lblAppTitle
+            //
+            lblAppTitle.Anchor = AnchorStyles.Left;
+            lblAppTitle.AutoSize = true;
+            lblAppTitle.Margin = new Padding(3, 0, 24, 0);
+            lblAppTitle.Name = "lblAppTitle";
+            lblAppTitle.Text = "Feeder kWh Copy";
+            //
+            // rdoFeeders
+            //
+            rdoFeeders.Checked = true;
+            rdoFeeders.Dock = DockStyle.Fill;
+            rdoFeeders.Margin = new Padding(0);
+            rdoFeeders.Name = "rdoFeeders";
+            rdoFeeders.TabIndex = 0;
+            rdoFeeders.TabStop = true;
+            rdoFeeders.Text = "Feeders";
+            rdoFeeders.CheckedChanged += navTab_CheckedChanged;
+            //
+            // rdoCopy
+            //
+            rdoCopy.Dock = DockStyle.Fill;
+            rdoCopy.Margin = new Padding(0);
+            rdoCopy.Name = "rdoCopy";
+            rdoCopy.TabIndex = 1;
+            rdoCopy.Text = "Copy kWh";
+            rdoCopy.CheckedChanged += navTab_CheckedChanged;
+            //
+            // rdoSettings
+            //
+            rdoSettings.Dock = DockStyle.Fill;
+            rdoSettings.Margin = new Padding(0);
+            rdoSettings.Name = "rdoSettings";
+            rdoSettings.TabIndex = 2;
+            rdoSettings.Text = "Settings";
+            rdoSettings.CheckedChanged += navTab_CheckedChanged;
+            //
+            // tlpWarning
+            //
+            tlpWarning.AutoSize = true;
+            tlpWarning.ColumnCount = 2;
+            tlpWarning.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            tlpWarning.ColumnStyles.Add(new ColumnStyle());
+            tlpWarning.Controls.Add(lblWarning, 0, 0);
+            tlpWarning.Controls.Add(btnDismissWarning, 1, 0);
+            tlpWarning.Dock = DockStyle.Fill;
+            tlpWarning.Margin = new Padding(0);
+            tlpWarning.Name = "tlpWarning";
+            tlpWarning.Padding = new Padding(16, 8, 16, 8);
+            tlpWarning.RowCount = 1;
+            tlpWarning.RowStyles.Add(new RowStyle());
+            tlpWarning.TabIndex = 1;
+            tlpWarning.Visible = false;
+            //
+            // lblWarning
+            //
+            lblWarning.Anchor = AnchorStyles.Left | AnchorStyles.Right;
+            lblWarning.AutoSize = true;
+            lblWarning.Name = "lblWarning";
+            //
+            // btnDismissWarning
+            //
+            btnDismissWarning.AutoSize = true;
+            btnDismissWarning.MinimumSize = new Size(90, 30);
+            btnDismissWarning.Name = "btnDismissWarning";
+            btnDismissWarning.TabIndex = 0;
+            btnDismissWarning.Text = "Dismiss";
+            btnDismissWarning.Click += btnDismissWarning_Click;
+            //
+            // pnlContent
+            //
+            pnlContent.Controls.Add(feedersView);
+            pnlContent.Controls.Add(copyView);
+            pnlContent.Controls.Add(settingsView);
+            pnlContent.Dock = DockStyle.Fill;
+            pnlContent.Margin = new Padding(0);
+            pnlContent.Name = "pnlContent";
+            pnlContent.TabIndex = 2;
+            //
+            // feedersView
+            //
+            feedersView.Dock = DockStyle.Fill;
+            feedersView.Name = "feedersView";
+            feedersView.TabIndex = 0;
+            //
+            // copyView
+            //
+            copyView.Dock = DockStyle.Fill;
+            copyView.Name = "copyView";
+            copyView.TabIndex = 1;
+            copyView.Visible = false;
+            //
+            // settingsView
+            //
+            settingsView.Dock = DockStyle.Fill;
+            settingsView.Name = "settingsView";
+            settingsView.TabIndex = 2;
+            settingsView.Visible = false;
+            //
+            // statusStrip
+            //
+            statusStrip.Items.AddRange(new ToolStripItem[] { lblStatus });
+            statusStrip.Name = "statusStrip";
+            statusStrip.TabIndex = 1;
+            //
+            // lblStatus
+            //
+            lblStatus.Name = "lblStatus";
+            lblStatus.Spring = true;
+            lblStatus.Text = "Ready";
+            lblStatus.TextAlign = ContentAlignment.MiddleLeft;
+            //
+            // MainForm
+            //
+            AutoScaleDimensions = new SizeF(96F, 96F);
+            AutoScaleMode = AutoScaleMode.Dpi;
+            ClientSize = new Size(1200, 760);
+            Controls.Add(tlpShell);
+            Controls.Add(statusStrip);
+            MinimumSize = new Size(1000, 640);
+            Name = "MainForm";
+            StartPosition = FormStartPosition.CenterScreen;
+            Text = "Feeder kWh Copy";
+            WindowState = FormWindowState.Maximized;
+            Shown += MainForm_Shown;
+            tlpShell.ResumeLayout(false);
+            tlpShell.PerformLayout();
+            tlpHeader.ResumeLayout(false);
+            tlpHeader.PerformLayout();
+            tlpWarning.ResumeLayout(false);
+            tlpWarning.PerformLayout();
+            pnlContent.ResumeLayout(false);
+            statusStrip.ResumeLayout(false);
+            statusStrip.PerformLayout();
+            ResumeLayout(false);
+            PerformLayout();
+        }
+
+        private TableLayoutPanel tlpShell;
+        private TableLayoutPanel tlpHeader;
+        private Label lblAppTitle;
+        private RadioButton rdoFeeders;
+        private RadioButton rdoCopy;
+        private RadioButton rdoSettings;
+        private TableLayoutPanel tlpWarning;
+        private Label lblWarning;
+        private Button btnDismissWarning;
+        private Panel pnlContent;
+        private FeederCopy.App.Forms.Feeders.FeedersView feedersView;
+        private FeederCopy.App.Forms.Copy.CopyView copyView;
+        private FeederCopy.App.Forms.Settings.SettingsView settingsView;
+        private StatusStrip statusStrip;
+        private ToolStripStatusLabel lblStatus;
+    }
+}
