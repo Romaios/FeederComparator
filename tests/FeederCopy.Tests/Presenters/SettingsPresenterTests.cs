@@ -1,0 +1,84 @@
+using FeederCopy.Core.Models.Settings;
+using FeederCopy.Core.Presenters.Settings;
+
+namespace FeederCopy.Tests.Presenters
+{
+    public sealed class SettingsPresenterTests
+    {
+        private readonly FakeSettingsView _view = new();
+        private readonly FakeSettingsStore _store = new();
+        private readonly SettingsPresenter _presenter;
+
+        public SettingsPresenterTests() => _presenter = new SettingsPresenter(_view, _store);
+
+        private static AppSettings Custom => AppSettings.Defaults with { Feeder = new FeederColumns { BusId = "BUS", ConsumerId = "ACCT" } };
+
+        [Fact]
+        public void Load_ShowsSettingsAndReturnsProblem()
+        {
+            _store.LoadResult = new SettingsLoadResult(Custom, "bad");
+            Assert.Equal("bad", _presenter.Load());
+            Assert.Equal(Custom, _view.Shown);
+            Assert.Equal(Custom, _presenter.Current);
+        }
+
+        [Fact]
+        public void Save_Invalid_ShowsErrorsDoesNotSave()
+        {
+            _presenter.Load();
+            _view.Entered = AppSettings.Defaults with { Feeder = FeederColumns.Defaults with { BusId = "" } };
+            _presenter.OnSaveClicked();
+            Assert.Contains("Enter the feeder list column name for Bus ID.", _view.Validation!);
+            Assert.Empty(_store.Saved);
+            Assert.Equal(AppSettings.Defaults, _presenter.Current);
+        }
+
+        [Fact]
+        public void Save_Valid_SavesRaisesChanged()
+        {
+            _presenter.Load();
+            int changed = 0;
+            _presenter.SettingsChanged += () => changed++;
+            _view.Entered = Custom;
+            _presenter.OnSaveClicked();
+            Assert.Equal([Custom], _store.Saved);
+            Assert.Equal(Custom, _presenter.Current);
+            Assert.Equal(1, changed);
+            Assert.Equal(1, _view.SavedCount);
+            Assert.Empty(_view.Validation!);
+        }
+
+        [Fact]
+        public void Revert_ShowsCurrentWithoutSaving()
+        {
+            _presenter.Load();
+            _view.Entered = Custom;
+            _presenter.OnRevertClicked();
+            Assert.Equal(AppSettings.Defaults, _view.Shown);
+            Assert.Empty(_store.Saved);
+        }
+
+        [Fact]
+        public void Defaults_ShowsDefaultsWithoutSaving()
+        {
+            _store.LoadResult = new SettingsLoadResult(Custom, null);
+            _presenter.Load();
+            _presenter.OnDefaultsClicked();
+            Assert.Equal(AppSettings.Defaults, _view.Shown);
+            Assert.Empty(_store.Saved);
+            Assert.Equal(Custom, _presenter.Current);
+        }
+
+        [Fact]
+        public void RememberExportStyle_SavesOnlyWhenDifferent_UpdatesView()
+        {
+            _presenter.Load();
+            _presenter.RememberExportStyle(ExportStyle.OneWorkbook);
+            Assert.Empty(_store.Saved);
+            _presenter.RememberExportStyle(ExportStyle.SeparateFiles);
+            Assert.Equal(ExportStyle.SeparateFiles, _store.Saved.Single().Export);
+            Assert.Equal(ExportStyle.SeparateFiles, _presenter.Current.Export);
+            Assert.Equal(ExportStyle.SeparateFiles, _view.Shown!.Export);
+        }
+    }
+}
