@@ -1,0 +1,16 @@
+using FeederCopy.Core.Models.Feeders;
+
+namespace FeederCopy.Core.Services.Data
+{
+    public interface IFeederService
+    {
+        IReadOnlyList<FeederSummary> GetFeeders();
+        IReadOnlyList<ConsumerEntry> GetConsumers(long feederId);
+        ConsumerLocation? FindConsumer(string consumerId);
+        IReadOnlyList<(string ConsumerId, ConsumerLocation Where)> FindConsumers(IEnumerable<string> consumerIds);
+        long CreateFeeder(string name, IReadOnlyList<ConsumerEntry> consumers);
+        void SaveConsumers(IReadOnlyDictionary<long, IReadOnlyList<ConsumerEntry>> byFeeder);
+        void RenameFeeder(long feederId, string name);
+        void DeleteFeeder(long feederId);
+    }
+}
