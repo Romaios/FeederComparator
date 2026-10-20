@@ -108,10 +108,24 @@ namespace FeederCopy.Tests.Presenters
         public async Task Import_ParserProblem_CannotSave()
         {
             _presenter.Load();
-            _view.NextOpenFile = Workbook(("Abuyog", [[1, "A", "c1"], [2, "A", "c1"]]));
+            string path = Path.Combine(TestFiles.TempFolder(), "feeders.xlsx");
+            TestFiles.WriteXlsxSheets([("Abuyog", [["Count", "From Bus ID", "To Customer ID", "Status"], [1, "A", "c1", "x"]])], path);
+            _view.NextOpenFile = path;
             await _presenter.OnImportClickedAsync();
-            Assert.Equal(["Sheet Abuyog: consumer ID c1 appears more than once (rows 2, 3)."], _view.Preview!.Problems);
+            Assert.Equal(["Sheet Abuyog row 2: status 'x' must be 1 or 0."], _view.Preview!.Problems);
             Assert.False(_view.Preview.CanSave);
+        }
+
+        [Fact]
+        public async Task Import_DuplicateIds_CanStillSave()
+        {
+            _presenter.Load();
+            _view.NextOpenFile = Workbook(("Abuyog", [[1, "A", "c1"], [2, "A", "c1"]]), ("Bacon", [[1, "B", "c1"], [2, "B", "c2"]]));
+            await _presenter.OnImportClickedAsync();
+            Assert.Empty(_view.Preview!.Problems);
+            Assert.True(_view.Preview.CanSave);
+            _presenter.OnSavePreviewClicked();
+            Assert.Equal("Abuyog", _service.FindConsumer("c1")!.FeederName);
         }
 
         [Fact]

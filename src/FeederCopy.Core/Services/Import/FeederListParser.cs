@@ -56,7 +56,7 @@ namespace FeederCopy.Core.Services.Import
                 else if (reads.Count == 0 && problems.Count == 0)
                     problems.Add(missingColumns ?? "No consumers were found in the file.");
 
-                HashSet<Occurrence> kept = ResolveDuplicates(reads.SelectMany(r => r.Rows), notes, problems);
+                HashSet<Occurrence> kept = ResolveDuplicates(reads.SelectMany(r => r.Rows), notes);
                 List<ParsedSheet> feeders = reads
                     .Select(r => new ParsedSheet(
                         r.Name.Trim(),
@@ -117,7 +117,7 @@ namespace FeederCopy.Core.Services.Import
             return new SheetRead(sheet.Name, rows, skipped);
         }
 
-        private static HashSet<Occurrence> ResolveDuplicates(IEnumerable<Occurrence> all, List<string> notes, List<string> problems)
+        private static HashSet<Occurrence> ResolveDuplicates(IEnumerable<Occurrence> all, List<string> notes)
         {
             var kept = new HashSet<Occurrence>();
             foreach (IGrouping<string, Occurrence> group in all.GroupBy(o => o.ConsumerId, StringComparer.Ordinal))
@@ -132,11 +132,8 @@ namespace FeederCopy.Core.Services.Import
                 List<Occurrence> active = copies.Where(o => o.Active).ToList();
                 if (active.Count > 1)
                 {
-                    List<string> sheets = active.Select(o => o.Sheet).Distinct().ToList();
-                    problems.Add(sheets.Count == 1
-                        ? $"Sheet {sheets[0]}: consumer ID {group.Key} appears more than once (rows {string.Join(", ", active.Select(o => o.Row))})."
-                        : $"Consumer ID {group.Key} is active on both the {JoinNames(sheets)} sheets.");
                     kept.Add(active[0]);
+                    notes.Add($"Consumer ID {group.Key} appears more than once ({string.Join(", ", copies.Select(o => o.Where))}); kept {active[0].Where}.");
                 }
                 else if (active.Count == 1)
                 {
@@ -152,9 +149,6 @@ namespace FeederCopy.Core.Services.Import
             }
             return kept;
         }
-
-        private static string JoinNames(IReadOnlyList<string> names) =>
-            names.Count <= 2 ? string.Join(" and ", names) : $"{string.Join(", ", names.Take(names.Count - 1))} and {names[^1]}";
 
         private static int FindHeader(IReadOnlyList<IReadOnlyList<string?>> rows)
         {

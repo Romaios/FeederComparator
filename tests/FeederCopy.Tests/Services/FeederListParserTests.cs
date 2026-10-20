@@ -69,17 +69,22 @@ namespace FeederCopy.Tests.Services
         }
 
         [Fact]
-        public void ReadWorkbook_DuplicateInSheet_Problem()
+        public void ReadWorkbook_DuplicateInSheet_KeepsFirstWithNote()
         {
             ParsedWorkbook result = One([1, "A", "c0"], [2, "A", "c1"], [3, "B", "c2"], [4, "B", "c3"], [5, "B", "c4"], [6, "C", "c1"]);
-            Assert.Equal(["Sheet Abuyog: consumer ID c1 appears more than once (rows 3, 7)."], result.Problems);
+            Assert.Empty(result.Problems);
+            Assert.Equal(["Consumer ID c1 appears more than once (Abuyog row 3, Abuyog row 7); kept Abuyog row 3."], result.Notes);
+            Assert.Equal(new ConsumerEntry("A", "c1"), result.Feeders.Single().Entries.Single(e => e.ConsumerId == "c1"));
         }
 
         [Fact]
-        public void ReadWorkbook_DuplicateAcrossSheets_Problem()
+        public void ReadWorkbook_DuplicateAcrossSheets_KeepsFirstWithNote()
         {
-            ParsedWorkbook result = Parse(("Abuyog", [Header, [1, "A", "c1"]]), ("Bacon", [Header, [1, "B", "c1"]]));
-            Assert.Equal(["Consumer ID c1 is active on both the Abuyog and Bacon sheets."], result.Problems);
+            ParsedWorkbook result = Parse(("Abuyog", [Header, [1, "A", "c1"]]), ("Bacon", [Header, [1, "B", "c1"], [2, "B", "c2"]]));
+            Assert.Empty(result.Problems);
+            Assert.Equal(["Consumer ID c1 appears more than once (Abuyog row 2, Bacon row 2); kept Abuyog row 2."], result.Notes);
+            Assert.Equal([new ConsumerEntry("A", "c1")], result.Feeders[0].Entries);
+            Assert.Equal([new ConsumerEntry("B", "c2")], result.Feeders[1].Entries);
         }
 
         private static readonly object?[] StatusHeader = ["Count", "From Bus ID", "To Customer ID", "Status"];
