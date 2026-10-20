@@ -170,7 +170,9 @@ namespace FeederCopy.App.Forms.Feeders
             AppTheme.StyleErrorLabel(lblSearchResult);
             AppTheme.StyleGrid(dgvConsumers);
             AppTheme.AlignRight(colCount);
-            AppTheme.StyleFieldLabel(lblSelected);
+            AppTheme.StyleCard(tlpSelected, lblSelected);
+            AppTheme.StyleFieldLabel(lblChangeBus);
+            AppTheme.StyleFieldLabel(lblMoveTo);
             AppTheme.StyleComboBox(cboSetBus);
             AppTheme.StyleOutlineButton(btnSetBus);
             AppTheme.StyleComboBox(cboMoveTo);
@@ -181,12 +183,18 @@ namespace FeederCopy.App.Forms.Feeders
 
         private void UpdateSelectionButtons()
         {
-            bool selected = SelectedConsumer is not null;
+            ConsumerRow? row = dgvConsumers.CurrentRow is { Index: var i } && i >= 0 && i < _rows.Count ? _rows[i] : null;
+            bool selected = row is not null;
+            cboSetBus.Enabled = selected;
             btnSetBus.Enabled = selected;
+            cboMoveTo.Enabled = selected && cboMoveTo.Items.Count > 0;
+            btnMove.Enabled = cboMoveTo.Enabled;
             btnRemove.Enabled = selected;
-            btnMove.Enabled = selected && cboMoveTo.Items.Count > 0;
-            if (selected)
-                cboSetBus.Text = _rows[dgvConsumers.CurrentRow!.Index].BusLabel == BusLabels.Unknown ? string.Empty : _rows[dgvConsumers.CurrentRow.Index].BusLabel;
+            lblSelected.Text = row is null
+                ? "Click a consumer in the list to change its bus ID, move it, or remove it."
+                : $"Selected: consumer {row.ConsumerId}  ·  bus {row.BusLabel}";
+            if (row is not null)
+                cboSetBus.Text = row.BusLabel == BusLabels.Unknown ? string.Empty : row.BusLabel;
         }
 
         private static void SetItems(ComboBox combo, IReadOnlyList<string> items)
