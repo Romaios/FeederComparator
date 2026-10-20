@@ -326,6 +326,37 @@ namespace FeederCopy.Tests.Presenters
         }
 
         [Fact]
+        public void SetActive_False_PersistsAndShows()
+        {
+            long id = Seed("F", E("A", "c1"), E("A", "c2"));
+            _presenter.OnSetActiveClicked("c2", false);
+            Assert.Equal([E("A", "c1"), new ConsumerEntry("A", "c2", false)], _service.GetConsumers(id));
+            Assert.False(_view.Rows[1].Active);
+            Assert.Equal("c2", _view.SelectedConsumer);
+            Assert.Equal(1, _changed);
+        }
+
+        [Fact]
+        public void Move_KeepsInactive()
+        {
+            long other = Seed("Other", E("A", "x1"));
+            Seed("F", new ConsumerEntry("A", "c1", false));
+            _presenter.OnMoveClicked("c1", other);
+            Assert.Equal([E("A", "x1"), new ConsumerEntry("A", "c1", false)], _service.GetConsumers(other));
+        }
+
+        [Fact]
+        public async Task Import_PreviewCountsInactive()
+        {
+            _presenter.Load();
+            string path = Path.Combine(TestFiles.TempFolder(), "feeders.xlsx");
+            TestFiles.WriteXlsxSheets([("Abuyog", [["Count", "From Bus ID", "To Customer ID", "Status"], [1, "A", "c1", 1], [2, "A", "c2", 0]])], path);
+            _view.NextOpenFile = path;
+            await _presenter.OnImportClickedAsync();
+            Assert.Equal(["Abuyog — new feeder · 2 consumers (1 inactive) · 1 bus"], _view.Preview!.Feeders);
+        }
+
+        [Fact]
         public void ServiceThrows_LoggedAndShown()
         {
             var presenter = new FeedersPresenter(_view, new FailingSaveService(), () => AppSettings.Defaults, _log);

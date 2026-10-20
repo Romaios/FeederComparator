@@ -184,6 +184,8 @@ namespace FeederCopy.App.Forms.Feeders
             AppTheme.StyleOutlineButton(btnSetBus);
             AppTheme.StyleComboBox(cboMoveTo);
             AppTheme.StyleOutlineButton(btnMove);
+            AppTheme.StyleOutlineButton(btnSetActive);
+            AppTheme.StyleOutlineButton(btnSetInactive);
             AppTheme.StyleDangerButton(btnRemove);
             AppTheme.StyleEmptyState(lblEmpty);
         }
@@ -197,9 +199,11 @@ namespace FeederCopy.App.Forms.Feeders
             cboMoveTo.Enabled = selected && cboMoveTo.Items.Count > 0;
             btnMove.Enabled = cboMoveTo.Enabled;
             btnRemove.Enabled = selected;
+            btnSetActive.Enabled = row is { Active: false };
+            btnSetInactive.Enabled = row is { Active: true };
             lblSelected.Text = row is null
-                ? "Click a consumer in the list to change its bus ID, move it, or remove it."
-                : $"Selected: consumer {row.ConsumerId}  ·  bus {row.BusLabel}";
+                ? "Click a consumer in the list to change its bus ID, move it, set its status, or remove it."
+                : $"Selected: consumer {row.ConsumerId}  ·  bus {row.BusLabel}  ·  {row.StatusLabel}";
             if (row is not null)
                 cboSetBus.Text = row.BusLabel == BusLabels.Unknown ? string.Empty : row.BusLabel;
         }
@@ -324,14 +328,29 @@ namespace FeederCopy.App.Forms.Feeders
             ConsumerRow row = _rows[e.RowIndex];
             e.Value = e.ColumnIndex == colCount.Index ? row.Count.ToString("N0")
                 : e.ColumnIndex == colBus.Index ? row.BusLabel
+                : e.ColumnIndex == colStatus.Index ? row.StatusLabel
                 : row.ConsumerId;
         }
 
         private void dgvConsumers_CellFormatting(object? sender, DataGridViewCellFormattingEventArgs e)
         {
-            if (e.CellStyle is not null && e.ColumnIndex == colBus.Index && e.RowIndex >= 0 && e.RowIndex < _rows.Count
-                && _rows[e.RowIndex].BusLabel == BusLabels.Unknown)
+            if (e.CellStyle is null || e.RowIndex < 0 || e.RowIndex >= _rows.Count)
+                return;
+            ConsumerRow row = _rows[e.RowIndex];
+            if (!row.Active || (e.ColumnIndex == colBus.Index && row.BusLabel == BusLabels.Unknown))
                 AppTheme.StyleMutedCell(e.CellStyle);
+        }
+
+        private void btnSetActive_Click(object? sender, EventArgs e)
+        {
+            if (SelectedConsumer is string id)
+                _presenter?.OnSetActiveClicked(id, true);
+        }
+
+        private void btnSetInactive_Click(object? sender, EventArgs e)
+        {
+            if (SelectedConsumer is string id)
+                _presenter?.OnSetActiveClicked(id, false);
         }
 
         private void dgvConsumers_SelectionChanged(object? sender, EventArgs e) => UpdateSelectionButtons();

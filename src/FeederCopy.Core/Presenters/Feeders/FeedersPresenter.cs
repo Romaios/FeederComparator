@@ -171,13 +171,20 @@ namespace FeederCopy.Core.Presenters.Feeders
             Change("Moving consumer", "Could not save the change.", () =>
             {
                 IReadOnlyList<ConsumerEntry> source = _feeders.GetConsumers(feeder.Id);
-                string? bus = source.FirstOrDefault(e => e.ConsumerId == consumerId)?.BusId;
+                ConsumerEntry moving = source.FirstOrDefault(e => e.ConsumerId == consumerId) ?? new ConsumerEntry(null, consumerId);
                 _feeders.SaveConsumers(new Dictionary<long, IReadOnlyList<ConsumerEntry>>
                 {
                     [feeder.Id] = FeederLayout.Remove(source, consumerId),
-                    [targetFeederId] = FeederLayout.Add(_feeders.GetConsumers(targetFeederId), bus, consumerId),
+                    [targetFeederId] = FeederLayout.Add(_feeders.GetConsumers(targetFeederId), moving),
                 });
             });
+        }
+
+        public void OnSetActiveClicked(string consumerId, bool active)
+        {
+            if (Selected is null)
+                return;
+            Change("Setting consumer status", "Could not save the change.", () => _feeders.SetActive(consumerId, active), consumerId);
         }
 
         public void OnRemoveClicked(string consumerId)
@@ -224,7 +231,8 @@ namespace FeederCopy.Core.Presenters.Feeders
             var lines = new List<string>();
             foreach (ParsedSheet sheet in parsed.Feeders)
             {
-                string consumers = Text.Count(sheet.Entries.Count, "consumer", "consumers");
+                int inactive = sheet.Entries.Count(e => !e.Active);
+                string consumers = Text.Count(sheet.Entries.Count, "consumer", "consumers") + (inactive > 0 ? $" ({inactive:N0} inactive)" : string.Empty);
                 FeederSummary? saved = existing.FirstOrDefault(f => string.Equals(f.Name, sheet.Name, StringComparison.OrdinalIgnoreCase));
                 lines.Add(saved is null
                     ? $"{sheet.Name} — new feeder · {consumers} · {Text.Count(FeederLayout.Buses(sheet.Entries).Count, "bus", "buses")}"
