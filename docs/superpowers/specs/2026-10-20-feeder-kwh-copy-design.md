@@ -170,3 +170,54 @@ These choices follow the Jonnel project and the SBPR lessons file. They are my c
 - Exact grid columns, button labels and layout spacing, following the Jonnel conventions.
 - The app name. *(My call: "Feeder kWh Copy" unless the owner names it.)*
 - Progress-report frequency and background threading details.
+
+## 11. Revision 2026-10-20: consumer status and monthly history
+
+Why: the feeder data still lists consumers who were disconnected long ago. Those consumers are what caused the duplicate-ID problems across sheets. The user will add a status to the workbook. Status stays a manual stand-in until the program connects to the billing server, as the CPD monitoring program does.
+
+### 11.1 Status in the workbook
+
+- New optional column **Status**, with the name set in Settings (default `Status`). `1` means active and `0` means not active. A blank value counts as active. Any other value is a problem that blocks saving: `Sheet X row N: status 'abc' must be 1 or 0.`
+- A sheet with no Status column imports everyone as active.
+- Inactive consumers stay in their feeder as stand-ins and are shown greyed.
+- **Same ID on more than one row (any sheets):**
+  - Exactly one copy is active: keep it and drop the inactive copies, with a note.
+  - Two or more copies are active: a problem that blocks saving. The messages are the ones from §6.1.
+  - No copy is active: keep the first one, with a note.
+
+### 11.2 Copy kWh statuses
+
+| Status | In As-Billed | kWh | Export Status | Problem |
+|---|---|---|---|---|
+| Active | once | copied | Active | – |
+| Active | missing | blank | Missing reading | yes |
+| Inactive | missing | blank | Inactive | – |
+| Inactive | once | copied | Inactive but billed | yes |
+| any | 2+ times | blank | Duplicate in As-Billed | yes |
+| any | unreadable kWh | blank | kWh unreadable | yes |
+
+- "Missing reading" replaces the old "Not in As-Billed" wording.
+- The per-feeder totals add Active, Inactive, Missing reading and Inactive but billed.
+- **Each Copy kWh run is saved by month** (consumer ID, month, kWh, status). Running the same month again replaces that month. This reverses the §3 non-goal "no kWh history".
+
+### 11.3 Export
+
+The columns become `Count | Bus ID | Consumer ID | Status | kWh (Mon YYYY)`. Rows with a problem are highlighted.
+
+### 11.4 Feeders tab
+
+The grid gains a Status column (Active or Inactive), with inactive rows greyed. The selected-consumer bar gains **Set active** and **Set inactive**. Changing a bus ID or moving a consumer keeps its status. New consumers start active.
+
+### 11.5 New Consumers tab (by year)
+
+```
+Feeder [All ▾]  Status [All ▾]  Year [2026 ▾]  Find [______]
+Feeder | Bus ID | Consumer ID | Status | Jan | Feb | … | Dec | Total
+Selected: 0900001 · Bacon · Active      [Set active] [Set inactive]
+```
+
+- Covers every consumer in every feeder, in feeder then position order.
+- Each month cell shows the saved kWh. When there's no kWh, it shows the saved status for that month ("Missing", "Inactive"). It's blank when that month was never copied.
+- Total is the sum of that year's kWh.
+- The year list holds the years with saved readings, plus the current year. It defaults to the latest one.
+- Changes made on the Feeders tab or by Copy kWh refresh this tab.

@@ -113,6 +113,33 @@ namespace FeederCopy.Tests.Services
         }
 
         [Fact]
+        public void Consumers_ActiveFlagRoundTrips()
+        {
+            long id = _service.CreateFeeder("F", [E("A", "c1"), new ConsumerEntry("A", "c2", false)]);
+            Assert.Equal([E("A", "c1"), new ConsumerEntry("A", "c2", false)], _service.GetConsumers(id));
+        }
+
+        [Fact]
+        public void SetActive_UpdatesOnlyThatConsumer()
+        {
+            long id = _service.CreateFeeder("F", [E("A", "c1"), E("A", "c2")]);
+            _service.SetActive("c2", false);
+            Assert.Equal([E("A", "c1"), new ConsumerEntry("A", "c2", false)], _service.GetConsumers(id));
+            _service.SetActive("c2", true);
+            Assert.True(_service.GetConsumers(id)[1].Active);
+        }
+
+        [Fact]
+        public void GetAllConsumers_FeederNameThenPosition()
+        {
+            _service.CreateFeeder("Bacon", [E("B", "c3")]);
+            _service.CreateFeeder("Abuyog", [E("A", "c2"), new ConsumerEntry("A", "c1", false)]);
+            var all = _service.GetAllConsumers();
+            Assert.Equal([("Abuyog", "c2"), ("Abuyog", "c1"), ("Bacon", "c3")], all.Select(a => (a.FeederName, a.Entry.ConsumerId)));
+            Assert.False(all[1].Entry.Active);
+        }
+
+        [Fact]
         public void DeleteFeeder_RemovesConsumers()
         {
             long id = _service.CreateFeeder("F", [E("A", "c1")]);

@@ -43,6 +43,21 @@ namespace FeederCopy.Tests.Services
         }
 
         [Fact]
+        public void Load_OldFileWithoutStatus_UsesDefaultStatusName()
+        {
+            string json = """
+                {
+                  "Feeder": { "BusId": "From Bus ID", "ConsumerId": "To Customer ID" },
+                  "AsBilled": { "AccountNumber": "ACCOUNTNUMBER", "KwhUsed": "KWHUSED", "BillMonth": "BILLMONTH" },
+                  "Export": "OneWorkbook"
+                }
+                """;
+            SettingsLoadResult result = new SettingsStore(TestFiles.WriteRawText(json, ".json")).Load();
+            Assert.Null(result.Problem);
+            Assert.Equal("Status", result.Settings.Feeder.Status);
+        }
+
+        [Fact]
         public void SaveThenLoad_RoundTrips()
         {
             string path = TestFiles.TempPath(".json");

@@ -10,8 +10,9 @@ namespace FeederCopy.Core.Models.Settings
     {
         public required string BusId { get; init; }
         public required string ConsumerId { get; init; }
+        public string Status { get; init; } = "Status";
 
-        public static FeederColumns Defaults { get; } = new() { BusId = "From Bus ID", ConsumerId = "To Customer ID" };
+        public static FeederColumns Defaults { get; } = new() { BusId = "From Bus ID", ConsumerId = "To Customer ID", Status = "Status" };
     }
 
     public sealed record AsBilledColumns

@@ -31,11 +31,31 @@ namespace FeederCopy.Core.Services.Data
         public IReadOnlyList<ConsumerEntry> GetConsumers(long feederId)
         {
             using SqliteConnection c = _database.Open();
-            return c.Query<(string? BusId, string ConsumerId)>(
-                    "SELECT BusId, ConsumerId FROM FeederConsumers WHERE FeederId = @feederId ORDER BY Position",
+            return c.Query<(string? BusId, string ConsumerId, long Active)>(
+                    "SELECT BusId, ConsumerId, Active FROM FeederConsumers WHERE FeederId = @feederId ORDER BY Position",
                     new { feederId })
-                .Select(r => new ConsumerEntry(r.BusId, r.ConsumerId))
+                .Select(r => new ConsumerEntry(r.BusId, r.ConsumerId, r.Active != 0))
                 .ToList();
+        }
+
+        public IReadOnlyList<(string FeederName, ConsumerEntry Entry)> GetAllConsumers()
+        {
+            using SqliteConnection c = _database.Open();
+            return c.Query<(string Name, string? BusId, string ConsumerId, long Active)>(
+                    """
+                    SELECT f.Name, fc.BusId, fc.ConsumerId, fc.Active
+                    FROM FeederConsumers fc
+                    JOIN Feeders f ON f.Id = fc.FeederId
+                    ORDER BY f.Name COLLATE NOCASE, fc.Position
+                    """)
+                .Select(r => (r.Name, new ConsumerEntry(r.BusId, r.ConsumerId, r.Active != 0)))
+                .ToList();
+        }
+
+        public void SetActive(string consumerId, bool active)
+        {
+            using SqliteConnection c = _database.Open();
+            c.Execute("UPDATE FeederConsumers SET Active = @active WHERE ConsumerId = @consumerId", new { active = active ? 1 : 0, consumerId });
         }
 
         public ConsumerLocation? FindConsumer(string consumerId) =>
@@ -121,11 +141,12 @@ namespace FeederCopy.Core.Services.Data
         {
             using SqliteCommand cmd = c.CreateCommand();
             cmd.Transaction = tx;
-            cmd.CommandText = "INSERT INTO FeederConsumers (FeederId, BusId, ConsumerId, Position) VALUES ($feeder, $bus, $consumer, $position)";
+            cmd.CommandText = "INSERT INTO FeederConsumers (FeederId, BusId, ConsumerId, Position, Active) VALUES ($feeder, $bus, $consumer, $position, $active)";
             SqliteParameter feeder = cmd.Parameters.Add("$feeder", SqliteType.Integer);
             SqliteParameter bus = cmd.Parameters.Add("$bus", SqliteType.Text);
             SqliteParameter consumer = cmd.Parameters.Add("$consumer", SqliteType.Text);
             SqliteParameter position = cmd.Parameters.Add("$position", SqliteType.Integer);
+            SqliteParameter active = cmd.Parameters.Add("$active", SqliteType.Integer);
             cmd.Prepare();
 
             feeder.Value = feederId;
@@ -134,6 +155,7 @@ namespace FeederCopy.Core.Services.Data
                 bus.Value = (object?)consumers[i].BusId ?? DBNull.Value;
                 consumer.Value = consumers[i].ConsumerId;
                 position.Value = i + 1;
+                active.Value = consumers[i].Active ? 1 : 0;
                 cmd.ExecuteNonQuery();
             }
         }

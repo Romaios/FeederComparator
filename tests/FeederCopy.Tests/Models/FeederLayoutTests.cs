@@ -60,6 +60,24 @@ namespace FeederCopy.Tests.Models
         }
 
         [Fact]
+        public void SetBus_KeepsInactive() =>
+            Assert.Equal([new ConsumerEntry("A", "c1"), new ConsumerEntry("A", "c2", false)],
+                FeederLayout.SetBus([E("A", "c1"), new ConsumerEntry(null, "c2", false)], "c2", "A"));
+
+        [Fact]
+        public void AddEntry_KeepsInactive() =>
+            Assert.Equal([E("A", "c1"), new ConsumerEntry("A", "c9", false)],
+                FeederLayout.Add([E("A", "c1")], new ConsumerEntry(" A ", " c9 ", false)));
+
+        [Fact]
+        public void ToRows_CarriesStatus()
+        {
+            IReadOnlyList<ConsumerRow> rows = FeederLayout.ToRows([E("A", "c1"), new ConsumerEntry("A", "c2", false)]);
+            Assert.Equal(["Active", "Inactive"], rows.Select(r => r.StatusLabel));
+            Assert.False(rows[1].Active);
+        }
+
+        [Fact]
         public void Buses_DistinctInBlockOrder() =>
             Assert.Equal(["B", "A"], FeederLayout.Buses([E("B", "c1"), E("B", "c2"), E("A", "c3"), E(null, "c4")]));
 

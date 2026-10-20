@@ -14,6 +14,8 @@ namespace FeederCopy.Core.Models.Settings
                 errors.Add("Enter the feeder list column name for Consumer ID.");
             if (!IsBlank(feeder.BusId) && Same(feeder.BusId, feeder.ConsumerId))
                 errors.Add("Bus ID and Consumer ID can't use the same column name.");
+            if (!IsBlank(feeder.Status) && (Same(feeder.Status, feeder.BusId) || Same(feeder.Status, feeder.ConsumerId)))
+                errors.Add("Status can't use the same column name as Bus ID or Consumer ID.");
 
             if (IsBlank(asBilled.AccountNumber))
                 errors.Add("Enter the As-Billed column name for ACCOUNTNUMBER.");

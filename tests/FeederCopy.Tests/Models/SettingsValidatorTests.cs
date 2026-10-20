@@ -40,6 +40,20 @@ namespace FeederCopy.Tests.Models
         }
 
         [Fact]
+        public void Validate_StatusSameAsBusId_Error()
+        {
+            AppSettings s = AppSettings.Defaults with { Feeder = FeederColumns.Defaults with { Status = "from bus id" } };
+            Assert.Contains("Status can't use the same column name as Bus ID or Consumer ID.", SettingsValidator.Validate(s));
+        }
+
+        [Fact]
+        public void Validate_BlankStatus_Allowed()
+        {
+            AppSettings s = AppSettings.Defaults with { Feeder = FeederColumns.Defaults with { Status = "" } };
+            Assert.Empty(SettingsValidator.Validate(s));
+        }
+
+        [Fact]
         public void Validate_DuplicateAsBilledNames_Error()
         {
             AppSettings s = AppSettings.Defaults with { AsBilled = AsBilledColumns.Defaults with { KwhUsed = "accountnumber" } };

@@ -37,7 +37,10 @@ namespace FeederCopy.Core.Models.Feeders
         }
 
         public static List<ConsumerEntry> Add(IReadOnlyList<ConsumerEntry> entries, string? busId, string consumerId) =>
-            Arrange(entries.Append(new ConsumerEntry(NormalizeBus(busId), NormalizeConsumer(consumerId))));
+            Add(entries, new ConsumerEntry(busId, consumerId));
+
+        public static List<ConsumerEntry> Add(IReadOnlyList<ConsumerEntry> entries, ConsumerEntry entry) =>
+            Arrange(entries.Append(entry with { BusId = NormalizeBus(entry.BusId), ConsumerId = NormalizeConsumer(entry.ConsumerId) }));
 
         public static List<ConsumerEntry> Remove(IReadOnlyList<ConsumerEntry> entries, string consumerId)
         {
@@ -45,8 +48,12 @@ namespace FeederCopy.Core.Models.Feeders
             return entries.Where(e => !string.Equals(e.ConsumerId, id, StringComparison.Ordinal)).ToList();
         }
 
-        public static List<ConsumerEntry> SetBus(IReadOnlyList<ConsumerEntry> entries, string consumerId, string? busId) =>
-            Add(Remove(entries, consumerId), busId, consumerId);
+        public static List<ConsumerEntry> SetBus(IReadOnlyList<ConsumerEntry> entries, string consumerId, string? busId)
+        {
+            string id = NormalizeConsumer(consumerId);
+            bool active = entries.FirstOrDefault(e => string.Equals(e.ConsumerId, id, StringComparison.Ordinal))?.Active ?? true;
+            return Add(Remove(entries, id), new ConsumerEntry(busId, id, active));
+        }
 
         public static IReadOnlyList<string> Buses(IReadOnlyList<ConsumerEntry> entries) =>
             entries.Where(e => e.BusId is not null)
@@ -55,6 +62,6 @@ namespace FeederCopy.Core.Models.Feeders
                 .ToList();
 
         public static IReadOnlyList<ConsumerRow> ToRows(IReadOnlyList<ConsumerEntry> entries) =>
-            entries.Select((e, i) => new ConsumerRow(i + 1, BusLabels.For(e.BusId), e.ConsumerId)).ToList();
+            entries.Select((e, i) => new ConsumerRow(i + 1, BusLabels.For(e.BusId), e.ConsumerId, e.Active)).ToList();
     }
 }

@@ -6,6 +6,8 @@ namespace FeederCopy.Core.Services.Data
     {
         IReadOnlyList<FeederSummary> GetFeeders();
         IReadOnlyList<ConsumerEntry> GetConsumers(long feederId);
+        IReadOnlyList<(string FeederName, ConsumerEntry Entry)> GetAllConsumers();
+        void SetActive(string consumerId, bool active);
         ConsumerLocation? FindConsumer(string consumerId);
         IReadOnlyList<(string ConsumerId, ConsumerLocation Where)> FindConsumers(IEnumerable<string> consumerIds);
         long CreateFeeder(string name, IReadOnlyList<ConsumerEntry> consumers);
