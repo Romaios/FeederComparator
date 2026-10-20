@@ -1,0 +1,15 @@
+bin/
+obj/
+*.user
+.vs/
+publish/
+TestResults/
+*.db
+*.db-*
+logs/
+*.xls
+*.xlsx
+*.csv
+settings.json
+.claude/settings.local.json*
+.superpowers/
