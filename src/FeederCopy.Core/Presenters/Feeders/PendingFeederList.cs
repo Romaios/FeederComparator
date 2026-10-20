@@ -1,4 +1,4 @@
-using FeederCopy.Core.Models.Feeders;
+﻿using FeederCopy.Core.Models.Feeders;
 using FeederCopy.Core.Models.Import;
 
 namespace FeederCopy.Core.Presenters.Feeders
@@ -25,7 +25,6 @@ namespace FeederCopy.Core.Presenters.Feeders
             bool canSave = Parsed.FatalError is null && Conflicts.Count == 0 && nameError is null;
             return new FeederPreview(Mode, Name, Summary, problems, canSave);
         }
-
-        public static string Count(int n, string one, string many) => $"{n} {(n == 1 ? one : many)}";
     }
 }
+

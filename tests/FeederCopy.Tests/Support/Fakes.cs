@@ -1,5 +1,8 @@
+using FeederCopy.Core.Models.Billing;
+using FeederCopy.Core.Models.Copy;
 using FeederCopy.Core.Models.Feeders;
 using FeederCopy.Core.Models.Settings;
+using FeederCopy.Core.Presenters.Copy;
 using FeederCopy.Core.Presenters.Feeders;
 using FeederCopy.Core.Presenters.Settings;
 using FeederCopy.Core.Services.Logging;
@@ -90,6 +93,87 @@ namespace FeederCopy.Tests.Support
         }
 
         public void ShowError(string message) => Errors.Add(message);
+    }
+
+    internal sealed class FakeCopyView : ICopyView
+    {
+        private readonly object _gate = new();
+        private readonly List<(bool Busy, string? Message)> _busy = [];
+
+        public (string FileName, BillMonth? Month, int Rows, int Skipped)? FileRead { get; private set; }
+        public (int? Month, int? Year) Month { get; private set; }
+        public IReadOnlyList<FeederTotals>? Totals { get; private set; }
+        public IReadOnlyList<CopyProblem>? Problems { get; private set; }
+        public string? Heading { get; private set; }
+        public string? ClearedMessage { get; private set; }
+        public ExportStyle? Style { get; private set; }
+        public bool CopyEnabled { get; private set; }
+        public bool ExportEnabled { get; private set; }
+        public string? NextOpenFile { get; set; }
+        public string? NextSaveFile { get; set; }
+        public string? NextFolder { get; set; }
+        public List<(string Filter, string DefaultName)> SavePrompts { get; } = [];
+        public bool ConfirmAnswer { get; set; } = true;
+        public List<(string Title, string Message)> Confirms { get; } = [];
+        public List<string> Errors { get; } = [];
+        public List<string> Infos { get; } = [];
+
+        public IReadOnlyList<(bool Busy, string? Message)> Busy
+        {
+            get { lock (_gate) return _busy.ToList(); }
+        }
+
+        public void ShowFileRead(string fileName, BillMonth? fileMonth, int rows, int skipped) => FileRead = (fileName, fileMonth, rows, skipped);
+
+        public void SetMonth(int? month, int? year) => Month = (month, year);
+
+        public void ShowResult(IReadOnlyList<FeederTotals> totals, IReadOnlyList<CopyProblem> problems, string heading)
+        {
+            Totals = totals;
+            Problems = problems;
+            Heading = heading;
+            ClearedMessage = null;
+        }
+
+        public void ClearResult(string message)
+        {
+            Totals = null;
+            Problems = null;
+            Heading = null;
+            ClearedMessage = message;
+        }
+
+        public void SetExportStyle(ExportStyle style) => Style = style;
+
+        public void SetBusy(bool busy, string? message)
+        {
+            lock (_gate)
+                _busy.Add((busy, message));
+        }
+
+        public void SetCopyEnabled(bool enabled) => CopyEnabled = enabled;
+
+        public void SetExportEnabled(bool enabled) => ExportEnabled = enabled;
+
+        public string? PickOpenFile(string title, string filter) => NextOpenFile;
+
+        public string? PickSaveFile(string filter, string defaultName)
+        {
+            SavePrompts.Add((filter, defaultName));
+            return NextSaveFile;
+        }
+
+        public string? PickFolder() => NextFolder;
+
+        public bool Confirm(string title, string message)
+        {
+            Confirms.Add((title, message));
+            return ConfirmAnswer;
+        }
+
+        public void ShowError(string message) => Errors.Add(message);
+
+        public void ShowInfo(string message) => Infos.Add(message);
     }
 
     internal sealed class FakeSettingsView : ISettingsView

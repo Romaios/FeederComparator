@@ -1,3 +1,4 @@
+using FeederCopy.Core.Models;
 using FeederCopy.Core.Models.Feeders;
 using FeederCopy.Core.Models.Import;
 using FeederCopy.Core.Models.Settings;
@@ -214,9 +215,9 @@ namespace FeederCopy.Core.Presenters.Feeders
                 .Select(f => FeederRules.AlreadyIn(f.ConsumerId, f.Where))
                 .ToList();
 
-            string consumers = PendingFeederList.Count(parsed.Entries.Count, "consumer", "consumers");
+            string consumers = Text.Count(parsed.Entries.Count, "consumer", "consumers");
             string summary = target is null
-                ? $"{consumers} · {PendingFeederList.Count(FeederLayout.Buses(parsed.Entries).Count, "bus", "buses")} · {PendingFeederList.Count(parsed.Warnings.Count, "row", "rows")} skipped"
+                ? $"{consumers} · {Text.Count(FeederLayout.Buses(parsed.Entries).Count, "bus", "buses")} · {Text.Count(parsed.Warnings.Count, "row", "rows")} skipped"
                 : $"{FeederDiff.Compare(_feeders.GetConsumers(target.Id), parsed.Entries)} · {consumers}";
             return (parsed, conflicts, summary);
         }
@@ -280,3 +281,4 @@ namespace FeederCopy.Core.Presenters.Feeders
         }
     }
 }
+
