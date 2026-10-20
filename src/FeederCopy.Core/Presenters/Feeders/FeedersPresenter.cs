@@ -42,6 +42,22 @@ namespace FeederCopy.Core.Presenters.Feeders
             Run("Loading feeder consumers", "Could not load the feeder.", ShowSelected);
         }
 
+        public void OnCreateClicked(string? name)
+        {
+            string? error = FeederRules.ValidateName(name, _all, null);
+            if (error is not null)
+            {
+                _view.ShowCreateError(error);
+                return;
+            }
+            Change("Creating feeder", "Could not create the feeder.", () =>
+            {
+                _selectedId = _feeders.CreateFeeder(name!.Trim(), []);
+                _view.ClearCreateForm();
+                _view.ShowCreateError(null);
+            });
+        }
+
         public Task OnImportNewClickedAsync() => ReadListAsync(PreviewMode.NewFeeder);
 
         public Task OnUpdateClickedAsync() => Selected is null ? Task.CompletedTask : ReadListAsync(PreviewMode.Update);

@@ -84,6 +84,13 @@ namespace FeederCopy.Tests.Support
 
         public void ShowSearchResult(string? message) => SearchResult = message;
 
+        public string? CreateError { get; private set; }
+        public int CreateCleared { get; private set; }
+
+        public void ShowCreateError(string? message) => CreateError = message;
+
+        public void ClearCreateForm() => CreateCleared++;
+
         public string? PickOpenFile(string title, string filter) => NextOpenFile;
 
         public bool Confirm(string title, string message)

@@ -304,6 +304,51 @@ namespace FeederCopy.Tests.Presenters
         }
 
         [Fact]
+        public void Create_FromNoFeeders_CreatesEmptyFeederAndSelectsIt()
+        {
+            _presenter.Load();
+            _presenter.OnCreateClicked(" Brooklyn Feeder ");
+            FeederSummary created = _service.GetFeeders().Single();
+            Assert.Equal("Brooklyn Feeder", created.Name);
+            Assert.Empty(_service.GetConsumers(created.Id));
+            Assert.Equal(created.Id, _view.ConsumersFeeder!.Id);
+            Assert.Empty(_view.Rows);
+            Assert.Equal(1, _view.CreateCleared);
+            Assert.Null(_view.CreateError);
+            Assert.Equal(1, _changed);
+        }
+
+        [Fact]
+        public void Create_ThenAddConsumer_GoesIntoNewFeeder()
+        {
+            Seed("New York", E("A", "c1"));
+            _presenter.OnCreateClicked("Brooklyn");
+            _presenter.OnAddClicked("Z", "c9");
+            long brooklyn = _service.GetFeeders().Single(f => f.Name == "Brooklyn").Id;
+            Assert.Equal([E("Z", "c9")], _service.GetConsumers(brooklyn));
+        }
+
+        [Fact]
+        public void Create_DuplicateName_ShowsError()
+        {
+            Seed("New York", E("A", "c1"));
+            _presenter.OnCreateClicked("new york");
+            Assert.Equal("A feeder named 'new york' already exists.", _view.CreateError);
+            Assert.Single(_service.GetFeeders());
+            Assert.Equal(0, _view.CreateCleared);
+            Assert.Equal(0, _changed);
+        }
+
+        [Fact]
+        public void Create_BlankName_ShowsError()
+        {
+            _presenter.Load();
+            _presenter.OnCreateClicked("  ");
+            Assert.Equal("Enter a feeder name.", _view.CreateError);
+            Assert.Empty(_service.GetFeeders());
+        }
+
+        [Fact]
         public void ServiceThrows_LoggedAndShown()
         {
             var presenter = new FeedersPresenter(_view, new FailingSaveService(), () => AppSettings.Defaults, _log);

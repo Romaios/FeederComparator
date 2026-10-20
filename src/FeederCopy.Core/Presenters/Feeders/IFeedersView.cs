@@ -14,6 +14,8 @@ namespace FeederCopy.Core.Presenters.Feeders
         void ShowAddError(string? message);
         void SelectConsumer(string consumerId);
         void ShowSearchResult(string? message);
+        void ShowCreateError(string? message);
+        void ClearCreateForm();
         string? PickOpenFile(string title, string filter);
         bool Confirm(string title, string message);
         void ShowError(string message);

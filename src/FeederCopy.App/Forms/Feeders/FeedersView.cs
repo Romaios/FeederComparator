@@ -116,6 +116,10 @@ namespace FeederCopy.App.Forms.Feeders
 
         public void ShowSearchResult(string? message) => lblSearchResult.Text = message ?? string.Empty;
 
+        public void ShowCreateError(string? message) => lblCreateError.Text = message ?? string.Empty;
+
+        public void ClearCreateForm() => txtNewFeeder.Clear();
+
         public string? PickOpenFile(string title, string filter) => Dialogs.PickOpenFile(Owner, title, filter);
 
         public bool Confirm(string title, string message) => Dialogs.Confirm(Owner, title, message);
@@ -135,6 +139,10 @@ namespace FeederCopy.App.Forms.Feeders
             AppTheme.StylePrimaryButton(btnImport);
             AppTheme.StyleOutlineButton(btnUpdate);
             AppTheme.StyleListBox(lstFeeders);
+            AppTheme.StyleFieldLabel(lblNewFeeder);
+            AppTheme.StyleTextBox(txtNewFeeder);
+            AppTheme.StyleOutlineButton(btnCreate);
+            AppTheme.StyleErrorLabel(lblCreateError);
             AppTheme.StyleCard(tlpPreview, lblPreviewTitle);
             AppTheme.StyleFieldLabel(lblPreviewName);
             AppTheme.StyleTextBox(txtPreviewName);
@@ -208,6 +216,16 @@ namespace FeederCopy.App.Forms.Feeders
         {
             if (!_populating && lstFeeders.SelectedItem is FeederItem item)
                 _presenter?.OnFeederSelected(item.Feeder.Id);
+        }
+
+        private void btnCreate_Click(object? sender, EventArgs e) => _presenter?.OnCreateClicked(txtNewFeeder.Text);
+
+        private void txtNewFeeder_KeyDown(object? sender, KeyEventArgs e)
+        {
+            if (e.KeyCode != Keys.Enter)
+                return;
+            e.SuppressKeyPress = true;
+            _presenter?.OnCreateClicked(txtNewFeeder.Text);
         }
 
         private void txtPreviewName_TextChanged(object? sender, EventArgs e)
