@@ -20,7 +20,7 @@
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>FeederCopy</AssemblyName>
-    <Version>1.1.1</Version>
+    <Version>1.2.0</Version>
     <Product>Feeder kWh Copy</Product>
   </PropertyGroup>
 

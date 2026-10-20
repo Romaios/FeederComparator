@@ -36,7 +36,7 @@ namespace FeederCopy.Tests.Support
         public IReadOnlyList<ConsumerRow> Rows { get; private set; } = [];
         public IReadOnlyList<string> Buses { get; private set; } = [];
         public IReadOnlyList<FeederSummary> OtherFeeders { get; private set; } = [];
-        public FeederPreview? Preview { get; private set; }
+        public ImportPreview? Preview { get; private set; }
         public List<(bool Busy, string? Message)> Busy { get; } = [];
         public int AddCleared { get; private set; }
         public string? AddError { get; private set; }
@@ -70,7 +70,7 @@ namespace FeederCopy.Tests.Support
             OtherFeeders = otherFeeders;
         }
 
-        public void ShowPreview(FeederPreview preview) => Preview = preview;
+        public void ShowPreview(ImportPreview preview) => Preview = preview;
 
         public void HidePreview() => Preview = null;
 

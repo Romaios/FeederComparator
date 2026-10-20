@@ -10,6 +10,7 @@ namespace FeederCopy.Core.Services.Data
         IReadOnlyList<(string ConsumerId, ConsumerLocation Where)> FindConsumers(IEnumerable<string> consumerIds);
         long CreateFeeder(string name, IReadOnlyList<ConsumerEntry> consumers);
         void SaveConsumers(IReadOnlyDictionary<long, IReadOnlyList<ConsumerEntry>> byFeeder);
+        IReadOnlyList<long> ImportFeeders(IReadOnlyList<(string Name, IReadOnlyList<ConsumerEntry> Consumers)> feeders);
         void RenameFeeder(long feederId, string name);
         void DeleteFeeder(long feederId);
     }

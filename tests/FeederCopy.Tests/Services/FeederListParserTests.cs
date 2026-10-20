@@ -7,85 +7,154 @@ namespace FeederCopy.Tests.Services
 {
     public sealed class FeederListParserTests
     {
-        private static readonly object?[] Header = ["Count", "Bus ID", "Consumer ID"];
+        private static readonly object?[] Header = ["Count", "From\nBus ID", "To  \nCustomer ID"];
 
-        private static ParsedFeederList Parse(params object?[][] rows) =>
-            FeederListParser.Read(TestFiles.WriteXlsx(rows), FeederColumns.Defaults);
+        private static ParsedWorkbook Parse(params (string Name, object?[][] Rows)[] sheets) =>
+            FeederListParser.ReadWorkbook(TestFiles.WriteXlsxSheets(sheets.Select(s => (s.Name, (IEnumerable<object?[]>)s.Rows))), FeederColumns.Defaults);
+
+        private static ParsedWorkbook One(params object?[][] rows) => Parse(("Abuyog", [Header, .. rows]));
 
         [Fact]
-        public void Read_CountColumnIgnoredAndOptional()
+        public void ReadWorkbook_OneFeederPerSheet_NamedBySheet()
         {
-            ParsedFeederList result = Parse(["Consumer ID", "Bus ID"], ["c1", "A"], ["c2", "B"]);
-            Assert.Null(result.FatalError);
-            Assert.Equal([new ConsumerEntry("A", "c1"), new ConsumerEntry("B", "c2")], result.Entries);
+            ParsedWorkbook result = Parse(("Abuyog", [Header, [1, "A", "c1"]]), ("Bacon", [Header, [1, "B", "c2"], [2, "B", "c3"]]));
+            Assert.Empty(result.Problems);
+            Assert.Equal(["Abuyog", "Bacon"], result.Feeders.Select(f => f.Name));
+            Assert.Equal([new ConsumerEntry("B", "c2"), new ConsumerEntry("B", "c3")], result.Feeders[1].Entries);
         }
 
         [Fact]
-        public void Read_ArrangesIntoBusBlocks()
+        public void ReadWorkbook_TemplateHeadersWithLineBreaks_Match()
         {
-            ParsedFeederList result = Parse(Header, [1, "A", "c1"], [2, "B", "c2"], [3, "A", "c3"]);
-            Assert.Equal(["c1", "c3", "c2"], result.Entries.Select(e => e.ConsumerId));
+            ParsedWorkbook result = One([1, "AFSEC4", "0900001"]);
+            Assert.Empty(result.Problems);
+            Assert.Equal([new ConsumerEntry("AFSEC4", "0900001")], result.Feeders.Single().Entries);
         }
 
         [Fact]
-        public void Read_BlankRowsSkipped()
+        public void ReadWorkbook_CountColumnOptional_AnyOrder()
         {
-            ParsedFeederList result = Parse(Header, [1, "A", "c1"], [null, null, null], [2, "A", "c2"]);
-            Assert.Equal(2, result.Entries.Count);
-            Assert.Empty(result.Warnings);
+            ParsedWorkbook result = Parse(("Abuyog", [["To Customer ID", "From Bus ID"], ["c1", "A"]]));
+            Assert.Equal([new ConsumerEntry("A", "c1")], result.Feeders.Single().Entries);
         }
 
         [Fact]
-        public void Read_BusWithoutConsumer_Warning()
+        public void ReadWorkbook_ArrangesIntoBusBlocks()
         {
-            ParsedFeederList result = Parse(Header, [1, "A", "c1"], [2, "A", null]);
-            Assert.Equal([new RowError(3, "Bus ID without a consumer ID; skipped")], result.Warnings);
-            Assert.Single(result.Entries);
+            ParsedWorkbook result = One([1, "A", "c1"], [2, "B", "c2"], [3, "A", "c3"]);
+            Assert.Equal(["c1", "c3", "c2"], result.Feeders.Single().Entries.Select(e => e.ConsumerId));
         }
 
         [Fact]
-        public void Read_ConsumerWithoutBus_ImportsAsUnknown()
+        public void ReadWorkbook_BlankRowsSkipped()
         {
-            ParsedFeederList result = Parse(Header, [1, null, "c1"], [2, "A", "c2"]);
-            Assert.Equal([new ConsumerEntry("A", "c2"), new ConsumerEntry(null, "c1")], result.Entries);
+            ParsedWorkbook result = One([1, "A", "c1"], [null, null, null], [2, "A", "c2"]);
+            Assert.Equal(2, result.Feeders.Single().Entries.Count);
+            Assert.Empty(result.Notes);
         }
 
         [Fact]
-        public void Read_DuplicateConsumer_Fatal()
+        public void ReadWorkbook_BusWithoutConsumer_Note()
         {
-            ParsedFeederList result = Parse(Header, [1, "A", "c0"], [2, "A", "c1"], [3, "B", "c2"], [4, "B", "c3"], [5, "B", "c4"], [6, "C", "c1"]);
-            Assert.Equal("Consumer ID c1 appears more than once (rows 3, 7).", result.FatalError);
+            ParsedWorkbook result = One([1, "A", "c1"], [2, "A", null]);
+            Assert.Equal(["Abuyog row 3: Bus ID without a consumer ID; skipped"], result.Notes);
+            Assert.Equal(1, result.Feeders.Single().SkippedRows);
         }
 
         [Fact]
-        public void Read_MissingColumn_Fatal()
+        public void ReadWorkbook_ConsumerWithoutBus_ImportsAsUnknown()
         {
-            ParsedFeederList result = Parse(["Count", "Consumer ID"], [1, "c1"]);
-            Assert.Contains("Missing column(s): Bus ID", result.FatalError);
-            Assert.Contains("Settings tab", result.FatalError);
+            ParsedWorkbook result = One([1, null, "c1"], [2, "A", "c2"]);
+            Assert.Equal([new ConsumerEntry("A", "c2"), new ConsumerEntry(null, "c1")], result.Feeders.Single().Entries);
         }
 
         [Fact]
-        public void Read_Empty_Fatal()
+        public void ReadWorkbook_DuplicateInSheet_Problem()
         {
-            ParsedFeederList result = FeederListParser.Read(TestFiles.WriteRawText("", ".csv"), FeederColumns.Defaults);
-            Assert.Equal("The file is empty.", result.FatalError);
+            ParsedWorkbook result = One([1, "A", "c0"], [2, "A", "c1"], [3, "B", "c2"], [4, "B", "c3"], [5, "B", "c4"], [6, "C", "c1"]);
+            Assert.Equal(["Sheet Abuyog: consumer ID c1 appears more than once (rows 3, 7)."], result.Problems);
         }
 
         [Fact]
-        public void Read_NoConsumers_Fatal()
+        public void ReadWorkbook_DuplicateAcrossSheets_Problem()
         {
-            ParsedFeederList result = Parse(Header);
-            Assert.Equal("No consumers were found in the file.", result.FatalError);
+            ParsedWorkbook result = Parse(("Abuyog", [Header, [1, "A", "c1"]]), ("Bacon", [Header, [1, "B", "c1"]]));
+            Assert.Equal(["Consumer ID c1 is on both the Abuyog and Bacon sheets."], result.Problems);
         }
 
         [Fact]
-        public void Read_LockedFile_FatalCloseInExcel()
+        public void ReadWorkbook_SheetWithoutColumns_SkippedWithNote()
+        {
+            ParsedWorkbook result = Parse(("Abuyog", [Header, [1, "A", "c1"]]), ("Summary", [["Feeder", "Total"], ["Abuyog", 1]]));
+            Assert.Equal(["Abuyog"], result.Feeders.Select(f => f.Name));
+            Assert.Equal(["Sheet Summary skipped: it has no From Bus ID and To Customer ID columns."], result.Notes);
+            Assert.Empty(result.Problems);
+        }
+
+        [Fact]
+        public void ReadWorkbook_EmptySheet_SkippedSilently()
+        {
+            ParsedWorkbook result = Parse(("Abuyog", [Header, [1, "A", "c1"]]), ("Sheet2", []));
+            Assert.Single(result.Feeders);
+            Assert.Empty(result.Notes);
+        }
+
+        [Fact]
+        public void ReadWorkbook_SheetWithNoConsumers_Note()
+        {
+            ParsedWorkbook result = Parse(("Abuyog", [Header, [1, "A", "c1"]]), ("Bacon", [Header]));
+            Assert.Equal(["Sheet Bacon skipped: no consumers."], result.Notes);
+        }
+
+        [Fact]
+        public void ReadWorkbook_NoFeederSheets_ProblemNamesMissingColumns()
+        {
+            ParsedWorkbook result = Parse(("Summary", [["Count", "Consumer"], [1, "c1"]]));
+            Assert.Empty(result.Feeders);
+            Assert.Contains("Missing column(s): From Bus ID, To Customer ID", result.Problems.Single());
+            Assert.Contains("Settings tab", result.Problems.Single());
+        }
+
+        [Fact]
+        public void ReadWorkbook_EmptyFile_Problem()
+        {
+            ParsedWorkbook result = FeederListParser.ReadWorkbook(TestFiles.WriteRawText("", ".csv"), FeederColumns.Defaults);
+            Assert.Equal(["The file is empty."], result.Problems);
+        }
+
+        [Fact]
+        public void ReadWorkbook_Csv_OneFeederNamedByFile()
+        {
+            string folder = TestFiles.TempFolder();
+            string path = Path.Combine(folder, "Gubat.csv");
+            File.WriteAllText(path, "Count,From Bus ID,To Customer ID\n1,A,c1\n");
+            ParsedWorkbook result = FeederListParser.ReadWorkbook(path, FeederColumns.Defaults);
+            Assert.Equal(["Gubat"], result.Feeders.Select(f => f.Name));
+        }
+
+        [Fact]
+        public void ReadWorkbook_SpreadsheetMl_AllWorksheets()
+        {
+            string?[] header = ["Count", "From Bus ID", "To Customer ID"];
+            string path = TestFiles.WriteSpreadsheetMlSheets([("Pilar", [header, ["1", "A", "c1"]]), ("Gubat", [header, ["1", "B", "c2"]])]);
+            ParsedWorkbook result = FeederListParser.ReadWorkbook(path, FeederColumns.Defaults);
+            Assert.Equal(["Pilar", "Gubat"], result.Feeders.Select(f => f.Name));
+        }
+
+        [Fact]
+        public void ReadWorkbook_LockedFile_ProblemCloseInExcel()
         {
             string path = TestFiles.WriteXlsx([Header, [1, "A", "c1"]]);
             using var locked = new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
-            ParsedFeederList result = FeederListParser.Read(path, FeederColumns.Defaults);
-            Assert.Contains("close it and try again", result.FatalError);
+            ParsedWorkbook result = FeederListParser.ReadWorkbook(path, FeederColumns.Defaults);
+            Assert.Contains("close it and try again", result.Problems.Single());
+        }
+
+        [Fact]
+        public void Defaults_MatchTemplateHeadings()
+        {
+            Assert.Equal("From Bus ID", FeederColumns.Defaults.BusId);
+            Assert.Equal("To Customer ID", FeederColumns.Defaults.ConsumerId);
         }
     }
 }

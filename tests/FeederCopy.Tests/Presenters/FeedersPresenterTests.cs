@@ -25,10 +25,11 @@ namespace FeederCopy.Tests.Presenters
 
         private static ConsumerEntry E(string? bus, string id) => new(bus, id);
 
-        private static string ListFile(string name, params object?[][] rows)
+        private static string Workbook(params (string Name, object?[][] Rows)[] sheets)
         {
-            string path = Path.Combine(TestFiles.TempFolder(), name + ".xlsx");
-            return TestFiles.WriteXlsx([["Count", "Bus ID", "Consumer ID"], .. rows], path);
+            string path = Path.Combine(TestFiles.TempFolder(), "feeders.xlsx");
+            object?[] header = ["Count", "From Bus ID", "To Customer ID"];
+            return TestFiles.WriteXlsxSheets(sheets.Select(s => (s.Name, (IEnumerable<object?[]>)[header, .. s.Rows])), path);
         }
 
         private long Seed(string name, params ConsumerEntry[] entries)
@@ -57,108 +58,84 @@ namespace FeederCopy.Tests.Presenters
         }
 
         [Fact]
-        public async Task ImportNew_ShowsPreviewWithSummary()
+        public async Task Import_NewFeeders_ShowsPreview()
         {
             _presenter.Load();
-            _view.NextOpenFile = ListFile("New York Feeder", [1, "A", "c1"], [2, "B", "c2"], [3, "A", null]);
-            await _presenter.OnImportNewClickedAsync();
-            FeederPreview p = _view.Preview!;
-            Assert.Equal(PreviewMode.NewFeeder, p.Mode);
-            Assert.Equal("New York Feeder", p.Name);
-            Assert.Equal("2 consumers · 2 buses · 1 row skipped", p.Summary);
-            Assert.Equal(["Row 4: Bus ID without a consumer ID; skipped"], p.Problems);
+            _view.NextOpenFile = Workbook(("Abuyog", [[1, "A", "c1"], [2, "B", "c2"], [3, "A", null]]), ("Bacon", [[1, "X", "c3"]]));
+            await _presenter.OnImportClickedAsync();
+            ImportPreview p = _view.Preview!;
+            Assert.Equal("Import from feeders.xlsx", p.Title);
+            Assert.Equal(["Abuyog — new feeder · 2 consumers · 2 buses", "Bacon — new feeder · 1 consumer · 1 bus"], p.Feeders);
+            Assert.Equal(["Abuyog row 4: Bus ID without a consumer ID; skipped"], p.Notes);
+            Assert.Empty(p.Problems);
             Assert.True(p.CanSave);
             Assert.Equal((false, (string?)null), _view.Busy[^1]);
         }
 
         [Fact]
-        public async Task ImportNew_ConsumerInOtherFeeder_CannotSave()
+        public async Task Import_ExistingFeeder_ShowsReplaceWithDiff()
+        {
+            Seed("Abuyog", E("A", "c1"), E("A", "c2"), E("B", "c3"));
+            _view.NextOpenFile = Workbook(("ABUYOG", [[1, "A", "c1"], [2, "B", "c2"], [3, "B", "c4"]]));
+            await _presenter.OnImportClickedAsync();
+            Assert.Equal(["Abuyog — replaces the saved list · 1 added, 1 removed, 1 moved to a different bus · 3 consumers"], _view.Preview!.Feeders);
+            Assert.True(_view.Preview.CanSave);
+        }
+
+        [Fact]
+        public async Task Import_ConsumerInFeederNotInFile_CannotSave()
         {
             Seed("Washington", E("X", "c1"));
-            _view.NextOpenFile = ListFile("New York", [1, "A", "c1"]);
-            await _presenter.OnImportNewClickedAsync();
-            Assert.Contains("Consumer c1 is already in Washington under bus X.", _view.Preview!.Problems);
+            _view.NextOpenFile = Workbook(("Abuyog", [[1, "A", "c1"]]));
+            await _presenter.OnImportClickedAsync();
+            Assert.Equal(["Consumer c1 is already in Washington under bus X."], _view.Preview!.Problems);
             Assert.False(_view.Preview.CanSave);
         }
 
         [Fact]
-        public async Task ImportNew_Fatal_CannotSave()
+        public async Task Import_ConsumerMovedBetweenFeedersInFile_Allowed()
+        {
+            Seed("Abuyog", E("A", "c1"));
+            _view.NextOpenFile = Workbook(("Abuyog", [[1, "A", "c2"]]), ("Bacon", [[1, "B", "c1"]]));
+            await _presenter.OnImportClickedAsync();
+            Assert.Empty(_view.Preview!.Problems);
+            _presenter.OnSavePreviewClicked();
+            long bacon = _service.GetFeeders().Single(f => f.Name == "Bacon").Id;
+            Assert.Equal([E("B", "c1")], _service.GetConsumers(bacon));
+        }
+
+        [Fact]
+        public async Task Import_ParserProblem_CannotSave()
         {
             _presenter.Load();
-            _view.NextOpenFile = ListFile("Dupes", [1, "A", "c1"], [2, "A", "c1"]);
-            await _presenter.OnImportNewClickedAsync();
-            Assert.Equal("Consumer ID c1 appears more than once (rows 2, 3).", _view.Preview!.Problems[0]);
+            _view.NextOpenFile = Workbook(("Abuyog", [[1, "A", "c1"], [2, "A", "c1"]]));
+            await _presenter.OnImportClickedAsync();
+            Assert.Equal(["Sheet Abuyog: consumer ID c1 appears more than once (rows 2, 3)."], _view.Preview!.Problems);
             Assert.False(_view.Preview.CanSave);
         }
 
         [Fact]
-        public async Task ImportNew_Save_CreatesAndSelects_RaisesChanged()
+        public async Task Import_Save_CreatesReplacesSelectsFirst_RaisesChanged()
         {
-            Seed("Washington", E("X", "c9"));
-            _view.NextOpenFile = ListFile("New York", [1, "A", "c1"], [2, "B", "c2"]);
-            await _presenter.OnImportNewClickedAsync();
+            long abuyog = Seed("Abuyog", E("A", "c1"));
+            Seed("Zed", E("Z", "c9"));
+            _view.NextOpenFile = Workbook(("Abuyog", [[1, "A", "c1"], [2, "A", "c2"]]), ("Bacon", [[1, "B", "c3"]]));
+            await _presenter.OnImportClickedAsync();
             _presenter.OnSavePreviewClicked();
             Assert.Null(_view.Preview);
-            Assert.Equal("New York", _view.ConsumersFeeder!.Name);
-            Assert.Equal([E("A", "c1"), E("B", "c2")], _service.GetConsumers(_view.ConsumersFeeder.Id));
+            Assert.Equal(abuyog, _view.ConsumersFeeder!.Id);
+            Assert.Equal([E("A", "c1"), E("A", "c2")], _service.GetConsumers(abuyog));
+            Assert.Equal(["Abuyog", "Bacon", "Zed"], _service.GetFeeders().Select(f => f.Name));
             Assert.Equal(1, _changed);
         }
 
         [Fact]
-        public async Task ImportNew_DuplicateName_CannotSave()
-        {
-            Seed("New York", E("X", "c9"));
-            _view.NextOpenFile = ListFile("new york", [1, "A", "c1"]);
-            await _presenter.OnImportNewClickedAsync();
-            Assert.False(_view.Preview!.CanSave);
-            Assert.Contains("A feeder named 'new york' already exists.", _view.Preview.Problems);
-            _presenter.OnPreviewNameChanged("Brooklyn");
-            Assert.True(_view.Preview!.CanSave);
-            Assert.Equal("Brooklyn", _view.Preview.Name);
-        }
-
-        [Fact]
-        public async Task ImportNew_PickerCancelled_NoPreview()
+        public async Task Import_PickerCancelled_NoPreview()
         {
             _presenter.Load();
             _view.NextOpenFile = null;
-            await _presenter.OnImportNewClickedAsync();
+            await _presenter.OnImportClickedAsync();
             Assert.Null(_view.Preview);
-        }
-
-        [Fact]
-        public async Task Update_ShowsDiffSummary()
-        {
-            Seed("F", E("A", "c1"), E("A", "c2"), E("B", "c3"));
-            _view.NextOpenFile = ListFile("whatever", [1, "A", "c1"], [2, "B", "c2"], [3, "B", "c4"]);
-            await _presenter.OnUpdateClickedAsync();
-            FeederPreview p = _view.Preview!;
-            Assert.Equal(PreviewMode.Update, p.Mode);
-            Assert.Equal("F", p.Name);
-            Assert.Equal("1 added, 1 removed, 1 moved to a different bus · 3 consumers", p.Summary);
-            Assert.True(p.CanSave);
-        }
-
-        [Fact]
-        public async Task Update_Save_ReplacesList()
-        {
-            long id = Seed("F", E("A", "c1"), E("A", "c2"));
-            _view.NextOpenFile = ListFile("whatever", [1, "B", "c2"], [2, "B", "c5"]);
-            await _presenter.OnUpdateClickedAsync();
-            _presenter.OnSavePreviewClicked();
-            Assert.Equal([E("B", "c2"), E("B", "c5")], _service.GetConsumers(id));
-            Assert.Equal(1, _changed);
-        }
-
-        [Fact]
-        public async Task Update_ConsumerInOtherFeeder_CannotSave()
-        {
-            Seed("Other", E("Z", "c9"));
-            Seed("F", E("A", "c1"));
-            _view.NextOpenFile = ListFile("whatever", [1, "A", "c1"], [2, "A", "c9"]);
-            await _presenter.OnUpdateClickedAsync();
-            Assert.Equal(["Consumer c9 is already in Other under bus Z."], _view.Preview!.Problems);
-            Assert.False(_view.Preview.CanSave);
         }
 
         [Fact]
@@ -366,6 +343,7 @@ namespace FeederCopy.Tests.Presenters
             public IReadOnlyList<(string ConsumerId, ConsumerLocation Where)> FindConsumers(IEnumerable<string> consumerIds) => [];
             public long CreateFeeder(string name, IReadOnlyList<ConsumerEntry> consumers) => throw new InvalidOperationException("boom");
             public void SaveConsumers(IReadOnlyDictionary<long, IReadOnlyList<ConsumerEntry>> byFeeder) => throw new InvalidOperationException("boom");
+            public IReadOnlyList<long> ImportFeeders(IReadOnlyList<(string Name, IReadOnlyList<ConsumerEntry> Consumers)> feeders) => throw new InvalidOperationException("boom");
             public void RenameFeeder(long feederId, string name) => throw new InvalidOperationException("boom");
             public void DeleteFeeder(long feederId) => throw new InvalidOperationException("boom");
         }

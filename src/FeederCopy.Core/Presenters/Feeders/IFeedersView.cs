@@ -7,7 +7,7 @@ namespace FeederCopy.Core.Presenters.Feeders
         void ShowFeeders(IReadOnlyList<FeederSummary> feeders, long? selectedId);
         void ShowNoFeeders();
         void ShowConsumers(FeederSummary feeder, IReadOnlyList<ConsumerRow> rows, IReadOnlyList<string> buses, IReadOnlyList<FeederSummary> otherFeeders);
-        void ShowPreview(FeederPreview preview);
+        void ShowPreview(ImportPreview preview);
         void HidePreview();
         void SetBusy(bool busy, string? message);
         void ClearAddForm();

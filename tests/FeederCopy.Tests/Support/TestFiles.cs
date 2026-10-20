@@ -55,27 +55,56 @@ namespace FeederCopy.Tests.Support
             return path;
         }
 
-        public static string WriteXlsx(IEnumerable<object?[]> rows, string? path = null)
+        public static string WriteXlsx(IEnumerable<object?[]> rows, string? path = null) =>
+            WriteXlsxSheets([("Sheet1", rows)], path);
+
+        public static string WriteXlsxSheets(IEnumerable<(string Name, IEnumerable<object?[]> Rows)> sheets, string? path = null)
         {
             path ??= TempPath(".xlsx");
             using var workbook = new XLWorkbook();
-            IXLWorksheet sheet = workbook.AddWorksheet("Sheet1");
-            int r = 1;
-            foreach (object?[] row in rows)
+            foreach ((string name, IEnumerable<object?[]> rows) in sheets)
             {
-                for (int c = 0; c < row.Length; c++)
+                IXLWorksheet sheet = workbook.AddWorksheet(name);
+                int r = 1;
+                foreach (object?[] row in rows)
                 {
-                    sheet.Cell(r, c + 1).Value = row[c] switch
+                    for (int c = 0; c < row.Length; c++)
                     {
-                        null => Blank.Value,
-                        double d => d,
-                        int i => i,
-                        var o => o.ToString(),
-                    };
+                        sheet.Cell(r, c + 1).Value = row[c] switch
+                        {
+                            null => Blank.Value,
+                            double d => d,
+                            int i => i,
+                            var o => o.ToString(),
+                        };
+                    }
+                    r++;
                 }
-                r++;
             }
             workbook.SaveAs(path);
+            return path;
+        }
+
+        public static string WriteSpreadsheetMlSheets(IEnumerable<(string Name, IEnumerable<string?[]> Rows)> sheets)
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine("<?xml version=\"1.0\"?>");
+            sb.AppendLine("<Workbook xmlns=\"urn:schemas-microsoft-com:office:spreadsheet\" xmlns:ss=\"urn:schemas-microsoft-com:office:spreadsheet\">");
+            foreach ((string name, IEnumerable<string?[]> rows) in sheets)
+            {
+                sb.AppendLine($" <Worksheet ss:Name=\"{SecurityElement.Escape(name)}\"><Table>");
+                foreach (string?[] row in rows)
+                {
+                    sb.Append("  <Row>");
+                    foreach (string? cell in row)
+                        sb.Append(cell is null ? "<Cell/>" : $"<Cell><Data ss:Type=\"String\">{SecurityElement.Escape(cell)}</Data></Cell>");
+                    sb.AppendLine("</Row>");
+                }
+                sb.AppendLine(" </Table></Worksheet>");
+            }
+            sb.AppendLine("</Workbook>");
+            string path = TempPath(".xls");
+            File.WriteAllText(path, sb.ToString(), new UTF8Encoding(false));
             return path;
         }
     }

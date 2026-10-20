@@ -31,7 +31,6 @@ namespace FeederCopy.App.Forms.Feeders
             lstFeeders.SelectedIndex = feeders.ToList().FindIndex(f => f.Id == selectedId);
             lstFeeders.EndUpdate();
             _populating = false;
-            btnUpdate.Enabled = true;
             tlpWorkspace.Visible = true;
             lblEmpty.Visible = false;
         }
@@ -43,7 +42,6 @@ namespace FeederCopy.App.Forms.Feeders
             _populating = false;
             _rows = [];
             dgvConsumers.RowCount = 0;
-            btnUpdate.Enabled = false;
             tlpWorkspace.Visible = false;
             lblEmpty.Visible = true;
         }
@@ -67,21 +65,27 @@ namespace FeederCopy.App.Forms.Feeders
             UpdateSelectionButtons();
         }
 
-        public void ShowPreview(FeederPreview preview)
+        public void ShowPreview(ImportPreview preview)
         {
-            bool isNew = preview.Mode == PreviewMode.NewFeeder;
-            lblPreviewTitle.Text = isNew ? "New feeder from list" : $"Update {preview.Name} from list";
-            _populating = true;
-            if (txtPreviewName.Text != preview.Name)
-                txtPreviewName.Text = preview.Name;
-            _populating = false;
-            txtPreviewName.ReadOnly = !isNew;
-            lblPreviewSummary.Text = preview.Summary;
+            lblPreviewTitle.Text = preview.Title;
+            lstPreviewFeeders.BeginUpdate();
+            lstPreviewFeeders.Items.Clear();
+            foreach (string feeder in preview.Feeders)
+                lstPreviewFeeders.Items.Add(feeder);
+            lstPreviewFeeders.EndUpdate();
+            lstPreviewFeeders.Visible = preview.Feeders.Count > 0;
+            lblPreviewSummary.Text = preview.CanSave
+                ? "Check the list, then click Save feeders."
+                : "Fix the problems below in the workbook, then import it again.";
+            lblPreviewSummary.ForeColor = preview.CanSave ? AppTheme.TextPrimary : AppTheme.Danger;
+            lstPreviewProblems.BeginUpdate();
             lstPreviewProblems.Items.Clear();
             foreach (string problem in preview.Problems)
-                lstPreviewProblems.Items.Add(problem);
-            lstPreviewProblems.Visible = preview.Problems.Count > 0;
-            btnSavePreview.Text = isNew ? "Save feeder" : "Replace list";
+                lstPreviewProblems.Items.Add($"Problem: {problem}");
+            foreach (string note in preview.Notes)
+                lstPreviewProblems.Items.Add($"Note: {note}");
+            lstPreviewProblems.EndUpdate();
+            lstPreviewProblems.Visible = lstPreviewProblems.Items.Count > 0;
             btnSavePreview.Enabled = preview.CanSave;
             tlpPreview.Visible = true;
         }
@@ -138,15 +142,13 @@ namespace FeederCopy.App.Forms.Feeders
             AppTheme.StyleCardPanel(tlpLeft);
             AppTheme.StyleSectionLabel(lblFeedersTitle);
             AppTheme.StylePrimaryButton(btnImport);
-            AppTheme.StyleOutlineButton(btnUpdate);
             AppTheme.StyleListBox(lstFeeders);
             AppTheme.StyleFieldLabel(lblNewFeeder);
             AppTheme.StyleTextBox(txtNewFeeder);
             AppTheme.StyleOutlineButton(btnCreate);
             AppTheme.StyleErrorLabel(lblCreateError);
             AppTheme.StyleCard(tlpPreview, lblPreviewTitle);
-            AppTheme.StyleFieldLabel(lblPreviewName);
-            AppTheme.StyleTextBox(txtPreviewName);
+            AppTheme.StyleListBox(lstPreviewFeeders);
             lblPreviewSummary.Font = AppTheme.BodyStrongFont;
             lblPreviewSummary.ForeColor = AppTheme.TextPrimary;
             AppTheme.StyleListBox(lstPreviewProblems);
@@ -212,13 +214,7 @@ namespace FeederCopy.App.Forms.Feeders
         private async void btnImport_Click(object? sender, EventArgs e)
         {
             if (_presenter is not null)
-                await _presenter.OnImportNewClickedAsync();
-        }
-
-        private async void btnUpdate_Click(object? sender, EventArgs e)
-        {
-            if (_presenter is not null)
-                await _presenter.OnUpdateClickedAsync();
+                await _presenter.OnImportClickedAsync();
         }
 
         private void lstFeeders_SelectedIndexChanged(object? sender, EventArgs e)
@@ -235,12 +231,6 @@ namespace FeederCopy.App.Forms.Feeders
                 return;
             e.SuppressKeyPress = true;
             _presenter?.OnCreateClicked(txtNewFeeder.Text);
-        }
-
-        private void txtPreviewName_TextChanged(object? sender, EventArgs e)
-        {
-            if (!_populating)
-                _presenter?.OnPreviewNameChanged(txtPreviewName.Text);
         }
 
         private void btnSavePreview_Click(object? sender, EventArgs e) => _presenter?.OnSavePreviewClicked();

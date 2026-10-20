@@ -31,6 +31,33 @@ namespace FeederCopy.Tests.Services
         }
 
         [Fact]
+        public void Xlsx_NumberWithZeroPaddedFormat_KeepsLeadingZeros()
+        {
+            string path = TestFiles.TempPath(".xlsx");
+            using (var workbook = new ClosedXML.Excel.XLWorkbook())
+            {
+                var sheet = workbook.AddWorksheet("Abuyog");
+                sheet.Cell(1, 1).Value = 900001;
+                sheet.Cell(1, 1).Style.NumberFormat.Format = "0000000";
+                sheet.Cell(2, 1).Value = 1234.5;
+                sheet.Cell(2, 1).Style.NumberFormat.Format = "#,##0.00";
+                workbook.SaveAs(path);
+            }
+            List<IReadOnlyList<string?>> rows = TableReaderFactory.For(path).ReadSheets(path)[0].Rows.ToList();
+            Assert.Equal("0900001", rows[0][0]);
+            Assert.Equal("1234.5", rows[1][0]);
+        }
+
+        [Fact]
+        public void Xlsx_ReadSheets_KeepsRowNumbersAcrossBlankRows()
+        {
+            string path = TestFiles.WriteXlsxSheets([("A", [["h"], [null], ["x"]]), ("B", [["y"]])]);
+            IReadOnlyList<TableSheet> sheets = TableReaderFactory.For(path).ReadSheets(path);
+            Assert.Equal(["A", "B"], sheets.Select(s => s.Name));
+            Assert.Equal("x", sheets[0].Rows[2][0]);
+        }
+
+        [Fact]
         public void Csv_ReadsRows()
         {
             string path = TestFiles.WriteRawText("Bus ID,Consumer ID\nA,c1\n", ".csv");

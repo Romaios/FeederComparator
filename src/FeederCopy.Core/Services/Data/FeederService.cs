@@ -84,6 +84,27 @@ namespace FeederCopy.Core.Services.Data
             tx.Commit();
         }
 
+        public IReadOnlyList<long> ImportFeeders(IReadOnlyList<(string Name, IReadOnlyList<ConsumerEntry> Consumers)> feeders)
+        {
+            using SqliteConnection c = _database.Open();
+            using SqliteTransaction tx = c.BeginTransaction();
+            var ids = new List<long>();
+            foreach ((string name, _) in feeders)
+            {
+                long? existing = c.ExecuteScalar<long?>("SELECT Id FROM Feeders WHERE Name = @name", new { name }, tx);
+                long id = existing ?? c.ExecuteScalar<long>(
+                    "INSERT INTO Feeders (Name, CreatedAt) VALUES (@name, @createdAt); SELECT last_insert_rowid();",
+                    new { name, createdAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") },
+                    tx);
+                c.Execute("DELETE FROM FeederConsumers WHERE FeederId = @id", new { id }, tx);
+                ids.Add(id);
+            }
+            for (int i = 0; i < feeders.Count; i++)
+                InsertConsumers(c, tx, ids[i], feeders[i].Consumers);
+            tx.Commit();
+            return ids;
+        }
+
         public void RenameFeeder(long feederId, string name)
         {
             using SqliteConnection c = _database.Open();

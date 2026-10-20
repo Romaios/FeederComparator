@@ -10,7 +10,7 @@ namespace FeederCopy.Core.Presenters.Feeders
 {
     public sealed class FeedersPresenter
     {
-        private const string ListFilter = "Feeder lists (*.xlsx;*.xls;*.csv)|*.xlsx;*.xls;*.csv|All files (*.*)|*.*";
+        private const string ListFilter = "Feeder workbooks (*.xlsx;*.xls;*.csv)|*.xlsx;*.xls;*.csv|All files (*.*)|*.*";
 
         private readonly IFeedersView _view;
         private readonly IFeederService _feeders;
@@ -18,7 +18,8 @@ namespace FeederCopy.Core.Presenters.Feeders
         private readonly IErrorLog _log;
         private IReadOnlyList<FeederSummary> _all = [];
         private long? _selectedId;
-        private PendingFeederList? _pending;
+        private ParsedWorkbook? _pending;
+        private ImportPreview? _pendingPreview;
 
         public FeedersPresenter(IFeedersView view, IFeederService feeders, Func<AppSettings> settings, IErrorLog log)
         {
@@ -58,29 +59,41 @@ namespace FeederCopy.Core.Presenters.Feeders
             });
         }
 
-        public Task OnImportNewClickedAsync() => ReadListAsync(PreviewMode.NewFeeder);
-
-        public Task OnUpdateClickedAsync() => Selected is null ? Task.CompletedTask : ReadListAsync(PreviewMode.Update);
-
-        public void OnPreviewNameChanged(string name)
+        public async Task OnImportClickedAsync()
         {
-            if (_pending is null || _pending.Mode != PreviewMode.NewFeeder)
+            string? path = _view.PickOpenFile("Choose the feeder workbook", ListFilter);
+            if (path is null)
                 return;
-            _pending = _pending with { Name = name };
-            _view.ShowPreview(_pending.ToPreview(_all));
+
+            _view.SetBusy(true, "Reading feeder workbook…");
+            try
+            {
+                FeederColumns columns = _settings().Feeder;
+                IReadOnlyList<FeederSummary> existing = _all;
+                (ParsedWorkbook parsed, ImportPreview preview) = await Task.Run(() => Inspect(path, columns, existing));
+                _pending = parsed;
+                _pendingPreview = preview;
+                _view.SetBusy(false, null);
+                _view.ShowPreview(preview);
+            }
+            catch (Exception ex)
+            {
+                _log.Error($"Reading feeder workbook {path}", ex);
+                _view.SetBusy(false, null);
+                _view.ShowError($"Could not read the feeder workbook. {ex.Message}");
+            }
         }
 
         public void OnSavePreviewClicked()
         {
-            if (_pending is not { } pending || !pending.ToPreview(_all).CanSave)
+            if (_pending is not { } parsed || _pendingPreview is not { CanSave: true })
                 return;
-            Change("Saving feeder list", "Could not save the feeder list.", () =>
+            Change("Saving feeder workbook", "Could not save the feeders.", () =>
             {
-                if (pending.Mode == PreviewMode.NewFeeder)
-                    _selectedId = _feeders.CreateFeeder(pending.Name.Trim(), pending.Parsed.Entries);
-                else
-                    _feeders.SaveConsumers(new Dictionary<long, IReadOnlyList<ConsumerEntry>> { [pending.FeederId!.Value] = pending.Parsed.Entries });
+                IReadOnlyList<long> ids = _feeders.ImportFeeders(parsed.Feeders.Select(f => (f.Name, f.Entries)).ToList());
+                _selectedId = ids[0];
                 _pending = null;
+                _pendingPreview = null;
                 _view.HidePreview();
             });
         }
@@ -88,6 +101,7 @@ namespace FeederCopy.Core.Presenters.Feeders
         public void OnCancelPreviewClicked()
         {
             _pending = null;
+            _pendingPreview = null;
             _view.HidePreview();
         }
 
@@ -198,44 +212,33 @@ namespace FeederCopy.Core.Presenters.Feeders
             });
         }
 
-        private async Task ReadListAsync(PreviewMode mode)
+        private (ParsedWorkbook, ImportPreview) Inspect(string path, FeederColumns columns, IReadOnlyList<FeederSummary> existing)
         {
-            string? path = _view.PickOpenFile(mode == PreviewMode.NewFeeder ? "Choose a feeder list" : "Choose the newer feeder list", ListFilter);
-            if (path is null)
-                return;
-
-            FeederSummary? target = mode == PreviewMode.Update ? Selected : null;
-            _view.SetBusy(true, "Reading feeder list…");
-            try
-            {
-                FeederColumns columns = _settings().Feeder;
-                (ParsedFeederList parsed, IReadOnlyList<string> conflicts, string summary) = await Task.Run(() => Inspect(path, columns, target));
-                string name = target?.Name ?? Path.GetFileNameWithoutExtension(path);
-                _pending = new PendingFeederList(mode, target?.Id, parsed, conflicts, summary, name);
-                _view.SetBusy(false, null);
-                _view.ShowPreview(_pending.ToPreview(_all));
-            }
-            catch (Exception ex)
-            {
-                _log.Error($"Reading feeder list {path}", ex);
-                _view.SetBusy(false, null);
-                _view.ShowError($"Could not read the feeder list. {ex.Message}");
-            }
-        }
-
-        private (ParsedFeederList, IReadOnlyList<string>, string) Inspect(string path, FeederColumns columns, FeederSummary? target)
-        {
-            ParsedFeederList parsed = FeederListParser.Read(path, columns);
-            IReadOnlyList<string> conflicts = _feeders.FindConsumers(parsed.Entries.Select(e => e.ConsumerId))
-                .Where(f => f.Where.FeederId != target?.Id)
+            ParsedWorkbook parsed = FeederListParser.ReadWorkbook(path, columns);
+            var imported = parsed.Feeders.Select(f => f.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            List<string> conflicts = _feeders.FindConsumers(parsed.Feeders.SelectMany(f => f.Entries).Select(e => e.ConsumerId))
+                .Where(f => !imported.Contains(f.Where.FeederName))
                 .Select(f => FeederRules.AlreadyIn(f.ConsumerId, f.Where))
                 .ToList();
 
-            string consumers = Text.Count(parsed.Entries.Count, "consumer", "consumers");
-            string summary = target is null
-                ? $"{consumers} · {Text.Count(FeederLayout.Buses(parsed.Entries).Count, "bus", "buses")} · {Text.Count(parsed.Warnings.Count, "row", "rows")} skipped"
-                : $"{FeederDiff.Compare(_feeders.GetConsumers(target.Id), parsed.Entries)} · {consumers}";
-            return (parsed, conflicts, summary);
+            var lines = new List<string>();
+            foreach (ParsedSheet sheet in parsed.Feeders)
+            {
+                string consumers = Text.Count(sheet.Entries.Count, "consumer", "consumers");
+                FeederSummary? saved = existing.FirstOrDefault(f => string.Equals(f.Name, sheet.Name, StringComparison.OrdinalIgnoreCase));
+                lines.Add(saved is null
+                    ? $"{sheet.Name} — new feeder · {consumers} · {Text.Count(FeederLayout.Buses(sheet.Entries).Count, "bus", "buses")}"
+                    : $"{saved.Name} — replaces the saved list · {FeederDiff.Compare(_feeders.GetConsumers(saved.Id), sheet.Entries)} · {consumers}");
+            }
+
+            List<string> problems = [.. parsed.Problems, .. conflicts];
+            var preview = new ImportPreview(
+                $"Import from {Path.GetFileName(path)}",
+                lines,
+                problems,
+                parsed.Notes,
+                problems.Count == 0 && parsed.Feeders.Count > 0);
+            return (parsed, preview);
         }
 
         private void Save(long feederId, IReadOnlyList<ConsumerEntry> entries) =>

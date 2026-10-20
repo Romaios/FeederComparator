@@ -12,5 +12,8 @@ namespace FeederCopy.Core.Services.Import
             while (parser.Read())
                 yield return parser.Record ?? [];
         }
+
+        public IReadOnlyList<TableSheet> ReadSheets(string path) =>
+            [new TableSheet(Path.GetFileNameWithoutExtension(path), ReadRows(path).ToList())];
     }
 }

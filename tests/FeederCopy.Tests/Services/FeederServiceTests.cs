@@ -82,6 +82,37 @@ namespace FeederCopy.Tests.Services
         }
 
         [Fact]
+        public void ImportFeeders_CreatesNewAndReplacesExistingByName()
+        {
+            long abuyog = _service.CreateFeeder("Abuyog", [E("A", "c1")]);
+            IReadOnlyList<long> ids = _service.ImportFeeders([("abuyog", [E("A", "c1"), E("A", "c2")]), ("Bacon", [E("B", "c3")])]);
+            Assert.Equal(abuyog, ids[0]);
+            Assert.Equal(["Abuyog", "Bacon"], _service.GetFeeders().Select(f => f.Name));
+            Assert.Equal([E("A", "c1"), E("A", "c2")], _service.GetConsumers(abuyog));
+            Assert.Equal([E("B", "c3")], _service.GetConsumers(ids[1]));
+        }
+
+        [Fact]
+        public void ImportFeeders_ConsumerMovedBetweenImportedFeeders_NoConflict()
+        {
+            _service.CreateFeeder("Abuyog", [E("A", "c1"), E("A", "c2")]);
+            IReadOnlyList<long> ids = _service.ImportFeeders([("Bacon", [E("B", "c1")]), ("Abuyog", [E("A", "c2")])]);
+            Assert.Equal([E("B", "c1")], _service.GetConsumers(ids[0]));
+            Assert.Equal([E("A", "c2")], _service.GetConsumers(ids[1]));
+        }
+
+        [Fact]
+        public void ImportFeeders_RollsBackOnFailure()
+        {
+            long other = _service.CreateFeeder("Other", [E("Z", "c9")]);
+            long abuyog = _service.CreateFeeder("Abuyog", [E("A", "c1")]);
+            Assert.Throws<SqliteException>(() => _service.ImportFeeders([("Abuyog", [E("A", "c2")]), ("Bacon", [E("B", "c9")])]));
+            Assert.Equal([E("A", "c1")], _service.GetConsumers(abuyog));
+            Assert.Equal([E("Z", "c9")], _service.GetConsumers(other));
+            Assert.Equal(["Abuyog", "Other"], _service.GetFeeders().Select(f => f.Name));
+        }
+
+        [Fact]
         public void DeleteFeeder_RemovesConsumers()
         {
             long id = _service.CreateFeeder("F", [E("A", "c1")]);

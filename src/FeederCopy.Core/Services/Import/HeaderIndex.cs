@@ -7,8 +7,8 @@ namespace FeederCopy.Core.Services.Import
             var positions = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
             for (int i = 0; i < header.Count; i++)
             {
-                string? name = header[i]?.Trim();
-                if (!string.IsNullOrEmpty(name))
+                string name = Normalize(header[i]);
+                if (name.Length > 0)
                     positions.TryAdd(name, i);
             }
 
@@ -16,10 +16,10 @@ namespace FeederCopy.Core.Services.Import
             var missing = new List<string>();
             foreach (string name in names)
             {
-                if (positions.TryGetValue(name.Trim(), out int position))
+                if (positions.TryGetValue(Normalize(name), out int position))
                     found.Add(position);
                 else
-                    missing.Add(name.Trim());
+                    missing.Add(Normalize(name));
             }
 
             if (missing.Count > 0)
@@ -37,5 +37,8 @@ namespace FeederCopy.Core.Services.Import
         }
 
         public static bool IsBlank(IReadOnlyList<string?> cells) => cells.All(string.IsNullOrWhiteSpace);
+
+        private static string Normalize(string? text) =>
+            string.Join(' ', (text ?? string.Empty).Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
     }
 }
