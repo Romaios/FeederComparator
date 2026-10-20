@@ -111,7 +111,8 @@ namespace FeederCopy.App.Forms.Feeders
             dgvConsumers.ClearSelection();
             dgvConsumers.CurrentCell = dgvConsumers.Rows[index].Cells[colConsumer.Index];
             dgvConsumers.Rows[index].Selected = true;
-            dgvConsumers.FirstDisplayedScrollingRowIndex = Math.Max(0, index - 3);
+            if (dgvConsumers.DisplayedRowCount(false) > 0)
+                dgvConsumers.FirstDisplayedScrollingRowIndex = Math.Max(0, index - 3);
         }
 
         public void ShowSearchResult(string? message) => lblSearchResult.Text = message ?? string.Empty;
