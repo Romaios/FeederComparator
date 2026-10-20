@@ -18,6 +18,7 @@ namespace FeederCopy.Core.Presenters.Copy
 
         private readonly ICopyView _view;
         private readonly IFeederService _feeders;
+        private readonly IReadingService _readings;
         private readonly IAsBilledReader _reader;
         private readonly IFeederExporter _exporter;
         private readonly Func<AppSettings> _settings;
@@ -29,6 +30,7 @@ namespace FeederCopy.Core.Presenters.Copy
         public CopyPresenter(
             ICopyView view,
             IFeederService feeders,
+            IReadingService readings,
             IAsBilledReader reader,
             IFeederExporter exporter,
             Func<AppSettings> settings,
@@ -37,12 +39,15 @@ namespace FeederCopy.Core.Presenters.Copy
         {
             _view = view;
             _feeders = feeders;
+            _readings = readings;
             _reader = reader;
             _exporter = exporter;
             _settings = settings;
             _rememberStyle = rememberStyle;
             _log = log;
         }
+
+        public event Action? ReadingsSaved;
 
         public void Load()
         {
@@ -106,7 +111,13 @@ namespace FeederCopy.Core.Presenters.Copy
             _view.SetBusy(true, "Copying kWh…");
             try
             {
-                CopyResult result = await Task.Run(() => KwhCopier.Fill(LoadFeeders(), snapshot, chosen));
+                CopyResult result = await Task.Run(() =>
+                {
+                    CopyResult filled = KwhCopier.Fill(LoadFeeders(), snapshot, chosen);
+                    if (filled.Feeders.Count > 0)
+                        _readings.SaveMonth(chosen, KwhCopier.Readings(filled));
+                    return filled;
+                });
                 _view.SetBusy(false, null);
                 if (result.Feeders.Count == 0)
                 {
@@ -115,6 +126,7 @@ namespace FeederCopy.Core.Presenters.Copy
                 }
 
                 _result = result;
+                ReadingsSaved?.Invoke();
                 string heading = $"{chosen} · {Text.Count(result.Feeders.Count, "feeder", "feeders")} · {Text.Count(result.Problems.Count, "problem", "problems")}";
                 _view.ShowResult(result.Totals, result.Problems, heading);
                 _view.SetExportEnabled(true);

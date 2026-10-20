@@ -21,7 +21,7 @@ namespace FeederCopy.App.Forms.Shell
 
             _settings = new SettingsPresenter(settingsView, services.Settings);
             _feeders = new FeedersPresenter(feedersView, services.Feeders, () => _settings.Current, services.Log);
-            _copy = new CopyPresenter(copyView, services.Feeders, services.AsBilled, services.Exporter,
+            _copy = new CopyPresenter(copyView, services.Feeders, services.Readings, services.AsBilled, services.Exporter,
                 () => _settings.Current, _settings.RememberExportStyle, services.Log);
             _feeders.FeedersChanged += _copy.OnFeedersChanged;
 

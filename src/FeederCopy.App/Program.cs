@@ -37,6 +37,7 @@ namespace FeederCopy.App
                 database.EnsureSchema();
                 services = new AppServices(
                     new FeederService(database),
+                    new ReadingService(database),
                     new AsBilledReader(),
                     new FeederExporter(),
                     new SettingsStore(Path.Combine(folder, "settings.json")),

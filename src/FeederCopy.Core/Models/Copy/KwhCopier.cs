@@ -5,8 +5,6 @@ namespace FeederCopy.Core.Models.Copy
 {
     public static class KwhCopier
     {
-        public const string NotFound = "Not in As-Billed";
-
         public static CopyResult Fill(IReadOnlyList<FeederSource> feeders, KwhSnapshot snapshot, BillMonth month)
         {
             var filled = new List<FilledFeeder>();
@@ -16,7 +14,7 @@ namespace FeederCopy.Core.Models.Copy
             foreach (FeederSource feeder in feeders)
             {
                 var rows = new List<FilledRow>();
-                int copied = 0, notFound = 0, duplicates = 0, unreadable = 0;
+                int active = 0, copied = 0, missing = 0, inactiveBilled = 0, duplicates = 0, unreadable = 0;
                 double total = 0;
 
                 for (int i = 0; i < feeder.Consumers.Count; i++)
@@ -24,42 +22,52 @@ namespace FeederCopy.Core.Models.Copy
                     ConsumerEntry entry = feeder.Consumers[i];
                     string id = entry.ConsumerId.Trim();
                     string bus = BusLabels.For(entry.BusId);
-                    double? kwh = null;
-                    string? problem;
+                    if (entry.Active)
+                        active++;
 
-                    if (!snapshot.ByAccount.TryGetValue(id, out IReadOnlyList<AsBilledEntry>? matches))
+                    (string status, double? kwh, string? problem) = Evaluate(entry.Active, snapshot.ByAccount.TryGetValue(id, out IReadOnlyList<AsBilledEntry>? matches) ? matches : []);
+                    switch (status)
                     {
-                        problem = NotFound;
-                        notFound++;
+                        case StatusLabels.MissingReading: missing++; break;
+                        case StatusLabels.InactiveButBilled: inactiveBilled++; break;
+                        case StatusLabels.DuplicateInAsBilled: duplicates++; break;
+                        case StatusLabels.Unreadable: unreadable++; break;
                     }
-                    else if (matches.Count > 1)
+                    if (kwh is double value)
                     {
-                        problem = $"Appears {matches.Count} times in As-Billed";
-                        duplicates++;
-                    }
-                    else if (matches[0].Kwh is not double value)
-                    {
-                        problem = $"kWh could not be read in As-Billed (row {matches[0].RowNumber})";
-                        unreadable++;
-                    }
-                    else
-                    {
-                        problem = null;
-                        kwh = value;
-                        total += value;
                         copied++;
+                        total += value;
                     }
 
-                    rows.Add(new FilledRow(i + 1, bus, id, kwh, problem));
+                    rows.Add(new FilledRow(i + 1, bus, id, status, kwh, problem));
                     if (problem is not null)
                         problems.Add(new CopyProblem(feeder.Name, i + 1, bus, id, problem));
                 }
 
                 filled.Add(new FilledFeeder(feeder.Name, rows));
-                totals.Add(new FeederTotals(feeder.Name, rows.Count, copied, notFound, duplicates, unreadable, total));
+                totals.Add(new FeederTotals(feeder.Name, rows.Count, active, rows.Count - active, copied, missing, inactiveBilled, duplicates, unreadable, total));
             }
 
             return new CopyResult(month, snapshot.FileName, filled, totals, problems);
+        }
+
+        public static IReadOnlyList<ReadingRecord> Readings(CopyResult result) =>
+            result.Feeders
+                .SelectMany(f => f.Rows)
+                .Select(r => new ReadingRecord(r.ConsumerId, result.Month.Key, r.Kwh, r.Status))
+                .ToList();
+
+        private static (string Status, double? Kwh, string? Problem) Evaluate(bool active, IReadOnlyList<AsBilledEntry> matches)
+        {
+            if (matches.Count == 0)
+                return active ? (StatusLabels.MissingReading, null, StatusLabels.MissingReading) : (StatusLabels.Inactive, null, null);
+            if (matches.Count > 1)
+                return (StatusLabels.DuplicateInAsBilled, null, $"Appears {matches.Count} times in As-Billed");
+            if (matches[0].Kwh is not double value)
+                return (StatusLabels.Unreadable, null, $"kWh could not be read in As-Billed (row {matches[0].RowNumber})");
+            return active
+                ? (StatusLabels.Active, value, null)
+                : (StatusLabels.InactiveButBilled, value, StatusLabels.InactiveButBilled);
         }
     }
 }

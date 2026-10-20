@@ -18,12 +18,30 @@ namespace FeederCopy.Tests.Presenters
         private readonly FakeCopyView _view = new();
         private readonly FakeErrorLog _log = new();
         private readonly List<ExportStyle> _remembered = [];
+        private readonly ReadingService _readings;
         private readonly CopyPresenter _presenter;
+        private int _readingsSaved;
 
         public CopyPresenterTests()
         {
             _service = new FeederService(_temp.Db);
-            _presenter = new CopyPresenter(_view, _service, new AsBilledReader(), new FeederExporter(), () => AppSettings.Defaults, _remembered.Add, _log);
+            _readings = new ReadingService(_temp.Db);
+            _presenter = new CopyPresenter(_view, _service, _readings, new AsBilledReader(), new FeederExporter(), () => AppSettings.Defaults, _remembered.Add, _log);
+            _presenter.ReadingsSaved += () => _readingsSaved++;
+        }
+
+        [Fact]
+        public async Task Copy_SavesReadingsForTheMonth_RaisesEvent()
+        {
+            await ReadyAsync();
+            await _presenter.OnCopyClickedAsync(7, 2026);
+            var year = _readings.GetYear(2026).OrderBy(r => r.ConsumerId).ToList();
+            Assert.Equal(
+                [new FeederCopy.Core.Models.Copy.ReadingRecord("c1", "202607", 10, "Active"),
+                 new FeederCopy.Core.Models.Copy.ReadingRecord("c2", "202607", null, "Missing reading"),
+                 new FeederCopy.Core.Models.Copy.ReadingRecord("c3", "202607", null, "Duplicate in As-Billed")],
+                year);
+            Assert.Equal(1, _readingsSaved);
         }
 
         public void Dispose() => _temp.Dispose();

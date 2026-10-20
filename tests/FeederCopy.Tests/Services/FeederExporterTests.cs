@@ -13,10 +13,10 @@ namespace FeederCopy.Tests.Services
             [
                 new FilledFeeder("New York Feeder",
                 [
-                    new FilledRow(1, "CONSjunc14Se", "0101", 152, null),
-                    new FilledRow(2, "Unknown", "0102", null, "Not in As-Billed"),
+                    new FilledRow(1, "CONSjunc14Se", "0101", "Active", 152, null),
+                    new FilledRow(2, "Unknown", "0102", "Missing reading", null, "Missing reading"),
                 ]),
-                new FilledFeeder("Washington Feeder", [new FilledRow(1, "B", "0201", 10.5, null)]),
+                new FilledFeeder("Washington Feeder", [new FilledRow(1, "B", "0201", "Active", 10.5, null)]),
             ],
             [], []);
 
@@ -39,18 +39,21 @@ namespace FeederCopy.Tests.Services
 
             Assert.Equal("New York Feeder", ws.Cell("A1").GetText());
             Assert.True(ws.Cell("A1").Style.Font.Bold);
-            Assert.True(ws.Range("A1:D1").IsMerged());
-            Assert.Equal(["Count", "Bus ID", "Consumer ID", "kWh (Jul 2026)"], Enumerable.Range(1, 4).Select(c => ws.Cell(2, c).GetText()));
+            Assert.True(ws.Range("A1:E1").IsMerged());
+            Assert.Equal(["Count", "Bus ID", "Consumer ID", "Status", "kWh (Jul 2026)"], Enumerable.Range(1, 5).Select(c => ws.Cell(2, c).GetText()));
 
             Assert.Equal(1, ws.Cell("A3").GetDouble());
             Assert.Equal("CONSjunc14Se", ws.Cell("B3").GetText());
             Assert.Equal(XLDataType.Text, ws.Cell("C3").DataType);
             Assert.Equal("0101", ws.Cell("C3").GetText());
-            Assert.Equal(XLDataType.Number, ws.Cell("D3").DataType);
-            Assert.Equal(152, ws.Cell("D3").GetDouble());
+            Assert.Equal("Active", ws.Cell("D3").GetText());
+            Assert.Equal(XLDataType.Number, ws.Cell("E3").DataType);
+            Assert.Equal(152, ws.Cell("E3").GetDouble());
 
-            Assert.True(ws.Cell("D4").IsEmpty());
+            Assert.Equal("Missing reading", ws.Cell("D4").GetText());
+            Assert.True(ws.Cell("E4").IsEmpty());
             Assert.Equal(XLColor.FromArgb(255, 242, 204), ws.Cell("D4").Style.Fill.BackgroundColor);
+            Assert.Equal(XLColor.FromArgb(255, 242, 204), ws.Cell("E4").Style.Fill.BackgroundColor);
             Assert.Equal(2, ws.SheetView.SplitRow);
         }
 

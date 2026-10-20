@@ -41,7 +41,8 @@ namespace FeederCopy.App.Forms.Copy
             lblMessage.Visible = false;
             dgvTotals.Rows.Clear();
             foreach (FeederTotals t in totals)
-                dgvTotals.Rows.Add(t.Name, t.Consumers.ToString("N0"), t.Copied.ToString("N0"), t.NotFound.ToString("N0"),
+                dgvTotals.Rows.Add(t.Name, t.Consumers.ToString("N0"), t.Active.ToString("N0"), t.Inactive.ToString("N0"),
+                    t.Copied.ToString("N0"), t.MissingReading.ToString("N0"), t.InactiveButBilled.ToString("N0"),
                     t.Duplicates.ToString("N0"), t.Unreadable.ToString("N0"), t.TotalKwh.ToString("N2"));
             _problems = problems;
             dgvProblems.RowCount = 0;
@@ -109,7 +110,7 @@ namespace FeederCopy.App.Forms.Copy
             AppTheme.StyleSectionLabel(lblHeading);
             AppTheme.StyleMutedLabel(lblMessage);
             AppTheme.StyleGrid(dgvTotals);
-            foreach (DataGridViewColumn column in new[] { colConsumers, colCopied, colNotFound, colDuplicates, colUnreadable, colTotalKwh })
+            foreach (DataGridViewColumn column in new[] { colConsumers, colActive, colInactive, colCopied, colMissing, colInactiveBilled, colDuplicates, colUnreadable, colTotalKwh })
                 AppTheme.AlignRight(column);
             lblProblemsTitle.Font = AppTheme.BodyStrongFont;
             lblProblemsTitle.ForeColor = AppTheme.TextPrimary;

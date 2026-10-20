@@ -8,6 +8,7 @@ namespace FeederCopy.App
 {
     public sealed record AppServices(
         IFeederService Feeders,
+        IReadingService Readings,
         IAsBilledReader AsBilled,
         IFeederExporter Exporter,
         ISettingsStore Settings,
