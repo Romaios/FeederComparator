@@ -34,9 +34,6 @@ namespace FeederCopy.App.Forms.Shell
             pnlContent.SuspendLayout();
             statusStrip.SuspendLayout();
             SuspendLayout();
-            //
-            // tlpShell
-            //
             tlpShell.ColumnCount = 1;
             tlpShell.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
             tlpShell.Controls.Add(tlpHeader, 0, 0);
@@ -52,9 +49,6 @@ namespace FeederCopy.App.Forms.Shell
             tlpShell.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
             tlpShell.Size = new Size(1200, 738);
             tlpShell.TabIndex = 0;
-            //
-            // tlpHeader
-            //
             tlpHeader.ColumnCount = 5;
             tlpHeader.ColumnStyles.Add(new ColumnStyle());
             tlpHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 130F));
@@ -72,17 +66,11 @@ namespace FeederCopy.App.Forms.Shell
             tlpHeader.RowCount = 1;
             tlpHeader.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
             tlpHeader.TabIndex = 0;
-            //
-            // lblAppTitle
-            //
             lblAppTitle.Anchor = AnchorStyles.Left;
             lblAppTitle.AutoSize = true;
             lblAppTitle.Margin = new Padding(3, 0, 24, 0);
             lblAppTitle.Name = "lblAppTitle";
             lblAppTitle.Text = "Feeder kWh Copy";
-            //
-            // rdoFeeders
-            //
             rdoFeeders.Checked = true;
             rdoFeeders.Dock = DockStyle.Fill;
             rdoFeeders.Margin = new Padding(0);
@@ -91,27 +79,18 @@ namespace FeederCopy.App.Forms.Shell
             rdoFeeders.TabStop = true;
             rdoFeeders.Text = "Feeders";
             rdoFeeders.CheckedChanged += navTab_CheckedChanged;
-            //
-            // rdoCopy
-            //
             rdoCopy.Dock = DockStyle.Fill;
             rdoCopy.Margin = new Padding(0);
             rdoCopy.Name = "rdoCopy";
             rdoCopy.TabIndex = 1;
             rdoCopy.Text = "Copy kWh";
             rdoCopy.CheckedChanged += navTab_CheckedChanged;
-            //
-            // rdoSettings
-            //
             rdoSettings.Dock = DockStyle.Fill;
             rdoSettings.Margin = new Padding(0);
             rdoSettings.Name = "rdoSettings";
             rdoSettings.TabIndex = 2;
             rdoSettings.Text = "Settings";
             rdoSettings.CheckedChanged += navTab_CheckedChanged;
-            //
-            // tlpWarning
-            //
             tlpWarning.AutoSize = true;
             tlpWarning.ColumnCount = 2;
             tlpWarning.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
@@ -126,24 +105,15 @@ namespace FeederCopy.App.Forms.Shell
             tlpWarning.RowStyles.Add(new RowStyle());
             tlpWarning.TabIndex = 1;
             tlpWarning.Visible = false;
-            //
-            // lblWarning
-            //
             lblWarning.Anchor = AnchorStyles.Left | AnchorStyles.Right;
             lblWarning.AutoSize = true;
             lblWarning.Name = "lblWarning";
-            //
-            // btnDismissWarning
-            //
             btnDismissWarning.AutoSize = true;
             btnDismissWarning.MinimumSize = new Size(90, 30);
             btnDismissWarning.Name = "btnDismissWarning";
             btnDismissWarning.TabIndex = 0;
             btnDismissWarning.Text = "Dismiss";
             btnDismissWarning.Click += btnDismissWarning_Click;
-            //
-            // pnlContent
-            //
             pnlContent.Controls.Add(feedersView);
             pnlContent.Controls.Add(copyView);
             pnlContent.Controls.Add(settingsView);
@@ -151,42 +121,24 @@ namespace FeederCopy.App.Forms.Shell
             pnlContent.Margin = new Padding(0);
             pnlContent.Name = "pnlContent";
             pnlContent.TabIndex = 2;
-            //
-            // feedersView
-            //
             feedersView.Dock = DockStyle.Fill;
             feedersView.Name = "feedersView";
             feedersView.TabIndex = 0;
-            //
-            // copyView
-            //
             copyView.Dock = DockStyle.Fill;
             copyView.Name = "copyView";
             copyView.TabIndex = 1;
             copyView.Visible = false;
-            //
-            // settingsView
-            //
             settingsView.Dock = DockStyle.Fill;
             settingsView.Name = "settingsView";
             settingsView.TabIndex = 2;
             settingsView.Visible = false;
-            //
-            // statusStrip
-            //
             statusStrip.Items.AddRange(new ToolStripItem[] { lblStatus });
             statusStrip.Name = "statusStrip";
             statusStrip.TabIndex = 1;
-            //
-            // lblStatus
-            //
             lblStatus.Name = "lblStatus";
             lblStatus.Spring = true;
             lblStatus.Text = "Ready";
             lblStatus.TextAlign = ContentAlignment.MiddleLeft;
-            //
-            // MainForm
-            //
             AutoScaleDimensions = new SizeF(96F, 96F);
             AutoScaleMode = AutoScaleMode.Dpi;
             ClientSize = new Size(1200, 760);

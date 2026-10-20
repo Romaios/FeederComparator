@@ -46,9 +46,6 @@ namespace FeederCopy.App.Forms.Settings
             tlpExportCard.SuspendLayout();
             flpButtons.SuspendLayout();
             SuspendLayout();
-            //
-            // tlpRoot
-            //
             tlpRoot.AutoScroll = true;
             tlpRoot.ColumnCount = 1;
             tlpRoot.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
@@ -74,23 +71,14 @@ namespace FeederCopy.App.Forms.Settings
             tlpRoot.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
             tlpRoot.Size = new Size(900, 640);
             tlpRoot.TabIndex = 0;
-            //
-            // lblTitle
-            //
             lblTitle.AutoSize = true;
             lblTitle.Margin = new Padding(3, 0, 3, 4);
             lblTitle.Name = "lblTitle";
             lblTitle.Text = "Settings";
-            //
-            // lblIntro
-            //
             lblIntro.AutoSize = true;
             lblIntro.Margin = new Padding(3, 0, 3, 12);
             lblIntro.Name = "lblIntro";
             lblIntro.Text = "Column names the program looks for in the files you import. Names are matched without regard to upper or lower case.";
-            //
-            // tlpFeederCard
-            //
             tlpFeederCard.AutoSize = true;
             tlpFeederCard.AutoSizeMode = AutoSizeMode.GrowAndShrink;
             tlpFeederCard.ColumnCount = 2;
@@ -109,45 +97,27 @@ namespace FeederCopy.App.Forms.Settings
             tlpFeederCard.RowStyles.Add(new RowStyle());
             tlpFeederCard.RowStyles.Add(new RowStyle());
             tlpFeederCard.TabIndex = 0;
-            //
-            // lblFeederTitle
-            //
             lblFeederTitle.AutoSize = true;
             tlpFeederCard.SetColumnSpan(lblFeederTitle, 2);
             lblFeederTitle.Margin = new Padding(3, 0, 3, 8);
             lblFeederTitle.Name = "lblFeederTitle";
             lblFeederTitle.Text = "Feeder list columns";
-            //
-            // lblBusId
-            //
             lblBusId.Anchor = AnchorStyles.Left;
             lblBusId.AutoSize = true;
             lblBusId.Name = "lblBusId";
             lblBusId.Text = "Bus ID column";
-            //
-            // txtBusId
-            //
             txtBusId.Anchor = AnchorStyles.Left | AnchorStyles.Right;
             txtBusId.Margin = new Padding(3, 4, 3, 4);
             txtBusId.Name = "txtBusId";
             txtBusId.TabIndex = 0;
-            //
-            // lblConsumerId
-            //
             lblConsumerId.Anchor = AnchorStyles.Left;
             lblConsumerId.AutoSize = true;
             lblConsumerId.Name = "lblConsumerId";
             lblConsumerId.Text = "Consumer ID column";
-            //
-            // txtConsumerId
-            //
             txtConsumerId.Anchor = AnchorStyles.Left | AnchorStyles.Right;
             txtConsumerId.Margin = new Padding(3, 4, 3, 4);
             txtConsumerId.Name = "txtConsumerId";
             txtConsumerId.TabIndex = 1;
-            //
-            // tlpAsBilledCard
-            //
             tlpAsBilledCard.AutoSize = true;
             tlpAsBilledCard.AutoSizeMode = AutoSizeMode.GrowAndShrink;
             tlpAsBilledCard.ColumnCount = 2;
@@ -169,59 +139,35 @@ namespace FeederCopy.App.Forms.Settings
             tlpAsBilledCard.RowStyles.Add(new RowStyle());
             tlpAsBilledCard.RowStyles.Add(new RowStyle());
             tlpAsBilledCard.TabIndex = 1;
-            //
-            // lblAsBilledTitle
-            //
             lblAsBilledTitle.AutoSize = true;
             tlpAsBilledCard.SetColumnSpan(lblAsBilledTitle, 2);
             lblAsBilledTitle.Margin = new Padding(3, 0, 3, 8);
             lblAsBilledTitle.Name = "lblAsBilledTitle";
             lblAsBilledTitle.Text = "As-Billed columns";
-            //
-            // lblAccount
-            //
             lblAccount.Anchor = AnchorStyles.Left;
             lblAccount.AutoSize = true;
             lblAccount.Name = "lblAccount";
             lblAccount.Text = "Account number column";
-            //
-            // txtAccount
-            //
             txtAccount.Anchor = AnchorStyles.Left | AnchorStyles.Right;
             txtAccount.Margin = new Padding(3, 4, 3, 4);
             txtAccount.Name = "txtAccount";
             txtAccount.TabIndex = 0;
-            //
-            // lblKwh
-            //
             lblKwh.Anchor = AnchorStyles.Left;
             lblKwh.AutoSize = true;
             lblKwh.Name = "lblKwh";
             lblKwh.Text = "kWh used column";
-            //
-            // txtKwh
-            //
             txtKwh.Anchor = AnchorStyles.Left | AnchorStyles.Right;
             txtKwh.Margin = new Padding(3, 4, 3, 4);
             txtKwh.Name = "txtKwh";
             txtKwh.TabIndex = 1;
-            //
-            // lblMonth
-            //
             lblMonth.Anchor = AnchorStyles.Left;
             lblMonth.AutoSize = true;
             lblMonth.Name = "lblMonth";
             lblMonth.Text = "Bill month column";
-            //
-            // txtMonth
-            //
             txtMonth.Anchor = AnchorStyles.Left | AnchorStyles.Right;
             txtMonth.Margin = new Padding(3, 4, 3, 4);
             txtMonth.Name = "txtMonth";
             txtMonth.TabIndex = 2;
-            //
-            // tlpExportCard
-            //
             tlpExportCard.AutoSize = true;
             tlpExportCard.AutoSizeMode = AutoSizeMode.GrowAndShrink;
             tlpExportCard.ColumnCount = 2;
@@ -237,33 +183,21 @@ namespace FeederCopy.App.Forms.Settings
             tlpExportCard.RowStyles.Add(new RowStyle());
             tlpExportCard.RowStyles.Add(new RowStyle());
             tlpExportCard.TabIndex = 2;
-            //
-            // lblExportTitle
-            //
             lblExportTitle.AutoSize = true;
             tlpExportCard.SetColumnSpan(lblExportTitle, 2);
             lblExportTitle.Margin = new Padding(3, 0, 3, 8);
             lblExportTitle.Name = "lblExportTitle";
             lblExportTitle.Text = "Export";
-            //
-            // lblExportStyle
-            //
             lblExportStyle.Anchor = AnchorStyles.Left;
             lblExportStyle.AutoSize = true;
             lblExportStyle.Name = "lblExportStyle";
             lblExportStyle.Text = "Default export style";
-            //
-            // cboExportStyle
-            //
             cboExportStyle.Anchor = AnchorStyles.Left | AnchorStyles.Right;
             cboExportStyle.DropDownStyle = ComboBoxStyle.DropDownList;
             cboExportStyle.Items.AddRange(new object[] { "One workbook, sheet per feeder", "Separate file per feeder" });
             cboExportStyle.Margin = new Padding(3, 4, 3, 4);
             cboExportStyle.Name = "cboExportStyle";
             cboExportStyle.TabIndex = 0;
-            //
-            // flpButtons
-            //
             flpButtons.AutoSize = true;
             flpButtons.AutoSizeMode = AutoSizeMode.GrowAndShrink;
             flpButtons.Controls.Add(btnSave);
@@ -274,49 +208,31 @@ namespace FeederCopy.App.Forms.Settings
             flpButtons.Name = "flpButtons";
             flpButtons.TabIndex = 3;
             flpButtons.WrapContents = false;
-            //
-            // btnSave
-            //
             btnSave.AutoSize = true;
             btnSave.MinimumSize = new Size(110, 34);
             btnSave.Name = "btnSave";
             btnSave.TabIndex = 0;
             btnSave.Text = "Save";
             btnSave.Click += btnSave_Click;
-            //
-            // btnRevert
-            //
             btnRevert.AutoSize = true;
             btnRevert.MinimumSize = new Size(110, 34);
             btnRevert.Name = "btnRevert";
             btnRevert.TabIndex = 1;
             btnRevert.Text = "Undo unsaved changes";
             btnRevert.Click += btnRevert_Click;
-            //
-            // btnDefaults
-            //
             btnDefaults.AutoSize = true;
             btnDefaults.MinimumSize = new Size(110, 34);
             btnDefaults.Name = "btnDefaults";
             btnDefaults.TabIndex = 2;
             btnDefaults.Text = "Fill in defaults";
             btnDefaults.Click += btnDefaults_Click;
-            //
-            // lblSaved
-            //
             lblSaved.Anchor = AnchorStyles.Left;
             lblSaved.AutoSize = true;
             lblSaved.Margin = new Padding(10, 0, 3, 0);
             lblSaved.Name = "lblSaved";
-            //
-            // lblValidation
-            //
             lblValidation.AutoSize = true;
             lblValidation.MaximumSize = new Size(700, 0);
             lblValidation.Name = "lblValidation";
-            //
-            // SettingsView
-            //
             AutoScaleDimensions = new SizeF(96F, 96F);
             AutoScaleMode = AutoScaleMode.Dpi;
             Controls.Add(tlpRoot);

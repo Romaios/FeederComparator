@@ -74,9 +74,6 @@ namespace FeederCopy.App.Forms.Feeders
             ((System.ComponentModel.ISupportInitialize)dgvConsumers).BeginInit();
             tlpSelected.SuspendLayout();
             SuspendLayout();
-            //
-            // tlpRoot
-            //
             tlpRoot.ColumnCount = 2;
             tlpRoot.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 290F));
             tlpRoot.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
@@ -89,9 +86,6 @@ namespace FeederCopy.App.Forms.Feeders
             tlpRoot.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
             tlpRoot.Size = new Size(1100, 680);
             tlpRoot.TabIndex = 0;
-            //
-            // tlpLeft
-            //
             tlpLeft.ColumnCount = 1;
             tlpLeft.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
             tlpLeft.Controls.Add(lblFeedersTitle, 0, 0);
@@ -108,16 +102,10 @@ namespace FeederCopy.App.Forms.Feeders
             tlpLeft.RowStyles.Add(new RowStyle());
             tlpLeft.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
             tlpLeft.TabIndex = 0;
-            //
-            // lblFeedersTitle
-            //
             lblFeedersTitle.AutoSize = true;
             lblFeedersTitle.Margin = new Padding(3, 0, 3, 8);
             lblFeedersTitle.Name = "lblFeedersTitle";
             lblFeedersTitle.Text = "Feeders";
-            //
-            // btnImport
-            //
             btnImport.Dock = DockStyle.Fill;
             btnImport.Margin = new Padding(3, 0, 3, 6);
             btnImport.MinimumSize = new Size(0, 34);
@@ -125,9 +113,6 @@ namespace FeederCopy.App.Forms.Feeders
             btnImport.TabIndex = 0;
             btnImport.Text = "Import feeder list…";
             btnImport.Click += btnImport_Click;
-            //
-            // btnUpdate
-            //
             btnUpdate.Dock = DockStyle.Fill;
             btnUpdate.Enabled = false;
             btnUpdate.Margin = new Padding(3, 0, 3, 10);
@@ -136,17 +121,11 @@ namespace FeederCopy.App.Forms.Feeders
             btnUpdate.TabIndex = 1;
             btnUpdate.Text = "Update from list…";
             btnUpdate.Click += btnUpdate_Click;
-            //
-            // lstFeeders
-            //
             lstFeeders.Dock = DockStyle.Fill;
             lstFeeders.ItemHeight = 17;
             lstFeeders.Name = "lstFeeders";
             lstFeeders.TabIndex = 2;
             lstFeeders.SelectedIndexChanged += lstFeeders_SelectedIndexChanged;
-            //
-            // tlpRight
-            //
             tlpRight.ColumnCount = 1;
             tlpRight.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
             tlpRight.Controls.Add(tlpPreview, 0, 0);
@@ -158,9 +137,6 @@ namespace FeederCopy.App.Forms.Feeders
             tlpRight.RowStyles.Add(new RowStyle());
             tlpRight.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
             tlpRight.TabIndex = 1;
-            //
-            // tlpPreview
-            //
             tlpPreview.AutoSize = true;
             tlpPreview.ColumnCount = 2;
             tlpPreview.ColumnStyles.Add(new ColumnStyle());
@@ -183,39 +159,24 @@ namespace FeederCopy.App.Forms.Feeders
             tlpPreview.RowStyles.Add(new RowStyle());
             tlpPreview.TabIndex = 0;
             tlpPreview.Visible = false;
-            //
-            // lblPreviewTitle
-            //
             lblPreviewTitle.AutoSize = true;
             tlpPreview.SetColumnSpan(lblPreviewTitle, 2);
             lblPreviewTitle.Margin = new Padding(3, 0, 3, 8);
             lblPreviewTitle.Name = "lblPreviewTitle";
-            //
-            // lblPreviewName
-            //
             lblPreviewName.Anchor = AnchorStyles.Left;
             lblPreviewName.AutoSize = true;
             lblPreviewName.Name = "lblPreviewName";
             lblPreviewName.Text = "Feeder name";
-            //
-            // txtPreviewName
-            //
             txtPreviewName.Anchor = AnchorStyles.Left;
             txtPreviewName.Margin = new Padding(8, 4, 3, 4);
             txtPreviewName.Name = "txtPreviewName";
             txtPreviewName.Size = new Size(320, 25);
             txtPreviewName.TabIndex = 0;
             txtPreviewName.TextChanged += txtPreviewName_TextChanged;
-            //
-            // lblPreviewSummary
-            //
             lblPreviewSummary.AutoSize = true;
             tlpPreview.SetColumnSpan(lblPreviewSummary, 2);
             lblPreviewSummary.Margin = new Padding(3, 8, 3, 6);
             lblPreviewSummary.Name = "lblPreviewSummary";
-            //
-            // lstPreviewProblems
-            //
             tlpPreview.SetColumnSpan(lstPreviewProblems, 2);
             lstPreviewProblems.Dock = DockStyle.Fill;
             lstPreviewProblems.ItemHeight = 17;
@@ -223,9 +184,6 @@ namespace FeederCopy.App.Forms.Feeders
             lstPreviewProblems.Name = "lstPreviewProblems";
             lstPreviewProblems.Size = new Size(600, 90);
             lstPreviewProblems.TabIndex = 1;
-            //
-            // flpPreviewButtons
-            //
             flpPreviewButtons.AutoSize = true;
             tlpPreview.SetColumnSpan(flpPreviewButtons, 2);
             flpPreviewButtons.Controls.Add(btnSavePreview);
@@ -234,35 +192,23 @@ namespace FeederCopy.App.Forms.Feeders
             flpPreviewButtons.Name = "flpPreviewButtons";
             flpPreviewButtons.TabIndex = 2;
             flpPreviewButtons.WrapContents = false;
-            //
-            // btnSavePreview
-            //
             btnSavePreview.AutoSize = true;
             btnSavePreview.MinimumSize = new Size(120, 34);
             btnSavePreview.Name = "btnSavePreview";
             btnSavePreview.TabIndex = 0;
             btnSavePreview.Click += btnSavePreview_Click;
-            //
-            // btnCancelPreview
-            //
             btnCancelPreview.AutoSize = true;
             btnCancelPreview.MinimumSize = new Size(100, 34);
             btnCancelPreview.Name = "btnCancelPreview";
             btnCancelPreview.TabIndex = 1;
             btnCancelPreview.Text = "Cancel";
             btnCancelPreview.Click += btnCancelPreview_Click;
-            //
-            // pnlWorkspace
-            //
             pnlWorkspace.Controls.Add(tlpWorkspace);
             pnlWorkspace.Controls.Add(lblEmpty);
             pnlWorkspace.Dock = DockStyle.Fill;
             pnlWorkspace.Margin = new Padding(0);
             pnlWorkspace.Name = "pnlWorkspace";
             pnlWorkspace.TabIndex = 1;
-            //
-            // tlpWorkspace
-            //
             tlpWorkspace.ColumnCount = 1;
             tlpWorkspace.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
             tlpWorkspace.Controls.Add(tlpFeederHeader, 0, 0);
@@ -280,9 +226,6 @@ namespace FeederCopy.App.Forms.Feeders
             tlpWorkspace.RowStyles.Add(new RowStyle());
             tlpWorkspace.TabIndex = 0;
             tlpWorkspace.Visible = false;
-            //
-            // tlpFeederHeader
-            //
             tlpFeederHeader.AutoSize = true;
             tlpFeederHeader.ColumnCount = 5;
             tlpFeederHeader.ColumnStyles.Add(new ColumnStyle());
@@ -300,40 +243,25 @@ namespace FeederCopy.App.Forms.Feeders
             tlpFeederHeader.RowCount = 1;
             tlpFeederHeader.RowStyles.Add(new RowStyle());
             tlpFeederHeader.TabIndex = 0;
-            //
-            // lblFeederName
-            //
             lblFeederName.Anchor = AnchorStyles.Left;
             lblFeederName.AutoSize = true;
             lblFeederName.Name = "lblFeederName";
-            //
-            // txtRename
-            //
             txtRename.Anchor = AnchorStyles.Right;
             txtRename.Name = "txtRename";
             txtRename.Size = new Size(240, 25);
             txtRename.TabIndex = 0;
-            //
-            // btnRename
-            //
             btnRename.AutoSize = true;
             btnRename.MinimumSize = new Size(90, 32);
             btnRename.Name = "btnRename";
             btnRename.TabIndex = 1;
             btnRename.Text = "Rename";
             btnRename.Click += btnRename_Click;
-            //
-            // btnDelete
-            //
             btnDelete.AutoSize = true;
             btnDelete.MinimumSize = new Size(110, 32);
             btnDelete.Name = "btnDelete";
             btnDelete.TabIndex = 2;
             btnDelete.Text = "Delete feeder";
             btnDelete.Click += btnDelete_Click;
-            //
-            // tlpAdd
-            //
             tlpAdd.AutoSize = true;
             tlpAdd.ColumnCount = 6;
             tlpAdd.ColumnStyles.Add(new ColumnStyle());
@@ -358,63 +286,39 @@ namespace FeederCopy.App.Forms.Feeders
             tlpAdd.RowStyles.Add(new RowStyle());
             tlpAdd.RowStyles.Add(new RowStyle());
             tlpAdd.TabIndex = 1;
-            //
-            // lblAddTitle
-            //
             lblAddTitle.AutoSize = true;
             tlpAdd.SetColumnSpan(lblAddTitle, 6);
             lblAddTitle.Margin = new Padding(3, 0, 3, 6);
             lblAddTitle.Name = "lblAddTitle";
             lblAddTitle.Text = "Add a new consumer (goes inside its bus block; leave Bus ID blank if not known yet)";
-            //
-            // lblAddBus
-            //
             lblAddBus.Anchor = AnchorStyles.Left;
             lblAddBus.AutoSize = true;
             lblAddBus.Name = "lblAddBus";
             lblAddBus.Text = "Bus ID";
-            //
-            // cboAddBus
-            //
             cboAddBus.Anchor = AnchorStyles.Left;
             cboAddBus.Margin = new Padding(6, 4, 16, 4);
             cboAddBus.Name = "cboAddBus";
             cboAddBus.Size = new Size(200, 25);
             cboAddBus.TabIndex = 0;
-            //
-            // lblAddConsumer
-            //
             lblAddConsumer.Anchor = AnchorStyles.Left;
             lblAddConsumer.AutoSize = true;
             lblAddConsumer.Name = "lblAddConsumer";
             lblAddConsumer.Text = "Consumer ID";
-            //
-            // txtAddConsumer
-            //
             txtAddConsumer.Anchor = AnchorStyles.Left;
             txtAddConsumer.Margin = new Padding(6, 4, 12, 4);
             txtAddConsumer.Name = "txtAddConsumer";
             txtAddConsumer.Size = new Size(200, 25);
             txtAddConsumer.TabIndex = 1;
             txtAddConsumer.KeyDown += txtAddConsumer_KeyDown;
-            //
-            // btnAdd
-            //
             btnAdd.AutoSize = true;
             btnAdd.MinimumSize = new Size(110, 32);
             btnAdd.Name = "btnAdd";
             btnAdd.TabIndex = 2;
             btnAdd.Text = "Add consumer";
             btnAdd.Click += btnAdd_Click;
-            //
-            // lblAddError
-            //
             lblAddError.AutoSize = true;
             tlpAdd.SetColumnSpan(lblAddError, 6);
             lblAddError.Name = "lblAddError";
-            //
-            // tlpSearch
-            //
             tlpSearch.AutoSize = true;
             tlpSearch.ColumnCount = 4;
             tlpSearch.ColumnStyles.Add(new ColumnStyle());
@@ -431,41 +335,26 @@ namespace FeederCopy.App.Forms.Feeders
             tlpSearch.RowCount = 1;
             tlpSearch.RowStyles.Add(new RowStyle());
             tlpSearch.TabIndex = 2;
-            //
-            // lblSearch
-            //
             lblSearch.Anchor = AnchorStyles.Left;
             lblSearch.AutoSize = true;
             lblSearch.Name = "lblSearch";
             lblSearch.Text = "Find consumer ID";
-            //
-            // txtSearch
-            //
             txtSearch.Anchor = AnchorStyles.Left;
             txtSearch.Margin = new Padding(6, 4, 6, 4);
             txtSearch.Name = "txtSearch";
             txtSearch.Size = new Size(200, 25);
             txtSearch.TabIndex = 0;
             txtSearch.KeyDown += txtSearch_KeyDown;
-            //
-            // btnSearch
-            //
             btnSearch.AutoSize = true;
             btnSearch.MinimumSize = new Size(80, 30);
             btnSearch.Name = "btnSearch";
             btnSearch.TabIndex = 1;
             btnSearch.Text = "Find";
             btnSearch.Click += btnSearch_Click;
-            //
-            // lblSearchResult
-            //
             lblSearchResult.Anchor = AnchorStyles.Left;
             lblSearchResult.AutoSize = true;
             lblSearchResult.Margin = new Padding(10, 0, 3, 0);
             lblSearchResult.Name = "lblSearchResult";
-            //
-            // dgvConsumers
-            //
             dgvConsumers.AllowUserToAddRows = false;
             dgvConsumers.AllowUserToDeleteRows = false;
             dgvConsumers.AllowUserToResizeRows = false;
@@ -482,33 +371,21 @@ namespace FeederCopy.App.Forms.Feeders
             dgvConsumers.CellFormatting += dgvConsumers_CellFormatting;
             dgvConsumers.CellValueNeeded += dgvConsumers_CellValueNeeded;
             dgvConsumers.SelectionChanged += dgvConsumers_SelectionChanged;
-            //
-            // colCount
-            //
             colCount.FillWeight = 15F;
             colCount.HeaderText = "Count";
             colCount.Name = "colCount";
             colCount.ReadOnly = true;
             colCount.SortMode = DataGridViewColumnSortMode.NotSortable;
-            //
-            // colBus
-            //
             colBus.FillWeight = 40F;
             colBus.HeaderText = "Bus ID";
             colBus.Name = "colBus";
             colBus.ReadOnly = true;
             colBus.SortMode = DataGridViewColumnSortMode.NotSortable;
-            //
-            // colConsumer
-            //
             colConsumer.FillWeight = 45F;
             colConsumer.HeaderText = "Consumer ID";
             colConsumer.Name = "colConsumer";
             colConsumer.ReadOnly = true;
             colConsumer.SortMode = DataGridViewColumnSortMode.NotSortable;
-            //
-            // tlpSelected
-            //
             tlpSelected.AutoSize = true;
             tlpSelected.ColumnCount = 7;
             tlpSelected.ColumnStyles.Add(new ColumnStyle());
@@ -530,24 +407,15 @@ namespace FeederCopy.App.Forms.Feeders
             tlpSelected.RowCount = 1;
             tlpSelected.RowStyles.Add(new RowStyle());
             tlpSelected.TabIndex = 4;
-            //
-            // lblSelected
-            //
             lblSelected.Anchor = AnchorStyles.Left;
             lblSelected.AutoSize = true;
             lblSelected.Name = "lblSelected";
             lblSelected.Text = "Selected consumer:";
-            //
-            // cboSetBus
-            //
             cboSetBus.Anchor = AnchorStyles.Left;
             cboSetBus.Margin = new Padding(8, 4, 4, 4);
             cboSetBus.Name = "cboSetBus";
             cboSetBus.Size = new Size(180, 25);
             cboSetBus.TabIndex = 0;
-            //
-            // btnSetBus
-            //
             btnSetBus.AutoSize = true;
             btnSetBus.MinimumSize = new Size(100, 32);
             btnSetBus.Margin = new Padding(3, 3, 16, 3);
@@ -555,18 +423,12 @@ namespace FeederCopy.App.Forms.Feeders
             btnSetBus.TabIndex = 1;
             btnSetBus.Text = "Set bus ID";
             btnSetBus.Click += btnSetBus_Click;
-            //
-            // cboMoveTo
-            //
             cboMoveTo.Anchor = AnchorStyles.Left;
             cboMoveTo.DropDownStyle = ComboBoxStyle.DropDownList;
             cboMoveTo.Margin = new Padding(3, 4, 4, 4);
             cboMoveTo.Name = "cboMoveTo";
             cboMoveTo.Size = new Size(200, 25);
             cboMoveTo.TabIndex = 2;
-            //
-            // btnMove
-            //
             btnMove.AutoSize = true;
             btnMove.MinimumSize = new Size(120, 32);
             btnMove.Margin = new Padding(3, 3, 16, 3);
@@ -574,24 +436,15 @@ namespace FeederCopy.App.Forms.Feeders
             btnMove.TabIndex = 3;
             btnMove.Text = "Move to feeder";
             btnMove.Click += btnMove_Click;
-            //
-            // btnRemove
-            //
             btnRemove.AutoSize = true;
             btnRemove.MinimumSize = new Size(100, 32);
             btnRemove.Name = "btnRemove";
             btnRemove.TabIndex = 4;
             btnRemove.Text = "Remove";
             btnRemove.Click += btnRemove_Click;
-            //
-            // lblEmpty
-            //
             lblEmpty.Dock = DockStyle.Fill;
             lblEmpty.Name = "lblEmpty";
             lblEmpty.Text = "No feeders yet. Click Import feeder list… to add one.";
-            //
-            // FeedersView
-            //
             AutoScaleDimensions = new SizeF(96F, 96F);
             AutoScaleMode = AutoScaleMode.Dpi;
             Controls.Add(tlpRoot);

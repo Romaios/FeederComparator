@@ -57,9 +57,6 @@ namespace FeederCopy.App.Forms.Copy
             ((System.ComponentModel.ISupportInitialize)dgvProblems).BeginInit();
             tlpExport.SuspendLayout();
             SuspendLayout();
-            //
-            // tlpRoot
-            //
             tlpRoot.ColumnCount = 1;
             tlpRoot.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
             tlpRoot.Controls.Add(tlpFile, 0, 0);
@@ -82,9 +79,6 @@ namespace FeederCopy.App.Forms.Copy
             tlpRoot.RowStyles.Add(new RowStyle());
             tlpRoot.Size = new Size(1100, 680);
             tlpRoot.TabIndex = 0;
-            //
-            // tlpFile
-            //
             tlpFile.AutoSize = true;
             tlpFile.ColumnCount = 2;
             tlpFile.ColumnStyles.Add(new ColumnStyle());
@@ -102,34 +96,22 @@ namespace FeederCopy.App.Forms.Copy
             tlpFile.RowStyles.Add(new RowStyle());
             tlpFile.RowStyles.Add(new RowStyle());
             tlpFile.TabIndex = 0;
-            //
-            // lblFileTitle
-            //
             lblFileTitle.AutoSize = true;
             tlpFile.SetColumnSpan(lblFileTitle, 2);
             lblFileTitle.Margin = new Padding(3, 0, 3, 8);
             lblFileTitle.Name = "lblFileTitle";
             lblFileTitle.Text = "1. Choose this month's As-Billed file, 2. check the month, 3. click Copy kWh";
-            //
-            // btnChooseFile
-            //
             btnChooseFile.AutoSize = true;
             btnChooseFile.MinimumSize = new Size(190, 34);
             btnChooseFile.Name = "btnChooseFile";
             btnChooseFile.TabIndex = 0;
             btnChooseFile.Text = "Choose As-Billed file…";
             btnChooseFile.Click += btnChooseFile_Click;
-            //
-            // lblFile
-            //
             lblFile.Anchor = AnchorStyles.Left;
             lblFile.AutoSize = true;
             lblFile.Margin = new Padding(10, 0, 3, 0);
             lblFile.Name = "lblFile";
             lblFile.Text = "No file chosen yet.";
-            //
-            // flpMonth
-            //
             flpMonth.AutoSize = true;
             tlpFile.SetColumnSpan(flpMonth, 2);
             flpMonth.Controls.Add(lblMonth);
@@ -141,16 +123,10 @@ namespace FeederCopy.App.Forms.Copy
             flpMonth.Name = "flpMonth";
             flpMonth.TabIndex = 1;
             flpMonth.WrapContents = false;
-            //
-            // lblMonth
-            //
             lblMonth.Anchor = AnchorStyles.Left;
             lblMonth.AutoSize = true;
             lblMonth.Name = "lblMonth";
             lblMonth.Text = "Month";
-            //
-            // cboMonth
-            //
             cboMonth.Anchor = AnchorStyles.Left;
             cboMonth.DropDownStyle = ComboBoxStyle.DropDownList;
             cboMonth.Items.AddRange(new object[] { "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" });
@@ -158,16 +134,10 @@ namespace FeederCopy.App.Forms.Copy
             cboMonth.Name = "cboMonth";
             cboMonth.Size = new Size(150, 25);
             cboMonth.TabIndex = 0;
-            //
-            // lblYear
-            //
             lblYear.Anchor = AnchorStyles.Left;
             lblYear.AutoSize = true;
             lblYear.Name = "lblYear";
             lblYear.Text = "Year";
-            //
-            // numYear
-            //
             numYear.Anchor = AnchorStyles.Left;
             numYear.Margin = new Padding(6, 4, 16, 4);
             numYear.Maximum = new decimal(new int[] { 2100, 0, 0, 0 });
@@ -176,9 +146,6 @@ namespace FeederCopy.App.Forms.Copy
             numYear.Size = new Size(90, 25);
             numYear.TabIndex = 1;
             numYear.Value = new decimal(new int[] { 2026, 0, 0, 0 });
-            //
-            // btnCopy
-            //
             btnCopy.AutoSize = true;
             btnCopy.Enabled = false;
             btnCopy.MinimumSize = new Size(120, 34);
@@ -186,21 +153,12 @@ namespace FeederCopy.App.Forms.Copy
             btnCopy.TabIndex = 2;
             btnCopy.Text = "Copy kWh";
             btnCopy.Click += btnCopy_Click;
-            //
-            // lblHeading
-            //
             lblHeading.AutoSize = true;
             lblHeading.Margin = new Padding(3, 4, 3, 6);
             lblHeading.Name = "lblHeading";
-            //
-            // lblMessage
-            //
             lblMessage.AutoSize = true;
             lblMessage.Margin = new Padding(3, 0, 3, 6);
             lblMessage.Name = "lblMessage";
-            //
-            // dgvTotals
-            //
             dgvTotals.AllowUserToAddRows = false;
             dgvTotals.AllowUserToDeleteRows = false;
             dgvTotals.AllowUserToResizeRows = false;
@@ -214,58 +172,34 @@ namespace FeederCopy.App.Forms.Copy
             dgvTotals.RowHeadersVisible = false;
             dgvTotals.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
             dgvTotals.TabIndex = 1;
-            //
-            // colFeeder
-            //
             colFeeder.FillWeight = 30F;
             colFeeder.HeaderText = "Feeder";
             colFeeder.Name = "colFeeder";
             colFeeder.ReadOnly = true;
-            //
-            // colConsumers
-            //
             colConsumers.FillWeight = 11F;
             colConsumers.HeaderText = "Consumers";
             colConsumers.Name = "colConsumers";
             colConsumers.ReadOnly = true;
-            //
-            // colCopied
-            //
             colCopied.FillWeight = 11F;
             colCopied.HeaderText = "Copied";
             colCopied.Name = "colCopied";
             colCopied.ReadOnly = true;
-            //
-            // colNotFound
-            //
             colNotFound.FillWeight = 11F;
             colNotFound.HeaderText = "Not found";
             colNotFound.Name = "colNotFound";
             colNotFound.ReadOnly = true;
-            //
-            // colDuplicates
-            //
             colDuplicates.FillWeight = 11F;
             colDuplicates.HeaderText = "Duplicates";
             colDuplicates.Name = "colDuplicates";
             colDuplicates.ReadOnly = true;
-            //
-            // colUnreadable
-            //
             colUnreadable.FillWeight = 11F;
             colUnreadable.HeaderText = "Unreadable";
             colUnreadable.Name = "colUnreadable";
             colUnreadable.ReadOnly = true;
-            //
-            // colTotalKwh
-            //
             colTotalKwh.FillWeight = 15F;
             colTotalKwh.HeaderText = "kWh total";
             colTotalKwh.Name = "colTotalKwh";
             colTotalKwh.ReadOnly = true;
-            //
-            // tlpProblemsHeader
-            //
             tlpProblemsHeader.AutoSize = true;
             tlpProblemsHeader.ColumnCount = 2;
             tlpProblemsHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
@@ -278,16 +212,10 @@ namespace FeederCopy.App.Forms.Copy
             tlpProblemsHeader.RowCount = 1;
             tlpProblemsHeader.RowStyles.Add(new RowStyle());
             tlpProblemsHeader.TabIndex = 2;
-            //
-            // lblProblemsTitle
-            //
             lblProblemsTitle.Anchor = AnchorStyles.Left;
             lblProblemsTitle.AutoSize = true;
             lblProblemsTitle.Name = "lblProblemsTitle";
             lblProblemsTitle.Text = "Problems (kWh left blank and highlighted in the export)";
-            //
-            // btnSaveProblems
-            //
             btnSaveProblems.AutoSize = true;
             btnSaveProblems.Enabled = false;
             btnSaveProblems.MinimumSize = new Size(170, 32);
@@ -295,9 +223,6 @@ namespace FeederCopy.App.Forms.Copy
             btnSaveProblems.TabIndex = 0;
             btnSaveProblems.Text = "Save problem list…";
             btnSaveProblems.Click += btnSaveProblems_Click;
-            //
-            // dgvProblems
-            //
             dgvProblems.AllowUserToAddRows = false;
             dgvProblems.AllowUserToDeleteRows = false;
             dgvProblems.AllowUserToResizeRows = false;
@@ -312,49 +237,31 @@ namespace FeederCopy.App.Forms.Copy
             dgvProblems.TabIndex = 3;
             dgvProblems.VirtualMode = true;
             dgvProblems.CellValueNeeded += dgvProblems_CellValueNeeded;
-            //
-            // colProblemFeeder
-            //
             colProblemFeeder.FillWeight = 25F;
             colProblemFeeder.HeaderText = "Feeder";
             colProblemFeeder.Name = "colProblemFeeder";
             colProblemFeeder.ReadOnly = true;
             colProblemFeeder.SortMode = DataGridViewColumnSortMode.NotSortable;
-            //
-            // colProblemCount
-            //
             colProblemCount.FillWeight = 8F;
             colProblemCount.HeaderText = "Count";
             colProblemCount.Name = "colProblemCount";
             colProblemCount.ReadOnly = true;
             colProblemCount.SortMode = DataGridViewColumnSortMode.NotSortable;
-            //
-            // colProblemBus
-            //
             colProblemBus.FillWeight = 20F;
             colProblemBus.HeaderText = "Bus ID";
             colProblemBus.Name = "colProblemBus";
             colProblemBus.ReadOnly = true;
             colProblemBus.SortMode = DataGridViewColumnSortMode.NotSortable;
-            //
-            // colProblemConsumer
-            //
             colProblemConsumer.FillWeight = 20F;
             colProblemConsumer.HeaderText = "Consumer ID";
             colProblemConsumer.Name = "colProblemConsumer";
             colProblemConsumer.ReadOnly = true;
             colProblemConsumer.SortMode = DataGridViewColumnSortMode.NotSortable;
-            //
-            // colProblemText
-            //
             colProblemText.FillWeight = 27F;
             colProblemText.HeaderText = "Problem";
             colProblemText.Name = "colProblemText";
             colProblemText.ReadOnly = true;
             colProblemText.SortMode = DataGridViewColumnSortMode.NotSortable;
-            //
-            // tlpExport
-            //
             tlpExport.AutoSize = true;
             tlpExport.ColumnCount = 5;
             tlpExport.ColumnStyles.Add(new ColumnStyle());
@@ -373,16 +280,10 @@ namespace FeederCopy.App.Forms.Copy
             tlpExport.RowCount = 1;
             tlpExport.RowStyles.Add(new RowStyle());
             tlpExport.TabIndex = 4;
-            //
-            // lblExportAs
-            //
             lblExportAs.Anchor = AnchorStyles.Left;
             lblExportAs.AutoSize = true;
             lblExportAs.Name = "lblExportAs";
             lblExportAs.Text = "Export as";
-            //
-            // rdoWorkbook
-            //
             rdoWorkbook.Anchor = AnchorStyles.Left;
             rdoWorkbook.AutoSize = true;
             rdoWorkbook.Checked = true;
@@ -391,18 +292,12 @@ namespace FeederCopy.App.Forms.Copy
             rdoWorkbook.TabIndex = 0;
             rdoWorkbook.TabStop = true;
             rdoWorkbook.Text = "One workbook, sheet per feeder";
-            //
-            // rdoSeparate
-            //
             rdoSeparate.Anchor = AnchorStyles.Left;
             rdoSeparate.AutoSize = true;
             rdoSeparate.Margin = new Padding(3, 3, 12, 3);
             rdoSeparate.Name = "rdoSeparate";
             rdoSeparate.TabIndex = 1;
             rdoSeparate.Text = "Separate file per feeder";
-            //
-            // btnExport
-            //
             btnExport.AutoSize = true;
             btnExport.Enabled = false;
             btnExport.MinimumSize = new Size(160, 34);
@@ -410,9 +305,6 @@ namespace FeederCopy.App.Forms.Copy
             btnExport.TabIndex = 2;
             btnExport.Text = "Export to Excel…";
             btnExport.Click += btnExport_Click;
-            //
-            // CopyView
-            //
             AutoScaleDimensions = new SizeF(96F, 96F);
             AutoScaleMode = AutoScaleMode.Dpi;
             Controls.Add(tlpRoot);
