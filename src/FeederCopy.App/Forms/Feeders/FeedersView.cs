@@ -86,6 +86,8 @@ namespace FeederCopy.App.Forms.Feeders
                 lstPreviewProblems.Items.Add($"Note: {note}");
             lstPreviewProblems.EndUpdate();
             lstPreviewProblems.Visible = lstPreviewProblems.Items.Count > 0;
+            btnCopyProblems.Visible = lstPreviewProblems.Visible;
+            lblCopied.Text = string.Empty;
             btnSavePreview.Enabled = preview.CanSave;
             tlpPreview.Visible = true;
         }
@@ -156,6 +158,8 @@ namespace FeederCopy.App.Forms.Feeders
             lstPreviewProblems.BackColor = AppTheme.SurfaceAlt;
             AppTheme.StylePrimaryButton(btnSavePreview);
             AppTheme.StyleOutlineButton(btnCancelPreview);
+            AppTheme.StyleOutlineButton(btnCopyProblems);
+            AppTheme.StyleSuccessLabel(lblCopied);
             AppTheme.StyleSectionLabel(lblFeederName);
             AppTheme.StyleTextBox(txtRename);
             AppTheme.StyleOutlineButton(btnRename);
@@ -236,6 +240,40 @@ namespace FeederCopy.App.Forms.Feeders
         private void btnSavePreview_Click(object? sender, EventArgs e) => _presenter?.OnSavePreviewClicked();
 
         private void btnCancelPreview_Click(object? sender, EventArgs e) => _presenter?.OnCancelPreviewClicked();
+
+        private void btnCopyProblems_Click(object? sender, EventArgs e) =>
+            CopyProblems(lstPreviewProblems.Items.Cast<object>());
+
+        private void lstPreviewProblems_KeyDown(object? sender, KeyEventArgs e)
+        {
+            if (e.Control && e.KeyCode == Keys.A)
+            {
+                for (int i = 0; i < lstPreviewProblems.Items.Count; i++)
+                    lstPreviewProblems.SetSelected(i, true);
+                e.SuppressKeyPress = true;
+            }
+            else if (e.Control && e.KeyCode == Keys.C)
+            {
+                CopyProblems(lstPreviewProblems.SelectedItems.Cast<object>());
+                e.SuppressKeyPress = true;
+            }
+        }
+
+        private void CopyProblems(IEnumerable<object> items)
+        {
+            List<string> lines = items.Select(i => i.ToString() ?? string.Empty).ToList();
+            if (lines.Count == 0)
+                return;
+            try
+            {
+                Clipboard.SetText(string.Join(Environment.NewLine, lines));
+                lblCopied.Text = lines.Count == 1 ? "Copied 1 line." : $"Copied {lines.Count:N0} lines.";
+            }
+            catch (System.Runtime.InteropServices.ExternalException ex)
+            {
+                ShowError($"Could not copy to the clipboard. Try again. ({ex.Message})");
+            }
+        }
 
         private void btnRename_Click(object? sender, EventArgs e) => _presenter?.OnRenameClicked(txtRename.Text);
 
