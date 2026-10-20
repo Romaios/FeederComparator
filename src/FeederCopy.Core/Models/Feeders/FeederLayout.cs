@@ -45,48 +45,32 @@ namespace FeederCopy.Core.Models.Feeders
             List<ConsumerEntry> list = Arrange(entries);
             if (normalized.BusId is string bus
                 && !list.Any(e => string.Equals(e.BusId, bus, StringComparison.OrdinalIgnoreCase))
-                && FamilyInsertIndex(list, bus) is int index)
+                && BusOrder.InsertIndex(Buses(list), bus) is int block)
             {
-                list.Insert(index, normalized);
+                list.Insert(EntryIndexOfBlock(list, block), normalized);
                 return Arrange(list);
             }
             return Arrange(list.Append(normalized));
         }
 
-        private static int? FamilyInsertIndex(IReadOnlyList<ConsumerEntry> arranged, string bus)
+        private static int EntryIndexOfBlock(IReadOnlyList<ConsumerEntry> arranged, int block)
         {
-            if (SplitNumber(bus) is not (string prefix, long number))
-                return null;
-
-            var siblings = arranged
-                .Select(e => e.BusId)
-                .OfType<string>()
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .Select(b => (Bus: b, Parts: SplitNumber(b)))
-                .Where(s => s.Parts is (string p, _) && string.Equals(p, prefix, StringComparison.OrdinalIgnoreCase))
-                .Select(s => (s.Bus, Number: s.Parts!.Value.Number))
-                .ToList();
-            if (siblings.Count == 0)
-                return null;
-
-            var lower = siblings.Where(s => s.Number < number).OrderByDescending(s => s.Number).ToList();
-            if (lower.Count > 0)
-                return LastIndexOfBus(arranged, lower[0].Bus) + 1;
-            string next = siblings.OrderBy(s => s.Number).First().Bus;
-            return arranged.ToList().FindIndex(e => string.Equals(e.BusId, next, StringComparison.OrdinalIgnoreCase));
-        }
-
-        private static int LastIndexOfBus(IReadOnlyList<ConsumerEntry> arranged, string bus) =>
-            arranged.ToList().FindLastIndex(e => string.Equals(e.BusId, bus, StringComparison.OrdinalIgnoreCase));
-
-        private static (string Prefix, long Number)? SplitNumber(string bus)
-        {
-            int start = bus.Length;
-            while (start > 0 && char.IsAsciiDigit(bus[start - 1]))
-                start--;
-            if (start == bus.Length || start == 0)
-                return null;
-            return long.TryParse(bus[start..], out long number) ? (bus[..start], number) : null;
+            int seen = -1;
+            string? previous = null;
+            for (int i = 0; i < arranged.Count; i++)
+            {
+                string? bus = arranged[i].BusId;
+                if (bus is null)
+                    return i;
+                if (!string.Equals(bus, previous, StringComparison.OrdinalIgnoreCase))
+                {
+                    seen++;
+                    previous = bus;
+                    if (seen == block)
+                        return i;
+                }
+            }
+            return arranged.Count;
         }
 
         public static List<ConsumerEntry> Remove(IReadOnlyList<ConsumerEntry> entries, string consumerId)
