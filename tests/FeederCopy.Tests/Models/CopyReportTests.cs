@@ -24,6 +24,7 @@ namespace FeederCopy.Tests.Models
         {
             var result = new CopyResult(Jul, "x.xls", [], [new FeederTotals("F", 1, 1, 0, 1, 0, 0, 0, 0, 1)], []);
             Assert.EndsWith("No problems.", CopyReport.ToText(result).TrimEnd());
+            Assert.StartsWith("F: 1 consumer (1 active, 0 inactive)", CopyReport.TotalsLine(result.Totals[0]));
         }
     }
 }

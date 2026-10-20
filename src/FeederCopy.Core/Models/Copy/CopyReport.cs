@@ -27,7 +27,7 @@ namespace FeederCopy.Core.Models.Copy
         }
 
         public static string TotalsLine(FeederTotals t) =>
-            $"{t.Name}: {t.Consumers} consumers ({t.Active} active, {t.Inactive} inactive), {t.Copied} copied, "
+            $"{t.Name}: {(t.Consumers == 1 ? "1 consumer" : $"{t.Consumers} consumers")} ({t.Active} active, {t.Inactive} inactive), {t.Copied} copied, "
             + $"{t.MissingReading} missing reading, {t.InactiveButBilled} inactive but billed, "
             + $"{t.Duplicates} {(t.Duplicates == 1 ? "duplicate" : "duplicates")}, {t.Unreadable} unreadable, "
             + $"{t.TotalKwh.ToString("N2", CultureInfo.InvariantCulture)} kWh";

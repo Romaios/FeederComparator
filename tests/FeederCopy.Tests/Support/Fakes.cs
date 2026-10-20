@@ -1,5 +1,7 @@
 using FeederCopy.Core.Models.Billing;
+using FeederCopy.Core.Models.Consumers;
 using FeederCopy.Core.Models.Copy;
+using FeederCopy.Core.Presenters.Consumers;
 using FeederCopy.Core.Models.Feeders;
 using FeederCopy.Core.Models.Settings;
 using FeederCopy.Core.Presenters.Copy;
@@ -181,6 +183,42 @@ namespace FeederCopy.Tests.Support
         public void ShowError(string message) => Errors.Add(message);
 
         public void ShowInfo(string message) => Infos.Add(message);
+    }
+
+    internal sealed class FakeConsumersView : IConsumersView
+    {
+        public IReadOnlyList<string> FeederNames { get; private set; } = [];
+        public IReadOnlyList<int> Years { get; private set; } = [];
+        public int SelectedYear { get; private set; }
+        public IReadOnlyList<ConsumerYearRow> Rows { get; private set; } = [];
+        public string? Summary { get; private set; }
+        public string? EmptyMessage { get; private set; }
+        public string? SelectedConsumer { get; private set; }
+        public List<string> Errors { get; } = [];
+
+        public void ShowFilters(IReadOnlyList<string> feederNames, IReadOnlyList<int> years, int selectedYear)
+        {
+            FeederNames = feederNames;
+            Years = years;
+            SelectedYear = selectedYear;
+        }
+
+        public void ShowRows(IReadOnlyList<ConsumerYearRow> rows, string summary)
+        {
+            Rows = rows;
+            Summary = summary;
+            EmptyMessage = null;
+        }
+
+        public void ShowEmpty(string message)
+        {
+            Rows = [];
+            EmptyMessage = message;
+        }
+
+        public void SelectConsumer(string consumerId) => SelectedConsumer = consumerId;
+
+        public void ShowError(string message) => Errors.Add(message);
     }
 
     internal sealed class FakeSettingsView : ISettingsView

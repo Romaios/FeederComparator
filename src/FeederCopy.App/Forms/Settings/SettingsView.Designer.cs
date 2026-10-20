@@ -22,6 +22,8 @@ namespace FeederCopy.App.Forms.Settings
             txtBusId = new TextBox();
             lblConsumerId = new Label();
             txtConsumerId = new TextBox();
+            lblStatusColumn = new Label();
+            txtStatusColumn = new TextBox();
             tlpAsBilledCard = new TableLayoutPanel();
             lblAsBilledTitle = new Label();
             lblAccount = new Label();
@@ -89,10 +91,13 @@ namespace FeederCopy.App.Forms.Settings
             tlpFeederCard.Controls.Add(txtBusId, 1, 1);
             tlpFeederCard.Controls.Add(lblConsumerId, 0, 2);
             tlpFeederCard.Controls.Add(txtConsumerId, 1, 2);
+            tlpFeederCard.Controls.Add(lblStatusColumn, 0, 3);
+            tlpFeederCard.Controls.Add(txtStatusColumn, 1, 3);
             tlpFeederCard.Margin = new Padding(3, 0, 3, 12);
             tlpFeederCard.Name = "tlpFeederCard";
             tlpFeederCard.Padding = new Padding(14, 12, 14, 12);
-            tlpFeederCard.RowCount = 3;
+            tlpFeederCard.RowCount = 4;
+            tlpFeederCard.RowStyles.Add(new RowStyle());
             tlpFeederCard.RowStyles.Add(new RowStyle());
             tlpFeederCard.RowStyles.Add(new RowStyle());
             tlpFeederCard.RowStyles.Add(new RowStyle());
@@ -118,6 +123,14 @@ namespace FeederCopy.App.Forms.Settings
             txtConsumerId.Margin = new Padding(3, 4, 3, 4);
             txtConsumerId.Name = "txtConsumerId";
             txtConsumerId.TabIndex = 1;
+            lblStatusColumn.Anchor = AnchorStyles.Left;
+            lblStatusColumn.AutoSize = true;
+            lblStatusColumn.Name = "lblStatusColumn";
+            lblStatusColumn.Text = "Status column (1 = active, 0 = not)";
+            txtStatusColumn.Anchor = AnchorStyles.Left | AnchorStyles.Right;
+            txtStatusColumn.Margin = new Padding(3, 4, 3, 4);
+            txtStatusColumn.Name = "txtStatusColumn";
+            txtStatusColumn.TabIndex = 2;
             tlpAsBilledCard.AutoSize = true;
             tlpAsBilledCard.AutoSizeMode = AutoSizeMode.GrowAndShrink;
             tlpAsBilledCard.ColumnCount = 2;
@@ -260,6 +273,8 @@ namespace FeederCopy.App.Forms.Settings
         private TextBox txtBusId;
         private Label lblConsumerId;
         private TextBox txtConsumerId;
+        private Label lblStatusColumn;
+        private TextBox txtStatusColumn;
         private TableLayoutPanel tlpAsBilledCard;
         private Label lblAsBilledTitle;
         private Label lblAccount;

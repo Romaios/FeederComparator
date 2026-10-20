@@ -8,7 +8,7 @@
     <Compile Update="Forms\Shell\MainForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Update="Forms\Feeders\FeedersView.cs;Forms\Copy\CopyView.cs;Forms\Settings\SettingsView.cs">
+    <Compile Update="Forms\Feeders\FeedersView.cs;Forms\Copy\CopyView.cs;Forms\Consumers\ConsumersView.cs;Forms\Settings\SettingsView.cs">
       <SubType>UserControl</SubType>
     </Compile>
   </ItemGroup>
@@ -20,7 +20,7 @@
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>FeederCopy</AssemblyName>
-    <Version>1.2.1</Version>
+    <Version>1.3.0</Version>
     <Product>Feeder kWh Copy</Product>
   </PropertyGroup>
 

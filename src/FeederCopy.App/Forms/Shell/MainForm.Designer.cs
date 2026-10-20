@@ -18,6 +18,7 @@ namespace FeederCopy.App.Forms.Shell
             lblAppTitle = new Label();
             rdoFeeders = new RadioButton();
             rdoCopy = new RadioButton();
+            rdoConsumers = new RadioButton();
             rdoSettings = new RadioButton();
             tlpWarning = new TableLayoutPanel();
             lblWarning = new Label();
@@ -25,6 +26,7 @@ namespace FeederCopy.App.Forms.Shell
             pnlContent = new Panel();
             feedersView = new FeederCopy.App.Forms.Feeders.FeedersView();
             copyView = new FeederCopy.App.Forms.Copy.CopyView();
+            consumersView = new FeederCopy.App.Forms.Consumers.ConsumersView();
             settingsView = new FeederCopy.App.Forms.Settings.SettingsView();
             statusStrip = new StatusStrip();
             lblStatus = new ToolStripStatusLabel();
@@ -49,7 +51,8 @@ namespace FeederCopy.App.Forms.Shell
             tlpShell.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
             tlpShell.Size = new Size(1200, 738);
             tlpShell.TabIndex = 0;
-            tlpHeader.ColumnCount = 5;
+            tlpHeader.ColumnCount = 6;
+            tlpHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 130F));
             tlpHeader.ColumnStyles.Add(new ColumnStyle());
             tlpHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 130F));
             tlpHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 130F));
@@ -58,7 +61,8 @@ namespace FeederCopy.App.Forms.Shell
             tlpHeader.Controls.Add(lblAppTitle, 0, 0);
             tlpHeader.Controls.Add(rdoFeeders, 1, 0);
             tlpHeader.Controls.Add(rdoCopy, 2, 0);
-            tlpHeader.Controls.Add(rdoSettings, 3, 0);
+            tlpHeader.Controls.Add(rdoConsumers, 3, 0);
+            tlpHeader.Controls.Add(rdoSettings, 4, 0);
             tlpHeader.Dock = DockStyle.Fill;
             tlpHeader.Margin = new Padding(0);
             tlpHeader.Name = "tlpHeader";
@@ -85,10 +89,16 @@ namespace FeederCopy.App.Forms.Shell
             rdoCopy.TabIndex = 1;
             rdoCopy.Text = "Copy kWh";
             rdoCopy.CheckedChanged += navTab_CheckedChanged;
+            rdoConsumers.Dock = DockStyle.Fill;
+            rdoConsumers.Margin = new Padding(0);
+            rdoConsumers.Name = "rdoConsumers";
+            rdoConsumers.TabIndex = 2;
+            rdoConsumers.Text = "Consumers";
+            rdoConsumers.CheckedChanged += navTab_CheckedChanged;
             rdoSettings.Dock = DockStyle.Fill;
             rdoSettings.Margin = new Padding(0);
             rdoSettings.Name = "rdoSettings";
-            rdoSettings.TabIndex = 2;
+            rdoSettings.TabIndex = 3;
             rdoSettings.Text = "Settings";
             rdoSettings.CheckedChanged += navTab_CheckedChanged;
             tlpWarning.AutoSize = true;
@@ -116,6 +126,7 @@ namespace FeederCopy.App.Forms.Shell
             btnDismissWarning.Click += btnDismissWarning_Click;
             pnlContent.Controls.Add(feedersView);
             pnlContent.Controls.Add(copyView);
+            pnlContent.Controls.Add(consumersView);
             pnlContent.Controls.Add(settingsView);
             pnlContent.Dock = DockStyle.Fill;
             pnlContent.Margin = new Padding(0);
@@ -128,6 +139,10 @@ namespace FeederCopy.App.Forms.Shell
             copyView.Name = "copyView";
             copyView.TabIndex = 1;
             copyView.Visible = false;
+            consumersView.Dock = DockStyle.Fill;
+            consumersView.Name = "consumersView";
+            consumersView.TabIndex = 3;
+            consumersView.Visible = false;
             settingsView.Dock = DockStyle.Fill;
             settingsView.Name = "settingsView";
             settingsView.TabIndex = 2;
@@ -168,6 +183,7 @@ namespace FeederCopy.App.Forms.Shell
         private Label lblAppTitle;
         private RadioButton rdoFeeders;
         private RadioButton rdoCopy;
+        private RadioButton rdoConsumers;
         private RadioButton rdoSettings;
         private TableLayoutPanel tlpWarning;
         private Label lblWarning;
@@ -175,6 +191,7 @@ namespace FeederCopy.App.Forms.Shell
         private Panel pnlContent;
         private FeederCopy.App.Forms.Feeders.FeedersView feedersView;
         private FeederCopy.App.Forms.Copy.CopyView copyView;
+        private FeederCopy.App.Forms.Consumers.ConsumersView consumersView;
         private FeederCopy.App.Forms.Settings.SettingsView settingsView;
         private StatusStrip statusStrip;
         private ToolStripStatusLabel lblStatus;

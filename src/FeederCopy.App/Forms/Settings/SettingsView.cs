@@ -20,6 +20,7 @@ namespace FeederCopy.App.Forms.Settings
         {
             txtBusId.Text = settings.Feeder.BusId;
             txtConsumerId.Text = settings.Feeder.ConsumerId;
+            txtStatusColumn.Text = settings.Feeder.Status;
             txtAccount.Text = settings.AsBilled.AccountNumber;
             txtKwh.Text = settings.AsBilled.KwhUsed;
             txtMonth.Text = settings.AsBilled.BillMonth;
@@ -29,7 +30,7 @@ namespace FeederCopy.App.Forms.Settings
 
         public AppSettings ReadSettings() => new()
         {
-            Feeder = new FeederColumns { BusId = txtBusId.Text.Trim(), ConsumerId = txtConsumerId.Text.Trim() },
+            Feeder = new FeederColumns { BusId = txtBusId.Text.Trim(), ConsumerId = txtConsumerId.Text.Trim(), Status = txtStatusColumn.Text.Trim() },
             AsBilled = new AsBilledColumns { AccountNumber = txtAccount.Text.Trim(), KwhUsed = txtKwh.Text.Trim(), BillMonth = txtMonth.Text.Trim() },
             Export = cboExportStyle.SelectedIndex == (int)ExportStyle.SeparateFiles ? ExportStyle.SeparateFiles : ExportStyle.OneWorkbook,
         };
@@ -51,9 +52,9 @@ namespace FeederCopy.App.Forms.Settings
             AppTheme.StyleCard(tlpFeederCard, lblFeederTitle);
             AppTheme.StyleCard(tlpAsBilledCard, lblAsBilledTitle);
             AppTheme.StyleCard(tlpExportCard, lblExportTitle);
-            foreach (Label label in new[] { lblBusId, lblConsumerId, lblAccount, lblKwh, lblMonth, lblExportStyle })
+            foreach (Label label in new[] { lblBusId, lblConsumerId, lblStatusColumn, lblAccount, lblKwh, lblMonth, lblExportStyle })
                 AppTheme.StyleFieldLabel(label);
-            foreach (TextBox box in new[] { txtBusId, txtConsumerId, txtAccount, txtKwh, txtMonth })
+            foreach (TextBox box in new[] { txtBusId, txtConsumerId, txtStatusColumn, txtAccount, txtKwh, txtMonth })
                 AppTheme.StyleTextBox(box);
             AppTheme.StyleComboBox(cboExportStyle);
             AppTheme.StylePrimaryButton(btnSave);
