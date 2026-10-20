@@ -28,6 +28,17 @@ namespace FeederCopy.Core.Services.Import
             return found;
         }
 
+        public static int? Find(IReadOnlyList<string?> header, string name)
+        {
+            string wanted = Normalize(name);
+            for (int i = 0; i < header.Count; i++)
+            {
+                if (string.Equals(Normalize(header[i]), wanted, StringComparison.OrdinalIgnoreCase))
+                    return i;
+            }
+            return null;
+        }
+
         public static string? Cell(IReadOnlyList<string?> cells, int index)
         {
             if (index >= cells.Count)

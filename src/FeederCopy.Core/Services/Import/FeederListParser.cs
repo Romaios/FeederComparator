@@ -6,12 +6,19 @@ namespace FeederCopy.Core.Services.Import
 {
     public static class FeederListParser
     {
+        private sealed record Occurrence(int SheetIndex, string Sheet, int Row, string? BusId, string ConsumerId, bool Active)
+        {
+            public string Where => $"{Sheet} row {Row}";
+        }
+
+        private sealed record SheetRead(string Name, List<Occurrence> Rows, int SkippedRows);
+
         public static ParsedWorkbook ReadWorkbook(string path, FeederColumns columns)
         {
             try
             {
                 IReadOnlyList<TableSheet> sheets = TableReaderFactory.For(path).ReadSheets(path);
-                var feeders = new List<ParsedSheet>();
+                var reads = new List<SheetRead>();
                 var notes = new List<string>();
                 var problems = new List<string>();
                 string? missingColumns = null;
@@ -36,15 +43,27 @@ namespace FeederCopy.Core.Services.Import
                         continue;
                     }
 
-                    if (ReadSheet(sheet, headerIndex, map, notes, problems) is { } parsed)
-                        feeders.Add(parsed);
+                    int? statusIndex = string.IsNullOrWhiteSpace(columns.Status) ? null : HeaderIndex.Find(sheet.Rows[headerIndex], columns.Status);
+                    SheetRead read = ReadSheet(sheet, reads.Count, headerIndex, map, statusIndex, notes, problems);
+                    if (read.Rows.Count == 0)
+                        notes.Add($"Sheet {sheet.Name} skipped: no consumers.");
+                    else
+                        reads.Add(read);
                 }
 
                 if (!anyContent)
                     problems.Add("The file is empty.");
-                else if (feeders.Count == 0 && problems.Count == 0)
+                else if (reads.Count == 0 && problems.Count == 0)
                     problems.Add(missingColumns ?? "No consumers were found in the file.");
-                problems.AddRange(CrossSheetDuplicates(feeders));
+
+                HashSet<Occurrence> kept = ResolveDuplicates(reads.SelectMany(r => r.Rows), notes, problems);
+                List<ParsedSheet> feeders = reads
+                    .Select(r => new ParsedSheet(
+                        r.Name.Trim(),
+                        FeederLayout.Arrange(r.Rows.Where(kept.Contains).Select(o => new ConsumerEntry(o.BusId, o.ConsumerId, o.Active))),
+                        r.SkippedRows))
+                    .Where(f => f.Entries.Count > 0)
+                    .ToList();
 
                 return new ParsedWorkbook(path, feeders, notes, problems);
             }
@@ -54,10 +73,9 @@ namespace FeederCopy.Core.Services.Import
             }
         }
 
-        private static ParsedSheet? ReadSheet(TableSheet sheet, int headerIndex, IReadOnlyList<int> map, List<string> notes, List<string> problems)
+        private static SheetRead ReadSheet(TableSheet sheet, int sheetIndex, int headerIndex, IReadOnlyList<int> map, int? statusIndex, List<string> notes, List<string> problems)
         {
-            var entries = new List<ConsumerEntry>();
-            var rowsById = new Dictionary<string, List<int>>(StringComparer.Ordinal);
+            var rows = new List<Occurrence>();
             int skipped = 0;
 
             for (int i = headerIndex + 1; i < sheet.Rows.Count; i++)
@@ -79,40 +97,64 @@ namespace FeederCopy.Core.Services.Import
                     continue;
                 }
 
-                if (!rowsById.TryGetValue(consumer, out List<int>? rows))
+                string? status = statusIndex is int s ? HeaderIndex.Cell(cells, s) : null;
+                bool? active = status switch
                 {
-                    rows = [];
-                    rowsById[consumer] = rows;
-                    entries.Add(new ConsumerEntry(bus, consumer));
+                    null => true,
+                    "1" => true,
+                    "0" => false,
+                    _ => null,
+                };
+                if (active is null)
+                {
+                    problems.Add($"Sheet {sheet.Name} row {rowNumber}: status '{status}' must be 1 or 0.");
+                    continue;
                 }
-                rows.Add(rowNumber);
+
+                rows.Add(new Occurrence(sheetIndex, sheet.Name, rowNumber, bus, consumer, active.Value));
             }
 
-            foreach ((string id, List<int> rows) in rowsById.Where(p => p.Value.Count > 1))
-                problems.Add($"Sheet {sheet.Name}: consumer ID {id} appears more than once (rows {string.Join(", ", rows)}).");
-
-            if (entries.Count == 0)
-            {
-                notes.Add($"Sheet {sheet.Name} skipped: no consumers.");
-                return null;
-            }
-            return new ParsedSheet(sheet.Name.Trim(), FeederLayout.Arrange(entries), skipped);
+            return new SheetRead(sheet.Name, rows, skipped);
         }
 
-        private static IEnumerable<string> CrossSheetDuplicates(IReadOnlyList<ParsedSheet> feeders)
+        private static HashSet<Occurrence> ResolveDuplicates(IEnumerable<Occurrence> all, List<string> notes, List<string> problems)
         {
-            var firstSheet = new Dictionary<string, string>(StringComparer.Ordinal);
-            foreach (ParsedSheet feeder in feeders)
+            var kept = new HashSet<Occurrence>();
+            foreach (IGrouping<string, Occurrence> group in all.GroupBy(o => o.ConsumerId, StringComparer.Ordinal))
             {
-                foreach (ConsumerEntry entry in feeder.Entries)
+                List<Occurrence> copies = group.ToList();
+                if (copies.Count == 1)
                 {
-                    if (firstSheet.TryGetValue(entry.ConsumerId, out string? other))
-                        yield return $"Consumer ID {entry.ConsumerId} is on both the {other} and {feeder.Name} sheets.";
-                    else
-                        firstSheet[entry.ConsumerId] = feeder.Name;
+                    kept.Add(copies[0]);
+                    continue;
+                }
+
+                List<Occurrence> active = copies.Where(o => o.Active).ToList();
+                if (active.Count > 1)
+                {
+                    List<string> sheets = active.Select(o => o.Sheet).Distinct().ToList();
+                    problems.Add(sheets.Count == 1
+                        ? $"Sheet {sheets[0]}: consumer ID {group.Key} appears more than once (rows {string.Join(", ", active.Select(o => o.Row))})."
+                        : $"Consumer ID {group.Key} is active on both the {JoinNames(sheets)} sheets.");
+                    kept.Add(active[0]);
+                }
+                else if (active.Count == 1)
+                {
+                    kept.Add(active[0]);
+                    string dropped = string.Join(", ", copies.Where(o => !o.Active).Select(o => o.Where));
+                    notes.Add($"Consumer ID {group.Key}: kept the active one ({active[0].Where}); dropped the inactive copy ({dropped}).");
+                }
+                else
+                {
+                    kept.Add(copies[0]);
+                    notes.Add($"Consumer ID {group.Key} is inactive in {string.Join(", ", copies.Select(o => o.Where))}; kept {copies[0].Where}.");
                 }
             }
+            return kept;
         }
+
+        private static string JoinNames(IReadOnlyList<string> names) =>
+            names.Count <= 2 ? string.Join(" and ", names) : $"{string.Join(", ", names.Take(names.Count - 1))} and {names[^1]}";
 
         private static int FindHeader(IReadOnlyList<IReadOnlyList<string?>> rows)
         {

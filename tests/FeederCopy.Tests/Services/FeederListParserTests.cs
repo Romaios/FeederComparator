@@ -79,7 +79,65 @@ namespace FeederCopy.Tests.Services
         public void ReadWorkbook_DuplicateAcrossSheets_Problem()
         {
             ParsedWorkbook result = Parse(("Abuyog", [Header, [1, "A", "c1"]]), ("Bacon", [Header, [1, "B", "c1"]]));
-            Assert.Equal(["Consumer ID c1 is on both the Abuyog and Bacon sheets."], result.Problems);
+            Assert.Equal(["Consumer ID c1 is active on both the Abuyog and Bacon sheets."], result.Problems);
+        }
+
+        private static readonly object?[] StatusHeader = ["Count", "From Bus ID", "To Customer ID", "Status"];
+
+        [Fact]
+        public void ReadWorkbook_StatusColumn_SetsActive()
+        {
+            ParsedWorkbook result = Parse(("Abuyog", [StatusHeader, [1, "A", "c1", "1"], [2, "A", "c2", "0"], [3, "A", "c3", null]]));
+            Assert.Equal([new ConsumerEntry("A", "c1"), new ConsumerEntry("A", "c2", false), new ConsumerEntry("A", "c3")], result.Feeders.Single().Entries);
+            Assert.Empty(result.Problems);
+        }
+
+        [Fact]
+        public void ReadWorkbook_StatusNumericCells()
+        {
+            ParsedWorkbook result = Parse(("Abuyog", [StatusHeader, [1, "A", "c1", 1], [2, "A", "c2", 0]]));
+            Assert.Equal([true, false], result.Feeders.Single().Entries.Select(e => e.Active));
+        }
+
+        [Fact]
+        public void ReadWorkbook_StatusInvalid_Problem()
+        {
+            ParsedWorkbook result = Parse(("Abuyog", [StatusHeader, [1, "A", "c1", "x"]]));
+            Assert.Contains("Sheet Abuyog row 2: status 'x' must be 1 or 0.", result.Problems);
+        }
+
+        [Fact]
+        public void ReadWorkbook_NoStatusColumn_AllActive()
+        {
+            ParsedWorkbook result = One([1, "A", "c1"]);
+            Assert.True(result.Feeders.Single().Entries.Single().Active);
+        }
+
+        [Fact]
+        public void ReadWorkbook_DuplicateOneActive_KeepsActiveDropsInactive()
+        {
+            ParsedWorkbook result = Parse(("Bacon", [StatusHeader, [1, "B", "c1", 1]]), ("Sorsogon", [StatusHeader, [1, "S", "c1", 0], [2, "S", "c2", 1]]));
+            Assert.Empty(result.Problems);
+            Assert.Equal([new ConsumerEntry("B", "c1")], result.Feeders[0].Entries);
+            Assert.Equal([new ConsumerEntry("S", "c2")], result.Feeders[1].Entries);
+            Assert.Equal(["Consumer ID c1: kept the active one (Bacon row 2); dropped the inactive copy (Sorsogon row 2)."], result.Notes);
+        }
+
+        [Fact]
+        public void ReadWorkbook_DuplicateSameSheetOneActive_KeepsActive()
+        {
+            ParsedWorkbook result = Parse(("Bacon", [StatusHeader, [1, "B", "c1", 0], [2, "B", "c1", 1]]));
+            Assert.Empty(result.Problems);
+            Assert.Equal([new ConsumerEntry("B", "c1")], result.Feeders.Single().Entries);
+        }
+
+        [Fact]
+        public void ReadWorkbook_DuplicateAllInactive_KeepsFirst()
+        {
+            ParsedWorkbook result = Parse(("Abuyog", [StatusHeader, [1, "A", "c1", 0]]), ("Bacon", [StatusHeader, [1, "B", "c1", 0], [2, "B", "c2", 1]]));
+            Assert.Empty(result.Problems);
+            Assert.Equal([new ConsumerEntry("A", "c1", false)], result.Feeders[0].Entries);
+            Assert.Equal(["Consumer ID c1 is inactive in Abuyog row 2, Bacon row 2; kept Abuyog row 2."], result.Notes);
         }
 
         [Fact]
