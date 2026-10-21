@@ -172,6 +172,25 @@ namespace FeederCopy.Tests.Presenters
         }
 
         [Fact]
+        public void Add_ExistingBusWith25Rows_NewBecomesRow26_RestMoveDownOne()
+        {
+            ConsumerEntry[] rows =
+            [
+                .. Enumerable.Range(1, 25).Select(i => E("AFSEC3jnc1", $"a{i}")),
+                .. Enumerable.Range(1, 5).Select(i => E("AFSEC3jnc2", $"b{i}")),
+            ];
+            Seed("Abuyog", rows);
+            Assert.Equal(26, _view.Rows.Single(r => r.ConsumerId == "b1").Count);
+
+            _presenter.OnAddClicked("AFSEC3jnc1", "NEW");
+
+            Assert.Equal(new ConsumerRow(26, "AFSEC3jnc1", "NEW"), _view.Rows.Single(r => r.ConsumerId == "NEW"));
+            Assert.Equal(25, _view.Rows.Single(r => r.ConsumerId == "a25").Count);
+            Assert.Equal(27, _view.Rows.Single(r => r.ConsumerId == "b1").Count);
+            Assert.Equal(31, _view.Rows.Single(r => r.ConsumerId == "b5").Count);
+        }
+
+        [Fact]
         public void Add_AlreadyInFeeder_ShowsAddError()
         {
             Seed("Other", E("Z", "c1"));
