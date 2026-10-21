@@ -54,6 +54,20 @@ namespace FeederCopy.Tests.Models
         }
 
         [Fact]
+        public void Validate_BusTagWithNonLetters_Error()
+        {
+            AppSettings s = AppSettings.Defaults with { HandPlacedBusTags = "sp, jnc-1" };
+            Assert.Contains("Bus tag 'jnc-1' can only contain letters.", SettingsValidator.Validate(s));
+        }
+
+        [Fact]
+        public void Validate_BusTagsLetters_Ok()
+        {
+            AppSettings s = AppSettings.Defaults with { HandPlacedBusTags = "sp, jnc, tap" };
+            Assert.Empty(SettingsValidator.Validate(s));
+        }
+
+        [Fact]
         public void Validate_DuplicateAsBilledNames_Error()
         {
             AppSettings s = AppSettings.Defaults with { AsBilled = AsBilledColumns.Defaults with { KwhUsed = "accountnumber" } };
