@@ -76,5 +76,20 @@ namespace FeederCopy.Tests.Models
             List<ConsumerEntry> before = [E("A1", "c1"), E("A2", "c2")];
             Assert.Equal(0, BusSorter.MovedRows(before, BusSorter.Sort(before, Tags)));
         }
+
+        [Fact]
+        public void MovedRows_SameBusInTwoPlaces_UnchangedOrderIsZero()
+        {
+            List<ConsumerEntry> before = [E("A5", "c1"), E("A5jnc1", "c2"), E("A5", "c3"), E("A2", "c4")];
+            Assert.Equal(0, BusSorter.MovedRows(before, before.ToList()));
+        }
+
+        [Fact]
+        public void MovedRows_BlockDraggedToTop_CountsItsRows()
+        {
+            List<ConsumerEntry> before = [E("A1", "c1"), E("A1", "c2"), E("A2", "c3"), E("A3", "c4"), E("A3", "c5")];
+            List<ConsumerEntry> after = [E("A3", "c4"), E("A3", "c5"), E("A1", "c1"), E("A1", "c2"), E("A2", "c3")];
+            Assert.Equal(2, BusSorter.MovedRows(before, after));
+        }
     }
 }

@@ -289,7 +289,8 @@ namespace FeederCopy.Tests.Support
         public string? Summary { get; private set; }
         public IReadOnlyList<BusBlockRow> Blocks { get; private set; } = [];
         public IReadOnlyList<BusTagRow> Tags { get; private set; } = [];
-        public bool CanSort { get; private set; }
+        public bool HasChanges { get; private set; }
+        public IReadOnlyList<int> SelectedBlocks { get; private set; } = [];
         public string? EmptyMessage { get; private set; }
         public int PlansShown { get; private set; }
         public bool ConfirmAnswer { get; set; } = true;
@@ -303,15 +304,17 @@ namespace FeederCopy.Tests.Support
             SelectedFeederId = selectedId;
         }
 
-        public void ShowPlan(string summary, IReadOnlyList<BusBlockRow> blocks, IReadOnlyList<BusTagRow> tags, bool canSort)
+        public void ShowPlan(string summary, IReadOnlyList<BusBlockRow> blocks, IReadOnlyList<BusTagRow> tags, bool hasChanges)
         {
             Summary = summary;
             Blocks = blocks;
             Tags = tags;
-            CanSort = canSort;
+            HasChanges = hasChanges;
             EmptyMessage = null;
             PlansShown++;
         }
+
+        public void SelectBlocks(IReadOnlyList<int> indexes) => SelectedBlocks = indexes;
 
         public void ShowEmpty(string message) => EmptyMessage = message;
 

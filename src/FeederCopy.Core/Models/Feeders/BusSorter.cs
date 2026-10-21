@@ -49,30 +49,11 @@ namespace FeederCopy.Core.Models.Feeders
 
         public static int MovedRows(IReadOnlyList<ConsumerEntry> before, IReadOnlyList<ConsumerEntry> after)
         {
-            List<(string Bus, int Rows)> beforeBlocks = Blocks(before);
-            var position = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-            for (int i = 0; i < beforeBlocks.Count; i++)
-                position.TryAdd(beforeBlocks[i].Bus, i);
-
-            List<(string Bus, int Rows)> afterBlocks = Blocks(after);
-            int[] sequence = afterBlocks.Select(b => position.GetValueOrDefault(b.Bus, -1)).ToArray();
-            HashSet<int> staying = LongestIncreasing(sequence);
-            return afterBlocks.Where((_, i) => !staying.Contains(i)).Sum(b => b.Rows);
-        }
-
-        private static List<(string Bus, int Rows)> Blocks(IReadOnlyList<ConsumerEntry> entries)
-        {
-            var blocks = new List<(string Bus, int Rows)>();
-            foreach (ConsumerEntry entry in entries)
-            {
-                if (entry.BusId is null)
-                    continue;
-                if (blocks.Count > 0 && string.Equals(blocks[^1].Bus, entry.BusId, StringComparison.OrdinalIgnoreCase))
-                    blocks[^1] = (blocks[^1].Bus, blocks[^1].Rows + 1);
-                else
-                    blocks.Add((entry.BusId, 1));
-            }
-            return blocks;
+            var position = new Dictionary<string, int>(StringComparer.Ordinal);
+            for (int i = 0; i < before.Count; i++)
+                position.TryAdd(before[i].ConsumerId, i);
+            int[] sequence = after.Select(e => position.GetValueOrDefault(e.ConsumerId, -1)).Where(p => p >= 0).ToArray();
+            return after.Count - LongestIncreasing(sequence).Count;
         }
 
         private static HashSet<int> LongestIncreasing(int[] values)
