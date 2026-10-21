@@ -21,7 +21,7 @@ namespace FeederCopy.Core.Models.Settings
         public required string KwhUsed { get; init; }
         public required string BillMonth { get; init; }
 
-        public static AsBilledColumns Defaults { get; } = new() { AccountNumber = "ACCOUNTNUMBER", KwhUsed = "KWHUSED", BillMonth = "BILLMONTH" };
+        public static AsBilledColumns Defaults { get; } = new() { AccountNumber = "ACCOUNTNUMBER", KwhUsed = "KWHUSED, KILOWATTHOUR", BillMonth = "BILLMONTH" };
     }
 
     public sealed record AppSettings

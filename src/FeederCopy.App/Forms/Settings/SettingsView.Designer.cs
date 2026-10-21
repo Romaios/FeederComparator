@@ -78,7 +78,7 @@ namespace FeederCopy.App.Forms.Settings
             lblIntro.AutoSize = true;
             lblIntro.Margin = new Padding(3, 0, 3, 10);
             lblIntro.Name = "lblIntro";
-            lblIntro.Text = "Column names the program looks for in the files you import. Names are matched without regard to upper or lower case.";
+            lblIntro.Text = "Column names the program looks for in the files you import, matched without regard to upper or lower case. When files name a column differently (for example 2025 As-Billed files), list every name separated by commas, like KWHUSED, KILOWATTHOUR.";
             tlpLeft.AutoScroll = true;
             tlpLeft.ColumnCount = 3;
             tlpLeft.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 580F));

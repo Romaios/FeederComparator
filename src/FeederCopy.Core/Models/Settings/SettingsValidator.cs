@@ -32,17 +32,15 @@ namespace FeederCopy.Core.Models.Settings
                     errors.Add($"Bus tag '{rule.Tag}' can only contain letters.");
             }
 
-            string[] names = [asBilled.AccountNumber, asBilled.KwhUsed, asBilled.BillMonth];
-            List<string> filled = names.Where(n => !IsBlank(n)).Select(n => n.Trim()).ToList();
+            List<string> filled = new[] { asBilled.AccountNumber, asBilled.KwhUsed, asBilled.BillMonth }.SelectMany(ColumnNames.Split).ToList();
             if (filled.Distinct(StringComparer.OrdinalIgnoreCase).Count() != filled.Count)
                 errors.Add("The As-Billed column names must all be different.");
 
             return errors;
         }
 
-        private static bool IsBlank(string? text) => string.IsNullOrWhiteSpace(text);
+        private static bool IsBlank(string? text) => ColumnNames.Split(text).Count == 0;
 
-        private static bool Same(string a, string b) =>
-            string.Equals(a.Trim(), b.Trim(), StringComparison.OrdinalIgnoreCase);
+        private static bool Same(string a, string b) => ColumnNames.Overlap(a, b);
     }
 }

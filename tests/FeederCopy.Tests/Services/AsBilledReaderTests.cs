@@ -27,6 +27,25 @@ namespace FeederCopy.Tests.Services
         }
 
         [Fact]
+        public void Read_2025Layout_KilowatthourAndMmyyMonth()
+        {
+            string?[] header2025 = ["ADDRESS", "ACCOUNTNUMBER", "NAME", "RATECODE", "KILOWATTHOUR", "BILLMONTH"];
+            string path = TestFiles.WriteSpreadsheetMl([header2025, ["Somewhere", "0900001", "Test Name", "R", "77", "0825"]]);
+            KwhSnapshot s = new AsBilledReader().Read(path, AsBilledColumns.Defaults, null);
+            Assert.Null(s.FatalError);
+            Assert.Equal([new AsBilledEntry(2, 77)], s.ByAccount["0900001"]);
+            Assert.Equal(new BillMonth(2025, 8), s.Month);
+        }
+
+        [Fact]
+        public void Read_NoListedName_ErrorNamesEveryChoice()
+        {
+            string path = TestFiles.WriteSpreadsheetMl([["ACCOUNTNUMBER", "KWH", "BILLMONTH"], ["c1", "1", "202607"]]);
+            KwhSnapshot s = new AsBilledReader().Read(path, AsBilledColumns.Defaults, null);
+            Assert.Contains("Missing column(s): KWHUSED or KILOWATTHOUR.", s.FatalError);
+        }
+
+        [Fact]
         public void Read_DuplicateAccount_KeepsBothEntries()
         {
             KwhSnapshot s = Read(Row("c1", "10"), Row("c2", "5"), Row("c1", "20"));

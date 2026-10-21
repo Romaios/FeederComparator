@@ -87,5 +87,26 @@ namespace FeederCopy.Tests.Models
             AppSettings s = AppSettings.Defaults with { AsBilled = AsBilledColumns.Defaults with { KwhUsed = "accountnumber" } };
             Assert.Contains("The As-Billed column names must all be different.", SettingsValidator.Validate(s));
         }
+
+        [Fact]
+        public void Validate_SeveralNamesPerColumn_Valid()
+        {
+            AppSettings s = AppSettings.Defaults with { AsBilled = new AsBilledColumns { AccountNumber = "ACCOUNTNUMBER, ACCTNO", KwhUsed = "KWHUSED, KILOWATTHOUR", BillMonth = "BILLMONTH" } };
+            Assert.Empty(SettingsValidator.Validate(s));
+        }
+
+        [Fact]
+        public void Validate_NameListedTwiceAcrossColumns_Error()
+        {
+            AppSettings s = AppSettings.Defaults with { AsBilled = new AsBilledColumns { AccountNumber = "ACCOUNTNUMBER", KwhUsed = "KWHUSED, accountnumber", BillMonth = "BILLMONTH" } };
+            Assert.Contains("The As-Billed column names must all be different.", SettingsValidator.Validate(s));
+        }
+
+        [Fact]
+        public void Validate_OnlyCommas_CountsAsBlank()
+        {
+            AppSettings s = AppSettings.Defaults with { AsBilled = AsBilledColumns.Defaults with { KwhUsed = " , " } };
+            Assert.Contains("Enter the As-Billed column name for KWHUSED.", SettingsValidator.Validate(s));
+        }
     }
 }
