@@ -238,6 +238,15 @@ namespace FeederCopy.Tests.Support
 
         public void SelectConsumer(string consumerId) => SelectedConsumer = consumerId;
 
+        public bool ConfirmAnswer { get; set; } = true;
+        public List<string> Confirms { get; } = [];
+
+        public bool Confirm(string title, string message)
+        {
+            Confirms.Add(message);
+            return ConfirmAnswer;
+        }
+
         public void ShowError(string message) => Errors.Add(message);
     }
 

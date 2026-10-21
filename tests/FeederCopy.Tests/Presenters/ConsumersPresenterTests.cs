@@ -80,7 +80,7 @@ namespace FeederCopy.Tests.Presenters
             _feeders.CreateFeeder("Abuyog", [new ConsumerEntry("A", "c1")]);
             _readings.SaveMonth(new BillMonth(2026, 6), [new ReadingRecord("c1", "202606", 12, "Active")]);
             _presenter.Load();
-            _presenter.OnSetInactiveClicked("c1", 7, 2026);
+            _presenter.OnSetInactiveClicked(["c1"], 7, 2026);
             Assert.False(_feeders.GetAllConsumers().Single().Entry.Active);
             Assert.Empty(_view.Rows);
             Assert.Equal((0, 1), _view.StatusCounts);
@@ -98,7 +98,7 @@ namespace FeederCopy.Tests.Presenters
         {
             _feeders.CreateFeeder("Abuyog", [new ConsumerEntry("A", "c1")]);
             _presenter.Load();
-            _presenter.OnSetInactiveClicked("c1", null, 2026);
+            _presenter.OnSetInactiveClicked(["c1"], null, 2026);
             Assert.Equal(["Choose the month the consumer became inactive."], _view.Errors);
             Assert.True(_feeders.GetAllConsumers().Single().Entry.Active);
             Assert.Equal(0, _statusChanged);
@@ -110,7 +110,7 @@ namespace FeederCopy.Tests.Presenters
             _feeders.CreateFeeder("Abuyog", [new ConsumerEntry("A", "c1")]);
             _feeders.SetActive("c1", false, new BillMonth(2026, 7));
             _presenter.Load();
-            _presenter.OnSetActiveClicked("c1");
+            _presenter.OnSetActiveClicked(["c1"]);
             Assert.True(_feeders.GetAllConsumers().Single().Entry.Active);
             Assert.Empty(_feeders.GetInactiveFrom());
             Assert.Equal("c1", _view.SelectedConsumer);
@@ -138,9 +138,9 @@ namespace FeederCopy.Tests.Presenters
             _feeders.CreateFeeder("Abuyog", [new ConsumerEntry("A", "c1"), new ConsumerEntry("A", "c2")]);
             presenter.Load();
             presenter.OnShown();
-            presenter.OnSetInactiveClicked("c1", 7, 2026);
+            presenter.OnSetInactiveClicked(["c1"], 7, 2026);
             presenter.OnFilterChanged(null, false, 2026, null);
-            presenter.OnSetActiveClicked("c1");
+            presenter.OnSetActiveClicked(["c1"]);
             Assert.Equal(1, counting.YearReads);
             Assert.Equal((2, 0), _view.StatusCounts);
         }
@@ -162,6 +162,43 @@ namespace FeederCopy.Tests.Presenters
             Assert.Equal(["c1"], view.Rows.Select(r => r.ConsumerId));
             presenter.OnShown();
             Assert.Equal(["c1", "c2"], view.Rows.Select(r => r.ConsumerId));
+        }
+
+        [Fact]
+        public void SetInactive_Many_ConfirmsThenMovesAll()
+        {
+            _feeders.CreateFeeder("Abuyog", [new ConsumerEntry("A", "c1"), new ConsumerEntry("A", "c2"), new ConsumerEntry("A", "c3")]);
+            _presenter.Load();
+            _presenter.OnSetInactiveClicked(["c1", "c3"], 7, 2026);
+            Assert.Equal(["Set 2 consumers inactive from Jul 2026?"], _view.Confirms);
+            Assert.Equal(["c2"], _view.Rows.Select(r => r.ConsumerId));
+            Assert.Equal((1, 2), _view.StatusCounts);
+            Assert.Equal(new BillMonth(2026, 7), _feeders.GetInactiveFrom()["c3"]);
+            Assert.Equal(1, _statusChanged);
+        }
+
+        [Fact]
+        public void SetInactive_Many_ConfirmNo_NoChange()
+        {
+            _feeders.CreateFeeder("Abuyog", [new ConsumerEntry("A", "c1"), new ConsumerEntry("A", "c2")]);
+            _view.ConfirmAnswer = false;
+            _presenter.Load();
+            _presenter.OnSetInactiveClicked(["c1", "c2"], 7, 2026);
+            Assert.All(_feeders.GetAllConsumers(), c => Assert.True(c.Entry.Active));
+            Assert.Equal(0, _statusChanged);
+        }
+
+        [Fact]
+        public void SetActive_Many_ClearsMonths()
+        {
+            _feeders.CreateFeeder("Abuyog", [new ConsumerEntry("A", "c1"), new ConsumerEntry("A", "c2")]);
+            _feeders.SetActive(["c1", "c2"], false, new BillMonth(2026, 5));
+            _presenter.Load();
+            _presenter.OnFilterChanged(null, false, 2026, null);
+            _presenter.OnSetActiveClicked(["c1", "c2"]);
+            Assert.Equal(["Set 2 consumers active?"], _view.Confirms);
+            Assert.Empty(_view.Rows);
+            Assert.Empty(_feeders.GetInactiveFrom());
         }
 
         private sealed class CountingReadings(IReadingService inner) : IReadingService

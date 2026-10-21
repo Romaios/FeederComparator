@@ -53,15 +53,35 @@ namespace FeederCopy.Core.Services.Data
                 .ToList();
         }
 
-        public void SetActive(string consumerId, bool active, BillMonth? inactiveFrom = null)
+        public void SetActive(string consumerId, bool active, BillMonth? inactiveFrom = null) =>
+            SetActive([consumerId], active, inactiveFrom);
+
+        public void SetActive(IReadOnlyList<string> consumerIds, bool active, BillMonth? inactiveFrom = null)
         {
             using SqliteConnection c = _database.Open();
             using SqliteTransaction tx = c.BeginTransaction();
-            c.Execute("UPDATE FeederConsumers SET Active = @active WHERE ConsumerId = @consumerId", new { active = active ? 1 : 0, consumerId }, tx);
-            if (!active && inactiveFrom is { } month)
-                c.Execute("INSERT OR REPLACE INTO ConsumerInactiveFrom (ConsumerId, BillMonth) VALUES (@consumerId, @month)", new { consumerId, month = month.Key }, tx);
-            else
-                c.Execute("DELETE FROM ConsumerInactiveFrom WHERE ConsumerId = @consumerId", new { consumerId }, tx);
+            using SqliteCommand update = c.CreateCommand();
+            update.Transaction = tx;
+            update.CommandText = "UPDATE FeederConsumers SET Active = $active WHERE ConsumerId = $consumer";
+            update.Parameters.AddWithValue("$active", active ? 1 : 0);
+            SqliteParameter updateId = update.Parameters.Add("$consumer", SqliteType.Text);
+            using SqliteCommand month = c.CreateCommand();
+            month.Transaction = tx;
+            month.CommandText = !active && inactiveFrom is not null
+                ? "INSERT OR REPLACE INTO ConsumerInactiveFrom (ConsumerId, BillMonth) VALUES ($consumer, $month)"
+                : "DELETE FROM ConsumerInactiveFrom WHERE ConsumerId = $consumer";
+            SqliteParameter monthId = month.Parameters.Add("$consumer", SqliteType.Text);
+            if (!active && inactiveFrom is { } from)
+                month.Parameters.AddWithValue("$month", from.Key);
+            update.Prepare();
+            month.Prepare();
+            foreach (string consumerId in consumerIds)
+            {
+                updateId.Value = consumerId;
+                update.ExecuteNonQuery();
+                monthId.Value = consumerId;
+                month.ExecuteNonQuery();
+            }
             tx.Commit();
         }
 

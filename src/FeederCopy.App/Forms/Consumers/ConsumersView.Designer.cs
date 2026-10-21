@@ -187,7 +187,7 @@ namespace FeederCopy.App.Forms.Consumers
             dgvConsumers.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
             dgvConsumers.Columns.AddRange(new DataGridViewColumn[] { colCount, colFeeder, colBus, colConsumer, colStatus, colJan, colFeb, colMar, colApr, colMay, colJun, colJul, colAug, colSep, colOct, colNov, colDec, colTotal });
             dgvConsumers.Dock = DockStyle.Fill;
-            dgvConsumers.MultiSelect = false;
+            dgvConsumers.MultiSelect = true;
             dgvConsumers.Name = "dgvConsumers";
             dgvConsumers.ReadOnly = true;
             dgvConsumers.RowHeadersVisible = false;

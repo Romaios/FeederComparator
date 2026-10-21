@@ -9,6 +9,7 @@ namespace FeederCopy.Core.Services.Data
         IReadOnlyList<ConsumerEntry> GetConsumers(long feederId);
         IReadOnlyList<(string FeederName, ConsumerEntry Entry)> GetAllConsumers();
         void SetActive(string consumerId, bool active, BillMonth? inactiveFrom = null);
+        void SetActive(IReadOnlyList<string> consumerIds, bool active, BillMonth? inactiveFrom = null);
         IReadOnlyDictionary<string, BillMonth> GetInactiveFrom();
         ConsumerLocation? FindConsumer(string consumerId);
         IReadOnlyList<(string ConsumerId, ConsumerLocation Where)> FindConsumers(IEnumerable<string> consumerIds);

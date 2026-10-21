@@ -58,18 +58,30 @@ namespace FeederCopy.Core.Presenters.Consumers
             Run("Filtering consumers", Update);
         }
 
-        public void OnSetActiveClicked(string consumerId) =>
-            ChangeStatus(consumerId, true, null);
-
-        public void OnSetInactiveClicked(string consumerId, int? month, int year)
+        public void OnSetActiveClicked(IReadOnlyList<string> consumerIds)
         {
+            if (consumerIds.Count == 0 || !ConfirmMany(consumerIds, "active"))
+                return;
+            ChangeStatus(consumerIds, true, null);
+        }
+
+        public void OnSetInactiveClicked(IReadOnlyList<string> consumerIds, int? month, int year)
+        {
+            if (consumerIds.Count == 0)
+                return;
             if (month is not (>= 1 and <= 12) || year is < 1900 or > 2100)
             {
                 _view.ShowError("Choose the month the consumer became inactive.");
                 return;
             }
-            ChangeStatus(consumerId, false, new BillMonth(year, month.Value));
+            var from = new BillMonth(year, month.Value);
+            if (!ConfirmMany(consumerIds, $"inactive from {from}"))
+                return;
+            ChangeStatus(consumerIds, false, from);
         }
+
+        private bool ConfirmMany(IReadOnlyList<string> consumerIds, string status) =>
+            consumerIds.Count == 1 || _view.Confirm("Set status", $"Set {consumerIds.Count:N0} consumers {status}?");
 
         private void MarkStale(bool feeders, bool readings)
         {
@@ -82,24 +94,31 @@ namespace FeederCopy.Core.Presenters.Consumers
                 Run("Refreshing consumers", Update);
         }
 
-        private void ChangeStatus(string consumerId, bool active, BillMonth? inactiveFrom)
+        private void ChangeStatus(IReadOnlyList<string> consumerIds, bool active, BillMonth? inactiveFrom)
         {
             bool changed = false;
             Run("Setting consumer status", () =>
             {
-                _feeders.SetActive(consumerId, active, inactiveFrom);
+                _feeders.SetActive(consumerIds, active, inactiveFrom);
+                var ids = consumerIds.ToHashSet(StringComparer.Ordinal);
                 if (_consumers is not null)
                 {
-                    int index = _consumers.FindIndex(c => c.Entry.ConsumerId == consumerId);
-                    if (index >= 0)
-                        _consumers[index] = (_consumers[index].FeederName, _consumers[index].Entry with { Active = active });
+                    for (int i = 0; i < _consumers.Count; i++)
+                    {
+                        if (ids.Contains(_consumers[i].Entry.ConsumerId))
+                            _consumers[i] = (_consumers[i].FeederName, _consumers[i].Entry with { Active = active });
+                    }
                 }
-                if (inactiveFrom is { } from)
-                    _inactiveFrom[consumerId] = from;
-                else
-                    _inactiveFrom.Remove(consumerId);
+                foreach (string id in ids)
+                {
+                    if (inactiveFrom is { } from)
+                        _inactiveFrom[id] = from;
+                    else
+                        _inactiveFrom.Remove(id);
+                }
                 Update();
-                _view.SelectConsumer(consumerId);
+                if (consumerIds.Count == 1)
+                    _view.SelectConsumer(consumerIds[0]);
                 changed = true;
             });
             if (changed)

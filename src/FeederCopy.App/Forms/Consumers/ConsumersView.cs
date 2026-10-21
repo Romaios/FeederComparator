@@ -94,10 +94,24 @@ namespace FeederCopy.App.Forms.Consumers
                 dgvConsumers.FirstDisplayedScrollingRowIndex = Math.Max(0, index - 3);
         }
 
-        public void ShowError(string message) => Dialogs.ShowError((IWin32Window?)FindForm() ?? this, message);
+        public bool Confirm(string title, string message) => Dialogs.Confirm(Owner, title, message);
 
-        private ConsumerYearRow? SelectedRow =>
-            dgvConsumers.CurrentRow is { Index: var i } && i >= 0 && i < _rows.Count ? _rows[i] : null;
+        public void ShowError(string message) => Dialogs.ShowError(Owner, message);
+
+        private IWin32Window Owner => (IWin32Window?)FindForm() ?? this;
+
+        private List<ConsumerYearRow> SelectedRows()
+        {
+            var selected = new List<ConsumerYearRow>();
+            int index = dgvConsumers.Rows.GetFirstRow(DataGridViewElementStates.Selected);
+            while (index >= 0)
+            {
+                if (index < _rows.Count)
+                    selected.Add(_rows[index]);
+                index = dgvConsumers.Rows.GetNextRow(index, DataGridViewElementStates.Selected);
+            }
+            return selected;
+        }
 
         private void ApplyTheme()
         {
@@ -142,16 +156,19 @@ namespace FeederCopy.App.Forms.Consumers
 
         private void UpdateSelection()
         {
-            ConsumerYearRow? row = SelectedRow;
+            List<ConsumerYearRow> rows = SelectedRows();
             btnSetActive.Visible = rdoInactiveTab.Checked;
-            btnSetActive.Enabled = row is { Active: false };
-            btnSetInactive.Enabled = row is not null;
-            btnSetInactive.Text = row is { Active: false } ? "Change month" : "Set inactive";
-            if (row?.InactiveFrom is { } from)
+            btnSetActive.Enabled = rows.Any(r => !r.Active);
+            btnSetInactive.Enabled = rows.Count > 0;
+            btnSetInactive.Text = rows.Count > 0 && rows.All(r => !r.Active) ? "Change month" : "Set inactive";
+            if (rows is [{ InactiveFrom: { } from }])
                 SetInactiveMonth(from);
-            lblSelected.Text = row is null
-                ? "Click a consumer to set its status."
-                : $"Selected: {row.Feeder} row {row.Count:N0}  ·  bus {row.BusLabel}  ·  consumer {row.ConsumerId}  ·  {row.StatusLabel}";
+            lblSelected.Text = rows switch
+            {
+                [] => "Click a consumer to set its status. Hold Ctrl or Shift to pick more than one.",
+                [var row] => $"Selected: {row.Feeder} row {row.Count:N0}  ·  bus {row.BusLabel}  ·  consumer {row.ConsumerId}  ·  {row.StatusLabel}",
+                _ => $"Selected: {rows.Count:N0} consumers  ·  Ctrl+click or Shift+click to change the selection",
+            };
         }
 
         private void filter_Changed(object? sender, EventArgs e) => NotifyFilter();
@@ -174,18 +191,15 @@ namespace FeederCopy.App.Forms.Consumers
 
         private void btnSetActive_Click(object? sender, EventArgs e)
         {
-            if (SelectedRow is not { } row)
-                return;
             _keepPosition = true;
-            _presenter?.OnSetActiveClicked(row.ConsumerId);
+            _presenter?.OnSetActiveClicked(SelectedRows().Where(r => !r.Active).Select(r => r.ConsumerId).ToList());
         }
 
         private void btnSetInactive_Click(object? sender, EventArgs e)
         {
-            if (SelectedRow is not { } row)
-                return;
             _keepPosition = true;
-            _presenter?.OnSetInactiveClicked(row.ConsumerId, cboInactiveMonth.SelectedIndex >= 0 ? cboInactiveMonth.SelectedIndex + 1 : null, (int)numInactiveYear.Value);
+            _presenter?.OnSetInactiveClicked(SelectedRows().Select(r => r.ConsumerId).ToList(),
+                cboInactiveMonth.SelectedIndex >= 0 ? cboInactiveMonth.SelectedIndex + 1 : null, (int)numInactiveYear.Value);
         }
 
         private void dgvConsumers_SelectionChanged(object? sender, EventArgs e) => UpdateSelection();
