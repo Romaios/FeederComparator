@@ -23,6 +23,7 @@ namespace FeederCopy.Tests.Presenters
             _readings = new ReadingService(_temp.Db);
             _presenter = new ConsumersPresenter(_view, _feeders, _readings, () => new BillMonth(2026, 10), _log);
             _presenter.StatusChanged += () => _statusChanged++;
+            _presenter.OnShown();
         }
 
         public void Dispose() => _temp.Dispose();
@@ -124,9 +125,58 @@ namespace FeederCopy.Tests.Presenters
             _presenter.Load();
             _presenter.OnFilterChanged("Abuyog", true, 2026, null);
             _readings.SaveMonth(new BillMonth(2026, 1), [new ReadingRecord("c1", "202601", 1, "Active")]);
-            _presenter.OnDataChanged();
+            _presenter.OnReadingsChanged();
             Assert.Equal("1.00", _view.Rows.Single().Months[0]);
             Assert.Equal(2026, _view.SelectedYear);
+        }
+
+        [Fact]
+        public void StatusChange_DoesNotReadReadingsAgain()
+        {
+            var counting = new CountingReadings(_readings);
+            var presenter = new ConsumersPresenter(_view, _feeders, counting, () => new BillMonth(2026, 10), _log);
+            _feeders.CreateFeeder("Abuyog", [new ConsumerEntry("A", "c1"), new ConsumerEntry("A", "c2")]);
+            presenter.Load();
+            presenter.OnShown();
+            presenter.OnSetInactiveClicked("c1", 7, 2026);
+            presenter.OnFilterChanged(null, false, 2026, null);
+            presenter.OnSetActiveClicked("c1");
+            Assert.Equal(1, counting.YearReads);
+            Assert.Equal((2, 0), _view.StatusCounts);
+        }
+
+        [Fact]
+        public void Hidden_WaitsUntilShown()
+        {
+            var view = new FakeConsumersView();
+            var presenter = new ConsumersPresenter(view, _feeders, _readings, () => new BillMonth(2026, 10), _log);
+            _feeders.CreateFeeder("Abuyog", [new ConsumerEntry("A", "c1")]);
+            presenter.Load();
+            presenter.OnFeedersChanged();
+            Assert.Empty(view.Rows);
+            presenter.OnShown();
+            Assert.Equal(["c1"], view.Rows.Select(r => r.ConsumerId));
+            presenter.OnHidden();
+            _feeders.CreateFeeder("Bacon", [new ConsumerEntry("B", "c2")]);
+            presenter.OnFeedersChanged();
+            Assert.Equal(["c1"], view.Rows.Select(r => r.ConsumerId));
+            presenter.OnShown();
+            Assert.Equal(["c1", "c2"], view.Rows.Select(r => r.ConsumerId));
+        }
+
+        private sealed class CountingReadings(IReadingService inner) : IReadingService
+        {
+            public int YearReads { get; private set; }
+
+            public void SaveMonth(BillMonth month, IReadOnlyList<ReadingRecord> readings) => inner.SaveMonth(month, readings);
+
+            public IReadOnlyList<int> GetYears() => inner.GetYears();
+
+            public IReadOnlyList<ReadingRecord> GetYear(int year)
+            {
+                YearReads++;
+                return inner.GetYear(year);
+            }
         }
     }
 }

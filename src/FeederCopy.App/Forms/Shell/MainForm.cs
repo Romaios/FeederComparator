@@ -1,5 +1,6 @@
 using FeederCopy.App.Utils;
 using FeederCopy.Core.Models.Billing;
+using FeederCopy.Core.Presenters.BusSort;
 using FeederCopy.Core.Presenters.Consumers;
 using FeederCopy.Core.Presenters.Copy;
 using FeederCopy.Core.Presenters.Feeders;
@@ -16,6 +17,7 @@ namespace FeederCopy.App.Forms.Shell
         private readonly FeedersPresenter _feeders;
         private readonly CopyPresenter _copy;
         private readonly ConsumersPresenter _consumers;
+        private readonly BusSortPresenter _busSort;
         private readonly UpdatesPresenter _updates;
 
         public MainForm(AppServices services)
@@ -24,26 +26,31 @@ namespace FeederCopy.App.Forms.Shell
             ApplyTheme();
             Text = $"{Dialogs.AppName} {typeof(MainForm).Assembly.GetName().Version?.ToString(3)}";
 
-            _settings = new SettingsPresenter(settingsView, services.Settings, () => services.Feeders.GetAllConsumers()
-                .Where(c => c.Entry.BusId is not null)
-                .Select(c => (c.FeederName, c.Entry.BusId!)));
+            _settings = new SettingsPresenter(settingsView, services.Settings);
             _feeders = new FeedersPresenter(feedersView, services.Feeders, () => _settings.Current, services.Log);
             _copy = new CopyPresenter(copyView, services.Feeders, services.Readings, services.AsBilled, services.Exporter,
                 () => _settings.Current, _settings.RememberExportStyle, services.Log);
             _consumers = new ConsumersPresenter(consumersView, services.Feeders, services.Readings, () => new BillMonth(DateTime.Today.Year, DateTime.Today.Month), services.Log);
+            _busSort = new BusSortPresenter(busSortView, services.Feeders, () => _settings.Current, _settings.RememberHandPlacedTags, services.Log);
             _updates = new UpdatesPresenter(updatesView, services.Updater, services.UpdateSettings, services.Log);
             _feeders.FeedersChanged += _copy.OnFeedersChanged;
-            _feeders.FeedersChanged += _settings.OnFeedersChanged;
-            _feeders.FeedersChanged += _consumers.OnDataChanged;
-            _copy.ReadingsSaved += _consumers.OnDataChanged;
-            _consumers.StatusChanged += _feeders.Load;
-            _consumers.StatusChanged += _copy.OnFeedersChanged;
+            _feeders.FeedersChanged += _consumers.OnFeedersChanged;
+            _feeders.FeedersChanged += _busSort.OnFeedersChanged;
+            _feeders.StatusChanged += _copy.OnStatusChanged;
+            _feeders.StatusChanged += _consumers.OnFeedersChanged;
+            _copy.ReadingsSaved += _consumers.OnReadingsChanged;
+            _consumers.StatusChanged += _feeders.OnStatusChanged;
+            _consumers.StatusChanged += _copy.OnStatusChanged;
+            _busSort.Sorted += _feeders.Load;
+            _busSort.Sorted += _copy.OnFeedersChanged;
+            _busSort.Sorted += _consumers.OnFeedersChanged;
             _updates.UpdateAvailable += ShowUpdateOffer;
 
             settingsView.Attach(_settings);
             feedersView.Attach(_feeders);
             copyView.Attach(_copy);
             consumersView.Attach(_consumers);
+            busSortView.Attach(_busSort);
             updatesView.Attach(_updates);
             feedersView.StatusChanged += SetStatus;
             copyView.StatusChanged += SetStatus;
@@ -57,6 +64,7 @@ namespace FeederCopy.App.Forms.Shell
             AppTheme.StyleNavTab(rdoFeeders);
             AppTheme.StyleNavTab(rdoCopy);
             AppTheme.StyleNavTab(rdoConsumers);
+            AppTheme.StyleNavTab(rdoBusSort);
             AppTheme.StyleNavTab(rdoSettings);
             AppTheme.StyleNavTab(rdoUpdates);
             AppTheme.StyleWarningBanner(tlpWarning, lblWarning, btnDismissWarning);
@@ -101,8 +109,18 @@ namespace FeederCopy.App.Forms.Shell
             feedersView.Visible = tab == rdoFeeders;
             copyView.Visible = tab == rdoCopy;
             consumersView.Visible = tab == rdoConsumers;
+            busSortView.Visible = tab == rdoBusSort;
+            Cursor.Current = Cursors.WaitCursor;
             settingsView.Visible = tab == rdoSettings;
             updatesView.Visible = tab == rdoUpdates;
+            if (tab == rdoConsumers)
+                _consumers.OnShown();
+            else
+                _consumers.OnHidden();
+            if (tab == rdoBusSort)
+                _busSort.OnShown();
+            else
+                _busSort.OnHidden();
         }
 
         private async void btnWarningAction_Click(object? sender, EventArgs e)

@@ -44,20 +44,48 @@ namespace FeederCopy.Core.Models.Consumers
             : StatusLabels.Inactive;
     }
 
+    public sealed record ConsumerYearReadings(int Year, IReadOnlyDictionary<string, (IReadOnlyList<string> Months, double Total)> ByConsumer);
+
     public static class ConsumerYearCalculator
     {
+        private static readonly IReadOnlyList<string> NoMonths = Enumerable.Repeat(string.Empty, 12).ToArray();
+
+        public static ConsumerYearReadings Index(IReadOnlyList<ReadingRecord> readings, int year)
+        {
+            string yearKey = year.ToString("D4", CultureInfo.InvariantCulture);
+            var byConsumer = new Dictionary<string, (IReadOnlyList<string>, double)>(StringComparer.Ordinal);
+            foreach (IGrouping<string, ReadingRecord> group in readings
+                .Where(r => r.BillMonth.StartsWith(yearKey, StringComparison.Ordinal))
+                .GroupBy(r => r.ConsumerId, StringComparer.Ordinal))
+            {
+                var months = new string[12];
+                Array.Fill(months, string.Empty);
+                double total = 0;
+                foreach (ReadingRecord reading in group)
+                {
+                    int month = int.Parse(reading.BillMonth[4..], CultureInfo.InvariantCulture);
+                    months[month - 1] = Cell(reading);
+                    total += reading.Kwh ?? 0;
+                }
+                byConsumer[group.Key] = (months, total);
+            }
+            return new ConsumerYearReadings(year, byConsumer);
+        }
+
         public static IReadOnlyList<ConsumerYearRow> Build(
             IReadOnlyList<(string FeederName, ConsumerEntry Entry)> consumers,
             IReadOnlyList<ReadingRecord> readings,
             int year,
             ConsumerFilter filter,
+            IReadOnlyDictionary<string, BillMonth>? inactiveFrom = null) =>
+            Build(consumers, Index(readings, year), filter, inactiveFrom);
+
+        public static IReadOnlyList<ConsumerYearRow> Build(
+            IReadOnlyList<(string FeederName, ConsumerEntry Entry)> consumers,
+            ConsumerYearReadings readings,
+            ConsumerFilter filter,
             IReadOnlyDictionary<string, BillMonth>? inactiveFrom = null)
         {
-            string yearKey = year.ToString("D4", CultureInfo.InvariantCulture);
-            Dictionary<string, ReadingRecord[]> byConsumer = readings
-                .Where(r => r.BillMonth.StartsWith(yearKey, StringComparison.Ordinal))
-                .GroupBy(r => r.ConsumerId, StringComparer.Ordinal)
-                .ToDictionary(g => g.Key, g => g.ToArray(), StringComparer.Ordinal);
             string? search = string.IsNullOrWhiteSpace(filter.Search) ? null : filter.Search.Trim();
             var counts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 
@@ -73,18 +101,10 @@ namespace FeederCopy.Core.Models.Consumers
                 if (search is not null && !entry.ConsumerId.Contains(search, StringComparison.OrdinalIgnoreCase))
                     continue;
 
-                var months = new string[12];
-                Array.Fill(months, string.Empty);
-                double total = 0;
-                foreach (ReadingRecord reading in byConsumer.GetValueOrDefault(entry.ConsumerId, []))
-                {
-                    int month = int.Parse(reading.BillMonth[4..], CultureInfo.InvariantCulture);
-                    months[month - 1] = Cell(reading);
-                    total += reading.Kwh ?? 0;
-                }
+                (IReadOnlyList<string> months, double total) = readings.ByConsumer.TryGetValue(entry.ConsumerId, out var found) ? found : (NoMonths, 0);
                 BillMonth? from = !entry.Active && inactiveFrom is not null && inactiveFrom.TryGetValue(entry.ConsumerId, out BillMonth m) ? m : null;
                 rows.Add(new ConsumerYearRow(feeder, count, BusLabels.For(entry.BusId), entry.ConsumerId, entry.Active, from,
-                    InactiveMonths.ActiveMonthsIn(entry.Active, from, year), months, total));
+                    InactiveMonths.ActiveMonthsIn(entry.Active, from, readings.Year), months, total));
             }
             return rows;
         }

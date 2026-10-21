@@ -44,28 +44,17 @@ namespace FeederCopy.Tests.Models
         }
 
         [Fact]
-        public void ToSetting_CheckedRowsAsCodeAndTag()
+        public void Toggle_TickAddsCodeRule_UntickDefaultAddsException()
         {
-            BusTagRow[] rows =
-            [
-                new("Gubat", "GPSEC", "sp", 3, "GPSEC5sp1", true),
-                new("Payawin", "GPSEC", "sp", 2, "GPSEC9sp1", true),
-                new("Abuyog", "AFSEC", "jnc", 2, "AFSEC3-5jnc1", true),
-                new("Bacon", "BFSEC", "jn", 1, "BFSEC1Pjn2", false),
-            ];
-            Assert.Equal("GPSEC:sp, AFSEC:jnc", BusTags.ToSetting(rows, []));
+            Assert.Equal("sp, jnc, BFSEC:jn", BusTags.Toggle("sp, jnc", "BFSEC", "jn", true));
+            Assert.Equal("sp, jnc, -BFSEC:jnc", BusTags.Toggle("sp, jnc", "BFSEC", "jnc", false));
         }
 
         [Fact]
-        public void ToSetting_KeepsDefaultsAndWritesOnlyExceptions()
+        public void Toggle_BackToDefault_RemovesRule_KeepsOtherCodes()
         {
-            BusTagRow[] rows =
-            [
-                new("Abuyog", "AFSEC", "jnc", 2, "AFSEC3-5jnc1", true),
-                new("Bacon", "BFSEC", "jnc", 9, "BFSEC1jnc1", false),
-                new("Bacon", "BFSEC", "jn", 1, "BFSEC1Pjn2", true),
-            ];
-            Assert.Equal("sp, jnc, -BFSEC:jnc, BFSEC:jn", BusTags.ToSetting(rows, BusTags.ParseRules("sp, jnc")));
+            Assert.Equal("sp, jnc, AFSEC:jn", BusTags.Toggle("sp, jnc, -BFSEC:jnc, AFSEC:jn", "BFSEC", "jnc", true));
+            Assert.Equal("sp, jnc, -AFSEC:sp", BusTags.Toggle("sp, jnc, BFSEC:jn, -AFSEC:sp", "bfsec", "JN", false));
         }
 
         [Fact]

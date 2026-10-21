@@ -80,55 +80,26 @@ namespace FeederCopy.Tests.Presenters
             Assert.False(_view.Restarted);
         }
 
-        private static readonly (string Feeder, string Bus)[] SavedBuses =
-        [
-            ("Abuyog", "AFSEC3jnc1"),
-            ("Abuyog", "AFSEC3sp1"),
-            ("Bacon", "BFSEC1Pjn2"),
-        ];
-
-        private SettingsPresenter WithBuses() => new(_view, _store, () => SavedBuses);
-
         [Fact]
-        public void Load_ShowsDiscoveredTagsForAllFeeders()
+        public void RememberHandPlacedTags_SavesOnlyWhenDifferent()
         {
-            SettingsPresenter presenter = WithBuses();
+            var presenter = new SettingsPresenter(_view, _store);
             presenter.Load();
-            Assert.Equal(["Abuyog", "Bacon"], _view.TagFeeders);
-            Assert.Null(_view.TagFilter);
-            Assert.Equal([("AFSEC", "jnc", true), ("AFSEC", "sp", true), ("BFSEC", "jn", false)], _view.TagRows.Select(r => (r.Code, r.Tag, r.HandPlaced)));
+            presenter.RememberHandPlacedTags(AppSettings.Defaults.HandPlacedBusTags);
+            Assert.Empty(_store.Saved);
+            presenter.RememberHandPlacedTags("sp, jnc, BFSEC:jn");
+            Assert.Equal("sp, jnc, BFSEC:jn", _store.Saved.Single().HandPlacedBusTags);
+            Assert.Equal("sp, jnc, BFSEC:jn", presenter.Current.HandPlacedBusTags);
         }
 
         [Fact]
-        public void TagFilter_ShowsOneFeeder()
-        {
-            SettingsPresenter presenter = WithBuses();
-            presenter.Load();
-            presenter.OnBusTagFilterChanged("Bacon");
-            Assert.Equal("Bacon", _view.TagFilter);
-            Assert.Equal(["jn"], _view.TagRows.Select(r => r.Tag));
-        }
-
-        [Fact]
-        public void TagToggles_SavedAsExceptions()
-        {
-            SettingsPresenter presenter = WithBuses();
-            presenter.Load();
-            presenter.OnBusTagToggled("BFSEC", "jn", true);
-            presenter.OnBusTagToggled("AFSEC", "sp", false);
-            presenter.OnSaveClicked();
-            Assert.Equal("sp, jnc, -AFSEC:sp, BFSEC:jn", _store.Saved.Single().HandPlacedBusTags);
-        }
-
-        [Fact]
-        public void Defaults_ResetsTagTicks()
+        public void Save_KeepsHandPlacedTags()
         {
             _store.LoadResult = new SettingsLoadResult(AppSettings.Defaults with { HandPlacedBusTags = "sp, jnc, -AFSEC:jnc" }, null);
-            SettingsPresenter presenter = WithBuses();
+            var presenter = new SettingsPresenter(_view, _store);
             presenter.Load();
-            Assert.False(_view.TagRows.Single(r => r.Tag == "jnc").HandPlaced);
-            presenter.OnDefaultsClicked();
-            Assert.True(_view.TagRows.Single(r => r.Tag == "jnc").HandPlaced);
+            presenter.OnSaveClicked();
+            Assert.Equal("sp, jnc, -AFSEC:jnc", _store.Saved.Single().HandPlacedBusTags);
         }
 
         [Fact]

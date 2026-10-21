@@ -153,6 +153,12 @@ namespace FeederCopy.Core.Presenters.Copy
             _view.SetCopyEnabled(HasFeeders());
         }
 
+        public void OnStatusChanged()
+        {
+            if (_result is not null)
+                OnFeedersChanged();
+        }
+
         public void OnSaveProblemsClicked()
         {
             if (_result is not { } result)

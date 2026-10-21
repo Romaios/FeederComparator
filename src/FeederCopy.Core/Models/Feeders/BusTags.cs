@@ -29,22 +29,18 @@ namespace FeederCopy.Core.Models.Feeders
                 .Where(rule => rule.Tag.Length > 0)
                 .ToList();
 
-        public static string ToSetting(IEnumerable<BusTagRow> rows, IReadOnlyList<BusTagRule> previous)
+        public static string Toggle(string? setting, string code, string tag, bool handPlaced)
         {
-            List<string> defaults = previous
-                .Where(r => r.Code is null && !r.Exclude)
-                .Select(r => r.Tag)
-                .Distinct(StringComparer.OrdinalIgnoreCase)
+            IReadOnlyList<BusTagRule> rules = ParseRules(setting);
+            bool byDefault = rules.Any(r => r.Code is null && !r.Exclude && string.Equals(r.Tag, tag, StringComparison.OrdinalIgnoreCase));
+            var entries = rules
+                .Where(r => !(string.Equals(r.Code, code, StringComparison.OrdinalIgnoreCase) && string.Equals(r.Tag, tag, StringComparison.OrdinalIgnoreCase)))
+                .Select(Format)
                 .ToList();
-            var entries = new List<string>(defaults);
-            foreach (BusTagRow row in rows.DistinctBy(r => (r.Code.ToUpperInvariant(), r.Tag.ToUpperInvariant())))
-            {
-                bool byDefault = defaults.Contains(row.Tag, StringComparer.OrdinalIgnoreCase);
-                if (row.HandPlaced && !byDefault)
-                    entries.Add($"{row.Code}:{row.Tag}");
-                else if (!row.HandPlaced && byDefault)
-                    entries.Add($"-{row.Code}:{row.Tag}");
-            }
+            if (handPlaced && !byDefault)
+                entries.Add($"{code}:{tag}");
+            else if (!handPlaced && byDefault)
+                entries.Add($"-{code}:{tag}");
             return string.Join(", ", entries);
         }
 
@@ -84,6 +80,9 @@ namespace FeederCopy.Core.Models.Feeders
                 .ThenBy(r => r.Tag, StringComparer.OrdinalIgnoreCase)
                 .ToList();
         }
+
+        private static string Format(BusTagRule rule) =>
+            (rule.Exclude ? "-" : string.Empty) + (rule.Code is null ? rule.Tag : $"{rule.Code}:{rule.Tag}");
 
         private static bool IsRuled(string code, string tag, IReadOnlyList<BusTagRule> rules) =>
             TagsFor(code, rules).Contains(tag, StringComparer.OrdinalIgnoreCase);

@@ -31,6 +31,8 @@ namespace FeederCopy.Core.Presenters.Feeders
 
         public event Action? FeedersChanged;
 
+        public event Action? StatusChanged;
+
         private FeederSummary? Selected => _all.FirstOrDefault(f => f.Id == _selectedId);
 
         public void Load() => Run("Loading feeders", "Could not load the feeders.", Reload);
@@ -131,25 +133,6 @@ namespace FeederCopy.Core.Presenters.Feeders
             });
         }
 
-        public void OnSortClicked()
-        {
-            if (Selected is not { } feeder)
-                return;
-            IReadOnlyList<BusTagRule> tags = BusTags.ParseRules(_settings().HandPlacedBusTags);
-            IReadOnlyList<ConsumerEntry> current = FeederLayout.Arrange(_feeders.GetConsumers(feeder.Id));
-            List<ConsumerEntry> sorted = BusSorter.Sort(current, tags);
-            int moved = BusSorter.MovedRows(current, sorted);
-            if (moved == 0)
-            {
-                _view.ShowInfo($"The bus IDs in {feeder.Name} are already in order.");
-                return;
-            }
-            string tagText = tags.Count == 0 ? string.Empty : " Buses with hand-placed tags stay under their parent bus in the order you placed them.";
-            if (!_view.Confirm("Sort bus IDs", $"Sort the bus IDs in {feeder.Name}? {moved:N0} of {current.Count:N0} rows will move.{tagText}"))
-                return;
-            Change("Sorting bus IDs", "Could not save the sorted list.", () => Save(feeder.Id, sorted));
-        }
-
         public void OnAddClicked(string? busId, string? consumerId, string? placeAfterBus = null)
         {
             if (Selected is not { } feeder)
@@ -214,8 +197,18 @@ namespace FeederCopy.Core.Presenters.Feeders
         {
             if (Selected is null)
                 return;
-            Change("Setting consumer status", "Could not save the change.", () => _feeders.SetActive(consumerId, active), consumerId);
+            bool changed = false;
+            Run("Setting consumer status", "Could not save the change.", () =>
+            {
+                _feeders.SetActive(consumerId, active);
+                ShowSelectedRows();
+                changed = true;
+            });
+            if (changed)
+                StatusChanged?.Invoke();
         }
+
+        public void OnStatusChanged() => Run("Refreshing consumer status", "Could not load the feeder.", ShowSelectedRows);
 
         public void OnRemoveClicked(string consumerId)
         {
@@ -327,6 +320,12 @@ namespace FeederCopy.Core.Presenters.Feeders
                 _selectedId = _all[0].Id;
             _view.ShowFeeders(_all, _selectedId);
             ShowSelected();
+        }
+
+        private void ShowSelectedRows()
+        {
+            if (Selected is { } feeder)
+                _view.ShowConsumerRows(FeederLayout.ToRows(_feeders.GetConsumers(feeder.Id)));
         }
 
         private void ShowSelected()

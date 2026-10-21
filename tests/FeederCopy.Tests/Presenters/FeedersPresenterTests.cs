@@ -14,12 +14,14 @@ namespace FeederCopy.Tests.Presenters
         private readonly FakeErrorLog _log = new();
         private readonly FeedersPresenter _presenter;
         private int _changed;
+        private int _statusChanged;
 
         public FeedersPresenterTests()
         {
             _service = new FeederService(_temp.Db);
             _presenter = new FeedersPresenter(_view, _service, () => AppSettings.Defaults, _log);
             _presenter.FeedersChanged += () => _changed++;
+            _presenter.StatusChanged += () => _statusChanged++;
         }
 
         public void Dispose() => _temp.Dispose();
@@ -366,8 +368,20 @@ namespace FeederCopy.Tests.Presenters
             _presenter.OnSetActiveClicked("c2", false);
             Assert.Equal([E("A", "c1"), new ConsumerEntry("A", "c2", false)], _service.GetConsumers(id));
             Assert.False(_view.Rows[1].Active);
-            Assert.Equal("c2", _view.SelectedConsumer);
-            Assert.Equal(1, _changed);
+            Assert.Equal(1, _view.RowRefreshes);
+            Assert.Equal(1, _statusChanged);
+            Assert.Equal(0, _changed);
+        }
+
+        [Fact]
+        public void StatusChangedElsewhere_RefreshesRowsOnly()
+        {
+            long id = Seed("F", E("A", "c1"));
+            _service.SetActive("c1", false);
+            _presenter.OnStatusChanged();
+            Assert.False(_view.Rows.Single().Active);
+            Assert.Equal(1, _view.RowRefreshes);
+            Assert.Equal(0, _statusChanged);
         }
 
         [Fact]
@@ -388,35 +402,6 @@ namespace FeederCopy.Tests.Presenters
             _view.NextOpenFile = path;
             await _presenter.OnImportClickedAsync();
             Assert.Equal(["Abuyog — new feeder · 2 consumers (1 inactive) · 1 bus"], _view.Preview!.Feeders);
-        }
-
-        [Fact]
-        public void Sort_ConfirmYes_SortsAndSaves()
-        {
-            long id = Seed("F", E("A2", "c1"), E("A1", "c2"));
-            _presenter.OnSortClicked();
-            Assert.Equal(["Sort the bus IDs in F? 1 of 2 rows will move. Buses with hand-placed tags stay under their parent bus in the order you placed them."], _view.ConfirmMessages);
-            Assert.Equal([E("A1", "c2"), E("A2", "c1")], _service.GetConsumers(id));
-            Assert.Equal(1, _changed);
-        }
-
-        [Fact]
-        public void Sort_ConfirmNo_NoChange()
-        {
-            long id = Seed("F", E("A2", "c1"), E("A1", "c2"));
-            _view.ConfirmAnswer = false;
-            _presenter.OnSortClicked();
-            Assert.Equal([E("A2", "c1"), E("A1", "c2")], _service.GetConsumers(id));
-            Assert.Equal(0, _changed);
-        }
-
-        [Fact]
-        public void Sort_AlreadyInOrder_SaysSo()
-        {
-            Seed("F", E("A1", "c1"), E("A2", "c2"));
-            _presenter.OnSortClicked();
-            Assert.Empty(_view.ConfirmMessages);
-            Assert.Equal(["The bus IDs in F are already in order."], _view.Infos);
         }
 
         [Fact]

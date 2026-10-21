@@ -74,6 +74,25 @@ namespace FeederCopy.App.Forms.Feeders
             UpdateSelectionButtons();
         }
 
+        public void ShowConsumerRows(IReadOnlyList<ConsumerRow> rows)
+        {
+            if (rows.Count != _rows.Count)
+            {
+                int firstRow = dgvConsumers.FirstDisplayedScrollingRowIndex;
+                int currentRow = dgvConsumers.CurrentCell?.RowIndex ?? -1;
+                _rows = rows;
+                dgvConsumers.RowCount = 0;
+                dgvConsumers.RowCount = rows.Count;
+                if (rows.Count > 0 && currentRow >= 0)
+                    dgvConsumers.CurrentCell = dgvConsumers.Rows[Math.Min(currentRow, rows.Count - 1)].Cells[colConsumer.Index];
+                if (firstRow >= 0 && rows.Count > 0 && dgvConsumers.DisplayedRowCount(false) > 0)
+                    dgvConsumers.FirstDisplayedScrollingRowIndex = Math.Min(firstRow, rows.Count - 1);
+            }
+            _rows = rows;
+            dgvConsumers.Invalidate();
+            UpdateSelectionButtons();
+        }
+
         public void ShowPreview(ImportPreview preview)
         {
             lblPreviewTitle.Text = preview.Title;
@@ -177,7 +196,6 @@ namespace FeederCopy.App.Forms.Feeders
             AppTheme.StyleSuccessLabel(lblCopied);
             AppTheme.StyleSectionLabel(lblFeederName);
             AppTheme.StyleTextBox(txtRename);
-            AppTheme.StyleOutlineButton(btnSort);
             AppTheme.StyleFieldLabel(lblPlaceAfter);
             AppTheme.StyleComboBox(cboPlaceAfter);
             AppTheme.StyleOutlineButton(btnRename);
@@ -303,7 +321,6 @@ namespace FeederCopy.App.Forms.Feeders
 
         private void btnAdd_Click(object? sender, EventArgs e) => _presenter?.OnAddClicked(cboAddBus.Text, txtAddConsumer.Text, PlaceAfter);
 
-        private void btnSort_Click(object? sender, EventArgs e) => _presenter?.OnSortClicked();
 
         private void txtAddConsumer_KeyDown(object? sender, KeyEventArgs e)
         {

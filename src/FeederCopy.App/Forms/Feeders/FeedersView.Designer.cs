@@ -39,7 +39,6 @@ namespace FeederCopy.App.Forms.Feeders
             lblFeederName = new Label();
             txtRename = new TextBox();
             btnRename = new Button();
-            btnSort = new Button();
             lblPlaceAfter = new Label();
             cboPlaceAfter = new ComboBox();
             btnDelete = new Button();
@@ -277,7 +276,6 @@ namespace FeederCopy.App.Forms.Feeders
             tlpFeederHeader.ColumnStyles.Add(new ColumnStyle());
             tlpFeederHeader.ColumnStyles.Add(new ColumnStyle());
             tlpFeederHeader.Controls.Add(lblFeederName, 0, 0);
-            tlpFeederHeader.Controls.Add(btnSort, 2, 0);
             tlpFeederHeader.Controls.Add(txtRename, 3, 0);
             tlpFeederHeader.Controls.Add(btnRename, 4, 0);
             tlpFeederHeader.Controls.Add(btnDelete, 5, 0);
@@ -368,13 +366,6 @@ namespace FeederCopy.App.Forms.Feeders
             cboPlaceAfter.Name = "cboPlaceAfter";
             cboPlaceAfter.Size = new Size(200, 25);
             cboPlaceAfter.TabIndex = 2;
-            btnSort.AutoSize = true;
-            btnSort.Margin = new Padding(3, 3, 16, 3);
-            btnSort.MinimumSize = new Size(110, 32);
-            btnSort.Name = "btnSort";
-            btnSort.TabIndex = 3;
-            btnSort.Text = "Sort buses";
-            btnSort.Click += btnSort_Click;
             btnAdd.AutoSize = true;
             btnAdd.MinimumSize = new Size(110, 32);
             btnAdd.Name = "btnAdd";
@@ -598,7 +589,6 @@ namespace FeederCopy.App.Forms.Feeders
         private Label lblFeederName;
         private TextBox txtRename;
         private Button btnRename;
-        private Button btnSort;
         private Label lblPlaceAfter;
         private ComboBox cboPlaceAfter;
         private Button btnDelete;

@@ -1,6 +1,7 @@
 using FeederCopy.Core.Models.Billing;
 using FeederCopy.Core.Models.Consumers;
 using FeederCopy.Core.Models.Copy;
+using FeederCopy.Core.Presenters.BusSort;
 using FeederCopy.Core.Presenters.Consumers;
 using FeederCopy.Core.Models.Feeders;
 using FeederCopy.Core.Models.Settings;
@@ -72,6 +73,14 @@ namespace FeederCopy.Tests.Support
             Rows = rows;
             Buses = buses;
             OtherFeeders = otherFeeders;
+        }
+
+        public int RowRefreshes { get; private set; }
+
+        public void ShowConsumerRows(IReadOnlyList<ConsumerRow> rows)
+        {
+            Rows = rows;
+            RowRefreshes++;
         }
 
         public void ShowPreview(ImportPreview preview) => Preview = preview;
@@ -262,16 +271,49 @@ namespace FeederCopy.Tests.Support
         }
 
         public void RestartApplication() => Restarted = true;
+    }
 
-        public IReadOnlyList<string> TagFeeders { get; private set; } = [];
-        public string? TagFilter { get; private set; }
-        public IReadOnlyList<BusTagRow> TagRows { get; private set; } = [];
+    internal sealed class FakeBusSortView : IBusSortView
+    {
+        public IReadOnlyList<FeederSummary> Feeders { get; private set; } = [];
+        public long? SelectedFeederId { get; private set; }
+        public string? Summary { get; private set; }
+        public IReadOnlyList<BusBlockRow> Blocks { get; private set; } = [];
+        public IReadOnlyList<BusTagRow> Tags { get; private set; } = [];
+        public bool CanSort { get; private set; }
+        public string? EmptyMessage { get; private set; }
+        public int PlansShown { get; private set; }
+        public bool ConfirmAnswer { get; set; } = true;
+        public List<string> ConfirmMessages { get; } = [];
+        public List<string> Infos { get; } = [];
+        public List<string> Errors { get; } = [];
 
-        public void ShowBusTags(IReadOnlyList<string> feeders, string? selectedFeeder, IReadOnlyList<BusTagRow> rows)
+        public void ShowFeeders(IReadOnlyList<FeederSummary> feeders, long selectedId)
         {
-            TagFeeders = feeders;
-            TagFilter = selectedFeeder;
-            TagRows = rows;
+            Feeders = feeders;
+            SelectedFeederId = selectedId;
         }
+
+        public void ShowPlan(string summary, IReadOnlyList<BusBlockRow> blocks, IReadOnlyList<BusTagRow> tags, bool canSort)
+        {
+            Summary = summary;
+            Blocks = blocks;
+            Tags = tags;
+            CanSort = canSort;
+            EmptyMessage = null;
+            PlansShown++;
+        }
+
+        public void ShowEmpty(string message) => EmptyMessage = message;
+
+        public bool Confirm(string title, string message)
+        {
+            ConfirmMessages.Add(message);
+            return ConfirmAnswer;
+        }
+
+        public void ShowInfo(string message) => Infos.Add(message);
+
+        public void ShowError(string message) => Errors.Add(message);
     }
 }

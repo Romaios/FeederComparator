@@ -19,6 +19,7 @@ namespace FeederCopy.App.Forms.Shell
             rdoFeeders = new RadioButton();
             rdoCopy = new RadioButton();
             rdoConsumers = new RadioButton();
+            rdoBusSort = new RadioButton();
             rdoSettings = new RadioButton();
             rdoUpdates = new RadioButton();
             tlpWarning = new TableLayoutPanel();
@@ -29,6 +30,7 @@ namespace FeederCopy.App.Forms.Shell
             feedersView = new FeederCopy.App.Forms.Feeders.FeedersView();
             copyView = new FeederCopy.App.Forms.Copy.CopyView();
             consumersView = new FeederCopy.App.Forms.Consumers.ConsumersView();
+            busSortView = new FeederCopy.App.Forms.BusSort.BusSortView();
             settingsView = new FeederCopy.App.Forms.Settings.SettingsView();
             updatesView = new FeederCopy.App.Forms.Updates.UpdatesView();
             statusStrip = new StatusStrip();
@@ -54,7 +56,8 @@ namespace FeederCopy.App.Forms.Shell
             tlpShell.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
             tlpShell.Size = new Size(1200, 738);
             tlpShell.TabIndex = 0;
-            tlpHeader.ColumnCount = 7;
+            tlpHeader.ColumnCount = 8;
+            tlpHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 130F));
             tlpHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 130F));
             tlpHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 130F));
             tlpHeader.ColumnStyles.Add(new ColumnStyle());
@@ -66,8 +69,9 @@ namespace FeederCopy.App.Forms.Shell
             tlpHeader.Controls.Add(rdoFeeders, 1, 0);
             tlpHeader.Controls.Add(rdoCopy, 2, 0);
             tlpHeader.Controls.Add(rdoConsumers, 3, 0);
-            tlpHeader.Controls.Add(rdoSettings, 4, 0);
-            tlpHeader.Controls.Add(rdoUpdates, 5, 0);
+            tlpHeader.Controls.Add(rdoBusSort, 4, 0);
+            tlpHeader.Controls.Add(rdoSettings, 5, 0);
+            tlpHeader.Controls.Add(rdoUpdates, 6, 0);
             tlpHeader.Dock = DockStyle.Fill;
             tlpHeader.Margin = new Padding(0);
             tlpHeader.Name = "tlpHeader";
@@ -100,16 +104,22 @@ namespace FeederCopy.App.Forms.Shell
             rdoConsumers.TabIndex = 2;
             rdoConsumers.Text = "Consumers";
             rdoConsumers.CheckedChanged += navTab_CheckedChanged;
+            rdoBusSort.Dock = DockStyle.Fill;
+            rdoBusSort.Margin = new Padding(0);
+            rdoBusSort.Name = "rdoBusSort";
+            rdoBusSort.TabIndex = 3;
+            rdoBusSort.Text = "Bus Sorting";
+            rdoBusSort.CheckedChanged += navTab_CheckedChanged;
             rdoSettings.Dock = DockStyle.Fill;
             rdoSettings.Margin = new Padding(0);
             rdoSettings.Name = "rdoSettings";
-            rdoSettings.TabIndex = 3;
+            rdoSettings.TabIndex = 4;
             rdoSettings.Text = "Settings";
             rdoSettings.CheckedChanged += navTab_CheckedChanged;
             rdoUpdates.Dock = DockStyle.Fill;
             rdoUpdates.Margin = new Padding(0);
             rdoUpdates.Name = "rdoUpdates";
-            rdoUpdates.TabIndex = 4;
+            rdoUpdates.TabIndex = 5;
             rdoUpdates.Text = "Updates";
             rdoUpdates.CheckedChanged += navTab_CheckedChanged;
             tlpWarning.AutoSize = true;
@@ -147,6 +157,7 @@ namespace FeederCopy.App.Forms.Shell
             pnlContent.Controls.Add(feedersView);
             pnlContent.Controls.Add(copyView);
             pnlContent.Controls.Add(consumersView);
+            pnlContent.Controls.Add(busSortView);
             pnlContent.Controls.Add(settingsView);
             pnlContent.Controls.Add(updatesView);
             pnlContent.Dock = DockStyle.Fill;
@@ -164,6 +175,10 @@ namespace FeederCopy.App.Forms.Shell
             consumersView.Name = "consumersView";
             consumersView.TabIndex = 3;
             consumersView.Visible = false;
+            busSortView.Dock = DockStyle.Fill;
+            busSortView.Name = "busSortView";
+            busSortView.TabIndex = 4;
+            busSortView.Visible = false;
             settingsView.Dock = DockStyle.Fill;
             settingsView.Name = "settingsView";
             settingsView.TabIndex = 2;
@@ -210,6 +225,7 @@ namespace FeederCopy.App.Forms.Shell
         private RadioButton rdoFeeders;
         private RadioButton rdoCopy;
         private RadioButton rdoConsumers;
+        private RadioButton rdoBusSort;
         private RadioButton rdoSettings;
         private RadioButton rdoUpdates;
         private TableLayoutPanel tlpWarning;
@@ -220,6 +236,7 @@ namespace FeederCopy.App.Forms.Shell
         private FeederCopy.App.Forms.Feeders.FeedersView feedersView;
         private FeederCopy.App.Forms.Copy.CopyView copyView;
         private FeederCopy.App.Forms.Consumers.ConsumersView consumersView;
+        private FeederCopy.App.Forms.BusSort.BusSortView busSortView;
         private FeederCopy.App.Forms.Settings.SettingsView settingsView;
         private FeederCopy.App.Forms.Updates.UpdatesView updatesView;
         private StatusStrip statusStrip;
