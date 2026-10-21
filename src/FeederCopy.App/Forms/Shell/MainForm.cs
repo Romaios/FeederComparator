@@ -23,13 +23,16 @@ namespace FeederCopy.App.Forms.Shell
             ApplyTheme();
             Text = $"{Dialogs.AppName} {typeof(MainForm).Assembly.GetName().Version?.ToString(3)}";
 
-            _settings = new SettingsPresenter(settingsView, services.Settings);
+            _settings = new SettingsPresenter(settingsView, services.Settings, () => services.Feeders.GetAllConsumers()
+                .Where(c => c.Entry.BusId is not null)
+                .Select(c => (c.FeederName, c.Entry.BusId!)));
             _feeders = new FeedersPresenter(feedersView, services.Feeders, () => _settings.Current, services.Log);
             _copy = new CopyPresenter(copyView, services.Feeders, services.Readings, services.AsBilled, services.Exporter,
                 () => _settings.Current, _settings.RememberExportStyle, services.Log);
             _consumers = new ConsumersPresenter(consumersView, services.Feeders, services.Readings, () => DateTime.Today.Year, services.Log);
             _updates = new UpdatesPresenter(updatesView, services.Updater, services.UpdateSettings, services.Log);
             _feeders.FeedersChanged += _copy.OnFeedersChanged;
+            _feeders.FeedersChanged += _settings.OnFeedersChanged;
             _feeders.FeedersChanged += _consumers.OnDataChanged;
             _copy.ReadingsSaved += _consumers.OnDataChanged;
             _consumers.StatusChanged += _feeders.Load;

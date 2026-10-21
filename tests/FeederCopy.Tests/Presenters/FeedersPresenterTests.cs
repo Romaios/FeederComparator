@@ -394,7 +394,7 @@ namespace FeederCopy.Tests.Presenters
         {
             long id = Seed("F", E("A2", "c1"), E("A1", "c2"));
             _presenter.OnSortClicked();
-            Assert.Equal(["Sort the bus IDs in F? 1 of 2 rows will move. Buses with sp/jnc stay under their parent bus in the order you placed them."], _view.ConfirmMessages);
+            Assert.Equal(["Sort the bus IDs in F? 1 of 2 rows will move. Buses with hand-placed tags stay under their parent bus in the order you placed them."], _view.ConfirmMessages);
             Assert.Equal([E("A1", "c2"), E("A2", "c1")], _service.GetConsumers(id));
             Assert.Equal(1, _changed);
         }
@@ -423,7 +423,7 @@ namespace FeederCopy.Tests.Presenters
         {
             long id = Seed("F", E("A1", "c1"), E("A2", "c2"));
             _presenter.OnAddClicked("A1jnc1", "c9", null);
-            Assert.Equal("A1jnc1 has sp/jnc. Choose where it goes in 'Place new bus after'.", _view.AddError);
+            Assert.Equal("A1jnc1 has a hand-placed tag (jnc). Choose where it goes in 'Place new bus after'.", _view.AddError);
             Assert.Equal(2, _service.GetConsumers(id).Count);
         }
 

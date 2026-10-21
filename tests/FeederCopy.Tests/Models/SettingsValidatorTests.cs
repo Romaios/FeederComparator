@@ -61,6 +61,20 @@ namespace FeederCopy.Tests.Models
         }
 
         [Fact]
+        public void Validate_PerCodeTags_Ok()
+        {
+            AppSettings s = AppSettings.Defaults with { HandPlacedBusTags = "AFSEC:jnc, CF-PSEC:sp" };
+            Assert.Empty(SettingsValidator.Validate(s));
+        }
+
+        [Fact]
+        public void Validate_FeederCodeWithSpace_Error()
+        {
+            AppSettings s = AppSettings.Defaults with { HandPlacedBusTags = "AF#SEC:jnc" };
+            Assert.Contains("Feeder code 'AF#SEC' can only contain letters and dashes.", SettingsValidator.Validate(s));
+        }
+
+        [Fact]
         public void Validate_BusTagsLetters_Ok()
         {
             AppSettings s = AppSettings.Defaults with { HandPlacedBusTags = "sp, jnc, tap" };

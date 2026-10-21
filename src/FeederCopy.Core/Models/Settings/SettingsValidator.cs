@@ -24,8 +24,13 @@ namespace FeederCopy.Core.Models.Settings
             if (IsBlank(asBilled.BillMonth))
                 errors.Add("Enter the As-Billed column name for BILLMONTH.");
 
-            foreach (string tag in Feeders.BusSorter.ParseTags(settings.HandPlacedBusTags).Where(t => !t.All(char.IsLetter)))
-                errors.Add($"Bus tag '{tag}' can only contain letters.");
+            foreach (Feeders.BusTagRule rule in Feeders.BusTags.ParseRules(settings.HandPlacedBusTags))
+            {
+                if (rule.Code is not null && !rule.Code.All(c => char.IsLetter(c) || c == '-'))
+                    errors.Add($"Feeder code '{rule.Code}' can only contain letters and dashes.");
+                if (!rule.Tag.All(char.IsLetter))
+                    errors.Add($"Bus tag '{rule.Tag}' can only contain letters.");
+            }
 
             string[] names = [asBilled.AccountNumber, asBilled.KwhUsed, asBilled.BillMonth];
             List<string> filled = names.Where(n => !IsBlank(n)).Select(n => n.Trim()).ToList();

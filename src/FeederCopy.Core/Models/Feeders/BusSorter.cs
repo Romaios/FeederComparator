@@ -1,12 +1,10 @@
-using System.Text.RegularExpressions;
-
 namespace FeederCopy.Core.Models.Feeders
 {
     public static class BusSorter
     {
         private sealed record Group(IReadOnlyList<string> Key, bool HandPlaced, List<ConsumerEntry> Rows);
 
-        public static List<ConsumerEntry> Sort(IReadOnlyList<ConsumerEntry> entries, IReadOnlyList<string> handPlacedTags)
+        public static List<ConsumerEntry> Sort(IReadOnlyList<ConsumerEntry> entries, IReadOnlyList<BusTagRule> handPlacedTags)
         {
             List<ConsumerEntry> arranged = FeederLayout.Arrange(entries);
             var groups = new List<Group>();
@@ -47,11 +45,7 @@ namespace FeederCopy.Core.Models.Feeders
                 .ToList();
         }
 
-        public static IReadOnlyList<string> ParseTags(string? text) =>
-            (text ?? string.Empty).Split([',', ';', ' '], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-
-        public static bool IsHandPlaced(string bus, IReadOnlyList<string> handPlacedTags) =>
-            TagPattern(handPlacedTags) is Regex pattern && pattern.IsMatch(bus);
+        public static bool IsHandPlaced(string bus, IReadOnlyList<BusTagRule> handPlacedTags) => BusTags.Matches(bus, handPlacedTags);
 
         public static int MovedRows(IReadOnlyList<ConsumerEntry> before, IReadOnlyList<ConsumerEntry> after)
         {
@@ -109,14 +103,8 @@ namespace FeederCopy.Core.Models.Feeders
             return result;
         }
 
-        private static string SortablePart(string bus, IReadOnlyList<string> handPlacedTags) =>
-            TagPattern(handPlacedTags)?.Match(bus) is { Success: true } match ? bus[..match.Index] : bus;
-
-        private static Regex? TagPattern(IReadOnlyList<string> tags)
-        {
-            List<string> words = tags.Select(t => t.Trim()).Where(t => t.Length > 0).Select(Regex.Escape).ToList();
-            return words.Count == 0 ? null : new Regex($"(?:{string.Join("|", words)})(?=[0-9])", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
-        }
+        private static string SortablePart(string bus, IReadOnlyList<BusTagRule> handPlacedTags) =>
+            BusTags.MatchIndex(bus, handPlacedTags) is int index ? bus[..index] : bus;
 
         private static int CompareKeys(IReadOnlyList<string> a, IReadOnlyList<string> b)
         {

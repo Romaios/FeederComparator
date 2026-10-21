@@ -257,5 +257,16 @@ namespace FeederCopy.Tests.Support
         }
 
         public void RestartApplication() => Restarted = true;
+
+        public IReadOnlyList<string> TagFeeders { get; private set; } = [];
+        public string? TagFilter { get; private set; }
+        public IReadOnlyList<BusTagRow> TagRows { get; private set; } = [];
+
+        public void ShowBusTags(IReadOnlyList<string> feeders, string? selectedFeeder, IReadOnlyList<BusTagRow> rows)
+        {
+            TagFeeders = feeders;
+            TagFilter = selectedFeeder;
+            TagRows = rows;
+        }
     }
 }

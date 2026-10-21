@@ -4,7 +4,7 @@ namespace FeederCopy.Tests.Models
 {
     public sealed class BusSorterTests
     {
-        private static readonly string[] Tags = ["sp", "jnc"];
+        private static readonly IReadOnlyList<BusTagRule> Tags = BusTags.ParseRules("sp, jnc");
 
         private static ConsumerEntry E(string? bus, string id) => new(bus, id);
 
