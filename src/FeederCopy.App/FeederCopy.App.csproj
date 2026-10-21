@@ -5,10 +5,14 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Velopack" Version="1.2.*" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Update="Forms\Shell\MainForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Update="Forms\Feeders\FeedersView.cs;Forms\Copy\CopyView.cs;Forms\Consumers\ConsumersView.cs;Forms\Settings\SettingsView.cs">
+    <Compile Update="Forms\Feeders\FeedersView.cs;Forms\Copy\CopyView.cs;Forms\Consumers\ConsumersView.cs;Forms\Settings\SettingsView.cs;Forms\Updates\UpdatesView.cs">
       <SubType>UserControl</SubType>
     </Compile>
   </ItemGroup>
@@ -20,7 +24,7 @@
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>FeederCopy</AssemblyName>
-    <Version>1.6.1</Version>
+    <Version>1.7.0</Version>
     <Product>Feeder kWh Copy</Product>
   </PropertyGroup>
 

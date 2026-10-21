@@ -1,5 +1,7 @@
 using FeederCopy.App.Forms.Shell;
+using FeederCopy.App.Services.Updates;
 using FeederCopy.App.Utils;
+using Velopack;
 using FeederCopy.Core.Services.Data;
 using FeederCopy.Core.Services.Export;
 using FeederCopy.Core.Services.Import;
@@ -13,8 +15,9 @@ namespace FeederCopy.App
         [STAThread]
         private static void Main()
         {
+            VelopackApp.Build().Run();
             ApplicationConfiguration.Initialize();
-            string folder = AppContext.BaseDirectory;
+            string folder = AppPaths.DataFolder;
             var log = new FileErrorLog(Path.Combine(folder, "logs"));
 
             Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
@@ -41,6 +44,8 @@ namespace FeederCopy.App
                     new AsBilledReader(),
                     new FeederExporter(),
                     new SettingsStore(Path.Combine(folder, "settings.json")),
+                    new VelopackUpdateService(),
+                    new UpdateSettingsStore(Path.Combine(folder, "updater-settings.json")),
                     log);
             }
             catch (Exception ex)
@@ -51,6 +56,7 @@ namespace FeederCopy.App
                 return;
             }
 
+            AppTheme.Use(services.Settings.Load().Settings.Theme);
             Application.Run(new MainForm(services));
         }
     }

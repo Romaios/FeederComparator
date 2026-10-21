@@ -1,0 +1,59 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Get version from tag
+        id: version
+        shell: bash
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Test
+        run: dotnet test tests/FeederCopy.Tests -c Release
+
+      - name: Publish app
+        run: dotnet publish src/FeederCopy.App -c Release -r win-x64 --self-contained -p:Version=${{ steps.version.outputs.VERSION }} -o ./publish
+
+      - name: Install vpk
+        run: dotnet tool install -g vpk
+
+      - name: Package with Velopack
+        run: vpk pack --packId FeederCopy --packVersion ${{ steps.version.outputs.VERSION }} --packDir ./publish --mainExe FeederCopy.exe --packTitle "Feeder kWh Copy"
+
+      - name: Unpack portable build
+        shell: pwsh
+        run: Expand-Archive -Path Releases/FeederCopy-win-Portable.zip -DestinationPath installer/portable -Force
+
+      - name: Install Inno Setup
+        run: choco install innosetup -y --no-progress
+
+      - name: Build folder-choice installer
+        shell: pwsh
+        run: '& "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" "/DAppVersion=${{ steps.version.outputs.VERSION }}" "/DSourceDir=${{ github.workspace }}\installer\portable" "/DOutputDir=${{ github.workspace }}\Releases\installer" installer\FeederCopy.iss'
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            Releases/installer/FeederCopy-Setup.exe
+            Releases/FeederCopy-win-Portable.zip
+            Releases/*.nupkg
+            Releases/releases.win.json
+            Releases/assets.win.json
+            Releases/RELEASES
+          generate_release_notes: true

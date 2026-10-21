@@ -56,6 +56,7 @@ namespace FeederCopy.Tests.Services
             Assert.Null(result.Problem);
             Assert.Equal("Status", result.Settings.Feeder.Status);
             Assert.Equal("sp, jnc", result.Settings.HandPlacedBusTags);
+            Assert.Equal(ThemeMode.Light, result.Settings.Theme);
         }
 
         [Fact]

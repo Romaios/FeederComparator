@@ -1,32 +1,135 @@
 using System.Reflection;
+using System.Runtime.InteropServices;
+using FeederCopy.Core.Models.Settings;
 
 namespace FeederCopy.App.Utils
 {
     public static class AppTheme
     {
-        public static readonly Color Primary = Color.FromArgb(20, 77, 91);
-        public static readonly Color PrimaryDark = Color.FromArgb(11, 43, 57);
-        public static readonly Color PrimaryLight = Color.FromArgb(221, 236, 239);
-        public static readonly Color Accent = Color.FromArgb(40, 116, 133);
-        public static readonly Color AccentLight = Color.FromArgb(229, 244, 246);
-        public static readonly Color Background = Color.FromArgb(240, 244, 246);
-        public static readonly Color CardBackground = Color.White;
-        public static readonly Color SurfaceAlt = Color.FromArgb(235, 242, 244);
-        public static readonly Color ControlSurface = Color.FromArgb(250, 253, 253);
-        public static readonly Color OutlineButtonBack = Color.FromArgb(247, 251, 252);
-        public static readonly Color ButtonBorder = Color.FromArgb(177, 195, 202);
-        public static readonly Color Border = Color.FromArgb(207, 218, 222);
-        public static readonly Color AltRow = Color.FromArgb(247, 250, 251);
-        public static readonly Color TextPrimary = Color.FromArgb(22, 36, 43);
-        public static readonly Color TextSecondary = Color.FromArgb(64, 82, 91);
-        public static readonly Color TextMuted = Color.FromArgb(104, 123, 132);
-        public static readonly Color Success = Color.FromArgb(35, 126, 93);
-        public static readonly Color Warning = Color.FromArgb(176, 111, 28);
-        public static readonly Color WarningLight = Color.FromArgb(250, 237, 211);
-        public static readonly Color Danger = Color.FromArgb(177, 58, 58);
-        public static readonly Color DangerHover = Color.FromArgb(194, 70, 70);
-        public static readonly Color DangerPressed = Color.FromArgb(138, 40, 40);
-        public static readonly Color ProblemFill = Color.FromArgb(255, 242, 204);
+        private sealed class Palette
+        {
+            public required Color Primary { get; init; }
+            public required Color PrimaryDark { get; init; }
+            public required Color PrimaryLight { get; init; }
+            public required Color Accent { get; init; }
+            public required Color AccentLight { get; init; }
+            public required Color Highlight { get; init; }
+            public required Color Background { get; init; }
+            public required Color CardBackground { get; init; }
+            public required Color SurfaceAlt { get; init; }
+            public required Color ControlSurface { get; init; }
+            public required Color InputBackground { get; init; }
+            public required Color OutlineButtonBack { get; init; }
+            public required Color ButtonBorder { get; init; }
+            public required Color Border { get; init; }
+            public required Color AltRow { get; init; }
+            public required Color TextPrimary { get; init; }
+            public required Color TextSecondary { get; init; }
+            public required Color TextMuted { get; init; }
+            public required Color Success { get; init; }
+            public required Color Warning { get; init; }
+            public required Color WarningLight { get; init; }
+            public required Color Danger { get; init; }
+            public required Color DangerHover { get; init; }
+            public required Color DangerPressed { get; init; }
+            public required Color ProblemFill { get; init; }
+            public required Color ProblemText { get; init; }
+        }
+
+        private static readonly Palette LightPalette = new()
+        {
+            Primary = Color.FromArgb(20, 77, 91),
+            PrimaryDark = Color.FromArgb(11, 43, 57),
+            PrimaryLight = Color.FromArgb(221, 236, 239),
+            Accent = Color.FromArgb(40, 116, 133),
+            AccentLight = Color.FromArgb(229, 244, 246),
+            Highlight = Color.FromArgb(20, 77, 91),
+            Background = Color.FromArgb(240, 244, 246),
+            CardBackground = Color.White,
+            SurfaceAlt = Color.FromArgb(235, 242, 244),
+            ControlSurface = Color.FromArgb(250, 253, 253),
+            InputBackground = Color.White,
+            OutlineButtonBack = Color.FromArgb(247, 251, 252),
+            ButtonBorder = Color.FromArgb(177, 195, 202),
+            Border = Color.FromArgb(207, 218, 222),
+            AltRow = Color.FromArgb(247, 250, 251),
+            TextPrimary = Color.FromArgb(22, 36, 43),
+            TextSecondary = Color.FromArgb(64, 82, 91),
+            TextMuted = Color.FromArgb(104, 123, 132),
+            Success = Color.FromArgb(35, 126, 93),
+            Warning = Color.FromArgb(176, 111, 28),
+            WarningLight = Color.FromArgb(250, 237, 211),
+            Danger = Color.FromArgb(177, 58, 58),
+            DangerHover = Color.FromArgb(194, 70, 70),
+            DangerPressed = Color.FromArgb(138, 40, 40),
+            ProblemFill = Color.FromArgb(255, 242, 204),
+            ProblemText = Color.FromArgb(22, 36, 43),
+        };
+
+        private static readonly Palette DarkPalette = new()
+        {
+            Primary = Color.FromArgb(32, 120, 138),
+            PrimaryDark = Color.FromArgb(18, 78, 92),
+            PrimaryLight = Color.FromArgb(30, 70, 80),
+            Accent = Color.FromArgb(48, 144, 163),
+            AccentLight = Color.FromArgb(36, 60, 68),
+            Highlight = Color.FromArgb(110, 200, 216),
+            Background = Color.FromArgb(16, 23, 27),
+            CardBackground = Color.FromArgb(27, 37, 43),
+            SurfaceAlt = Color.FromArgb(36, 49, 56),
+            ControlSurface = Color.FromArgb(32, 44, 51),
+            InputBackground = Color.FromArgb(22, 31, 36),
+            OutlineButtonBack = Color.FromArgb(32, 44, 51),
+            ButtonBorder = Color.FromArgb(70, 90, 99),
+            Border = Color.FromArgb(52, 68, 76),
+            AltRow = Color.FromArgb(31, 42, 48),
+            TextPrimary = Color.FromArgb(228, 236, 240),
+            TextSecondary = Color.FromArgb(172, 188, 196),
+            TextMuted = Color.FromArgb(126, 144, 153),
+            Success = Color.FromArgb(78, 196, 146),
+            Warning = Color.FromArgb(230, 162, 64),
+            WarningLight = Color.FromArgb(66, 52, 26),
+            Danger = Color.FromArgb(236, 104, 104),
+            DangerHover = Color.FromArgb(214, 88, 88),
+            DangerPressed = Color.FromArgb(170, 60, 60),
+            ProblemFill = Color.FromArgb(84, 64, 24),
+            ProblemText = Color.FromArgb(250, 226, 170),
+        };
+
+        private static Palette _palette = LightPalette;
+
+        public static bool IsDark { get; private set; }
+
+        public static void Use(ThemeMode theme)
+        {
+            IsDark = theme == ThemeMode.Dark;
+            _palette = IsDark ? DarkPalette : LightPalette;
+        }
+
+        public static Color Primary => _palette.Primary;
+        public static Color PrimaryDark => _palette.PrimaryDark;
+        public static Color PrimaryLight => _palette.PrimaryLight;
+        public static Color Accent => _palette.Accent;
+        public static Color AccentLight => _palette.AccentLight;
+        public static Color Highlight => _palette.Highlight;
+        public static Color Background => _palette.Background;
+        public static Color CardBackground => _palette.CardBackground;
+        public static Color SurfaceAlt => _palette.SurfaceAlt;
+        public static Color ControlSurface => _palette.ControlSurface;
+        public static Color OutlineButtonBack => _palette.OutlineButtonBack;
+        public static Color ButtonBorder => _palette.ButtonBorder;
+        public static Color Border => _palette.Border;
+        public static Color AltRow => _palette.AltRow;
+        public static Color TextPrimary => _palette.TextPrimary;
+        public static Color TextSecondary => _palette.TextSecondary;
+        public static Color TextMuted => _palette.TextMuted;
+        public static Color Success => _palette.Success;
+        public static Color Warning => _palette.Warning;
+        public static Color WarningLight => _palette.WarningLight;
+        public static Color Danger => _palette.Danger;
+        public static Color DangerHover => _palette.DangerHover;
+        public static Color DangerPressed => _palette.DangerPressed;
+        public static Color ProblemFill => _palette.ProblemFill;
 
         public static readonly Font HeadingFont = new("Bahnschrift SemiBold", 12.5F);
         public static readonly Font TitleFont = new("Bahnschrift SemiBold", 15F);
@@ -47,6 +150,10 @@ namespace FeederCopy.App.Utils
             form.BackColor = Background;
             form.ForeColor = TextPrimary;
             form.Font = BodyFont;
+            form.HandleCreated -= ApplyTitleBar;
+            form.HandleCreated += ApplyTitleBar;
+            if (form.IsHandleCreated)
+                ApplyTitleBar(form, EventArgs.Empty);
         }
 
         public static void StyleView(Control view)
@@ -95,11 +202,21 @@ namespace FeederCopy.App.Utils
 
         public static void StyleComboBox(ComboBox comboBox)
         {
-            comboBox.FlatStyle = FlatStyle.System;
+            comboBox.FlatStyle = IsDark ? FlatStyle.Standard : FlatStyle.System;
             comboBox.Font = BodyFont;
             comboBox.ForeColor = TextPrimary;
             comboBox.BackColor = ControlSurface;
-            comboBox.MaxDropDownItems = 12;
+            comboBox.MaxDropDownItems = ComboVisibleItems;
+            if (!IsDark)
+                return;
+            if (comboBox.DropDownStyle == ComboBoxStyle.DropDownList)
+            {
+                comboBox.DrawMode = DrawMode.OwnerDrawFixed;
+                comboBox.DrawItem -= DrawComboItem;
+                comboBox.DrawItem += DrawComboItem;
+            }
+            DarkComboPainter.Attach(comboBox);
+            ApplyDarkControlTheme(comboBox, "DarkMode_CFD");
         }
 
         public static void StyleTextBox(TextBox textBox)
@@ -107,14 +224,14 @@ namespace FeederCopy.App.Utils
             textBox.BorderStyle = BorderStyle.FixedSingle;
             textBox.Font = BodyFont;
             textBox.ForeColor = TextPrimary;
-            textBox.BackColor = Color.White;
+            textBox.BackColor = _palette.InputBackground;
         }
 
         public static void StyleNumeric(NumericUpDown numeric)
         {
             numeric.Font = BodyFont;
             numeric.ForeColor = TextPrimary;
-            numeric.BackColor = Color.White;
+            numeric.BackColor = _palette.InputBackground;
             numeric.BorderStyle = BorderStyle.FixedSingle;
         }
 
@@ -258,6 +375,7 @@ namespace FeederCopy.App.Utils
             grid.RowTemplate.Height = 30;
             grid.EnableHeadersVisualStyles = false;
             DoubleBufferedProperty?.SetValue(grid, true);
+            ApplyDarkControlTheme(grid, "DarkMode_Explorer");
         }
 
         public static void AlignRight(DataGridViewColumn column) =>
@@ -273,6 +391,8 @@ namespace FeederCopy.App.Utils
         {
             style.BackColor = ProblemFill;
             style.SelectionBackColor = ProblemFill;
+            style.ForeColor = _palette.ProblemText;
+            style.SelectionForeColor = _palette.ProblemText;
         }
 
         public static void StyleListBox(ListBox listBox)
@@ -282,6 +402,7 @@ namespace FeederCopy.App.Utils
             listBox.ForeColor = TextPrimary;
             listBox.Font = BodyFont;
             listBox.IntegralHeight = false;
+            ApplyDarkControlTheme(listBox, "DarkMode_Explorer");
         }
 
         public static void StyleSummaryBox(TextBox textBox)
@@ -290,6 +411,50 @@ namespace FeederCopy.App.Utils
             textBox.BackColor = CardBackground;
             textBox.ForeColor = TextPrimary;
             textBox.Font = MonoFont;
+        }
+
+        private const int ComboVisibleItems = 12;
+        private const int DwmUseImmersiveDarkMode = 20;
+
+        [DllImport("uxtheme.dll", CharSet = CharSet.Unicode)]
+        private static extern int SetWindowTheme(IntPtr hWnd, string pszSubAppName, string? pszSubIdList);
+
+        [DllImport("dwmapi.dll")]
+        private static extern int DwmSetWindowAttribute(IntPtr hWnd, int attribute, ref int value, int size);
+
+        private static void ApplyTitleBar(object? sender, EventArgs e)
+        {
+            if (sender is not Form form)
+                return;
+            int dark = IsDark ? 1 : 0;
+            _ = DwmSetWindowAttribute(form.Handle, DwmUseImmersiveDarkMode, ref dark, sizeof(int));
+        }
+
+        private static void ApplyDarkControlTheme(Control control, string theme)
+        {
+            if (!IsDark)
+                return;
+            void Apply(object? sender, EventArgs e) => _ = SetWindowTheme(control.Handle, theme, null);
+            control.HandleCreated += Apply;
+            if (control.IsHandleCreated)
+                Apply(control, EventArgs.Empty);
+        }
+
+        private static void DrawComboItem(object? sender, DrawItemEventArgs e)
+        {
+            if (sender is not ComboBox combo)
+                return;
+            bool edit = (e.State & DrawItemState.ComboBoxEdit) != 0;
+            bool selected = !edit && (e.State & DrawItemState.Selected) != 0;
+            Color back = selected ? Primary : ControlSurface;
+            Color fore = selected ? Color.White : combo.Enabled ? TextPrimary : TextMuted;
+            using (var brush = new SolidBrush(back))
+                e.Graphics.FillRectangle(brush, e.Bounds);
+            if (e.Index < 0)
+                return;
+            var text = new Rectangle(e.Bounds.Left + 4, e.Bounds.Top, e.Bounds.Width - 6, e.Bounds.Height);
+            TextRenderer.DrawText(e.Graphics, combo.GetItemText(combo.Items[e.Index]), combo.Font, text, fore,
+                TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix | TextFormatFlags.SingleLine | TextFormatFlags.EndEllipsis);
         }
 
         private static void PaintNavTab(object? sender, EventArgs e)

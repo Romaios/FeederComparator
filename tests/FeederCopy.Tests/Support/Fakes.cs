@@ -16,6 +16,8 @@ namespace FeederCopy.Tests.Support
     {
         public List<(string Context, Exception Exception)> Entries { get; } = [];
 
+        public IEnumerable<string> Contexts => Entries.Select(e => e.Context);
+
         public void Error(string context, Exception exception) => Entries.Add((context, exception));
     }
 
@@ -243,5 +245,17 @@ namespace FeederCopy.Tests.Support
         public void ShowValidation(IReadOnlyList<string> errors) => Validation = errors;
 
         public void ShowSaved() => SavedCount++;
+
+        public bool ConfirmAnswer { get; set; } = true;
+        public List<string> Confirms { get; } = [];
+        public bool Restarted { get; private set; }
+
+        public bool Confirm(string title, string message)
+        {
+            Confirms.Add(message);
+            return ConfirmAnswer;
+        }
+
+        public void RestartApplication() => Restarted = true;
     }
 }

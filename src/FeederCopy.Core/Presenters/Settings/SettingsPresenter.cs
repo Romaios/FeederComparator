@@ -14,6 +14,8 @@ namespace FeederCopy.Core.Presenters.Settings
             _store = store;
         }
 
+        private ThemeMode _appliedTheme = ThemeMode.Light;
+
         public AppSettings Current { get; private set; } = AppSettings.Defaults;
 
         public event Action? SettingsChanged;
@@ -22,6 +24,7 @@ namespace FeederCopy.Core.Presenters.Settings
         {
             SettingsLoadResult result = _store.Load();
             Current = result.Settings;
+            _appliedTheme = Current.Theme;
             _view.ShowSettings(Current);
             return result.Problem;
         }
@@ -38,6 +41,10 @@ namespace FeederCopy.Core.Presenters.Settings
             Current = entered;
             _view.ShowSaved();
             SettingsChanged?.Invoke();
+
+            if (entered.Theme != _appliedTheme
+                && _view.Confirm("Theme", $"{entered.Theme} mode is saved. Restart the program now to switch?\n\nChoose No to switch the next time you open the program."))
+                _view.RestartApplication();
         }
 
         public void OnRevertClicked()

@@ -8,5 +8,7 @@ namespace FeederCopy.Core.Presenters.Settings
         AppSettings ReadSettings();
         void ShowValidation(IReadOnlyList<string> errors);
         void ShowSaved();
+        bool Confirm(string title, string message);
+        void RestartApplication();
     }
 }

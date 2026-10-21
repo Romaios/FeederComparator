@@ -49,6 +49,38 @@ namespace FeederCopy.Tests.Presenters
         }
 
         [Fact]
+        public void Save_ThemeChanged_ConfirmYes_Restarts()
+        {
+            _presenter.Load();
+            _view.Entered = AppSettings.Defaults with { Theme = ThemeMode.Dark };
+            _presenter.OnSaveClicked();
+            Assert.Equal(["Dark mode is saved. Restart the program now to switch?\n\nChoose No to switch the next time you open the program."], _view.Confirms);
+            Assert.True(_view.Restarted);
+            Assert.Equal(ThemeMode.Dark, _store.Saved.Single().Theme);
+        }
+
+        [Fact]
+        public void Save_ThemeChanged_ConfirmNo_SavesWithoutRestart()
+        {
+            _presenter.Load();
+            _view.ConfirmAnswer = false;
+            _view.Entered = AppSettings.Defaults with { Theme = ThemeMode.Dark };
+            _presenter.OnSaveClicked();
+            Assert.False(_view.Restarted);
+            Assert.Equal(ThemeMode.Dark, _presenter.Current.Theme);
+        }
+
+        [Fact]
+        public void Save_ThemeUnchanged_NoPrompt()
+        {
+            _presenter.Load();
+            _view.Entered = Custom;
+            _presenter.OnSaveClicked();
+            Assert.Empty(_view.Confirms);
+            Assert.False(_view.Restarted);
+        }
+
+        [Fact]
         public void Revert_ShowsCurrentWithoutSaving()
         {
             _presenter.Load();

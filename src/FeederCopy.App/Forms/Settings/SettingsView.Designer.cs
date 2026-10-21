@@ -42,6 +42,8 @@ namespace FeederCopy.App.Forms.Settings
             lblExportTitle = new Label();
             lblExportStyle = new Label();
             cboExportStyle = new ComboBox();
+            lblTheme = new Label();
+            cboTheme = new ComboBox();
             flpButtons = new FlowLayoutPanel();
             btnSave = new Button();
             btnRevert = new Button();
@@ -199,10 +201,13 @@ namespace FeederCopy.App.Forms.Settings
             tlpExportCard.Controls.Add(lblExportTitle, 0, 0);
             tlpExportCard.Controls.Add(lblExportStyle, 0, 1);
             tlpExportCard.Controls.Add(cboExportStyle, 1, 1);
+            tlpExportCard.Controls.Add(lblTheme, 0, 2);
+            tlpExportCard.Controls.Add(cboTheme, 1, 2);
             tlpExportCard.Margin = new Padding(3, 0, 3, 12);
             tlpExportCard.Name = "tlpExportCard";
             tlpExportCard.Padding = new Padding(14, 12, 14, 12);
-            tlpExportCard.RowCount = 2;
+            tlpExportCard.RowCount = 3;
+            tlpExportCard.RowStyles.Add(new RowStyle());
             tlpExportCard.RowStyles.Add(new RowStyle());
             tlpExportCard.RowStyles.Add(new RowStyle());
             tlpExportCard.TabIndex = 2;
@@ -257,7 +262,7 @@ namespace FeederCopy.App.Forms.Settings
             btnRemoveTag.Click += btnRemoveTag_Click;
             lblExportTitle.Margin = new Padding(3, 0, 3, 8);
             lblExportTitle.Name = "lblExportTitle";
-            lblExportTitle.Text = "Export";
+            lblExportTitle.Text = "Export and appearance";
             lblExportStyle.Anchor = AnchorStyles.Left;
             lblExportStyle.AutoSize = true;
             lblExportStyle.Name = "lblExportStyle";
@@ -268,6 +273,16 @@ namespace FeederCopy.App.Forms.Settings
             cboExportStyle.Margin = new Padding(3, 4, 3, 4);
             cboExportStyle.Name = "cboExportStyle";
             cboExportStyle.TabIndex = 0;
+            lblTheme.Anchor = AnchorStyles.Left;
+            lblTheme.AutoSize = true;
+            lblTheme.Name = "lblTheme";
+            lblTheme.Text = "Theme (switching asks to restart)";
+            cboTheme.Anchor = AnchorStyles.Left | AnchorStyles.Right;
+            cboTheme.DropDownStyle = ComboBoxStyle.DropDownList;
+            cboTheme.Items.AddRange(new object[] { "Light", "Dark" });
+            cboTheme.Margin = new Padding(3, 4, 3, 4);
+            cboTheme.Name = "cboTheme";
+            cboTheme.TabIndex = 1;
             flpButtons.AutoSize = true;
             flpButtons.AutoSizeMode = AutoSizeMode.GrowAndShrink;
             flpButtons.Controls.Add(btnSave);
@@ -353,6 +368,8 @@ namespace FeederCopy.App.Forms.Settings
         private Label lblExportTitle;
         private Label lblExportStyle;
         private ComboBox cboExportStyle;
+        private Label lblTheme;
+        private ComboBox cboTheme;
         private FlowLayoutPanel flpButtons;
         private Button btnSave;
         private Button btnRevert;

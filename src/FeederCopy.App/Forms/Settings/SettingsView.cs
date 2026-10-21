@@ -29,6 +29,7 @@ namespace FeederCopy.App.Forms.Settings
             txtKwh.Text = settings.AsBilled.KwhUsed;
             txtMonth.Text = settings.AsBilled.BillMonth;
             cboExportStyle.SelectedIndex = (int)settings.Export;
+            cboTheme.SelectedIndex = (int)settings.Theme;
             lblSaved.Text = string.Empty;
         }
 
@@ -42,7 +43,12 @@ namespace FeederCopy.App.Forms.Settings
                 .Select(r => (r.Cells[colTag.Index].Value as string)?.Trim())
                 .Where(t => !string.IsNullOrEmpty(t))
                 .Distinct(StringComparer.OrdinalIgnoreCase)),
+            Theme = cboTheme.SelectedIndex == (int)ThemeMode.Dark ? ThemeMode.Dark : ThemeMode.Light,
         };
+
+        public bool Confirm(string title, string message) => Dialogs.Confirm((IWin32Window?)FindForm() ?? this, title, message);
+
+        public void RestartApplication() => Application.Restart();
 
         private void btnRemoveTag_Click(object? sender, EventArgs e)
         {
@@ -71,8 +77,9 @@ namespace FeederCopy.App.Forms.Settings
             AppTheme.StyleMutedLabel(lblSortHelp);
             AppTheme.StyleGrid(dgvTags);
             AppTheme.StyleOutlineButton(btnRemoveTag);
-            foreach (Label label in new[] { lblBusId, lblConsumerId, lblStatusColumn, lblAccount, lblKwh, lblMonth, lblExportStyle })
+            foreach (Label label in new[] { lblBusId, lblConsumerId, lblStatusColumn, lblAccount, lblKwh, lblMonth, lblExportStyle, lblTheme })
                 AppTheme.StyleFieldLabel(label);
+            AppTheme.StyleComboBox(cboTheme);
             foreach (TextBox box in new[] { txtBusId, txtConsumerId, txtStatusColumn, txtAccount, txtKwh, txtMonth })
                 AppTheme.StyleTextBox(box);
             AppTheme.StyleComboBox(cboExportStyle);

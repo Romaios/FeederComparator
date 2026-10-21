@@ -13,3 +13,6 @@ logs/
 settings.json
 .claude/settings.local.json*
 .superpowers/
+updater-settings.json*
+Releases/
+installer/portable/
