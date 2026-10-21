@@ -1,3 +1,4 @@
+using FeederCopy.Core.Models.Billing;
 using FeederCopy.Core.Models.Feeders;
 
 namespace FeederCopy.Core.Services.Data
@@ -7,7 +8,8 @@ namespace FeederCopy.Core.Services.Data
         IReadOnlyList<FeederSummary> GetFeeders();
         IReadOnlyList<ConsumerEntry> GetConsumers(long feederId);
         IReadOnlyList<(string FeederName, ConsumerEntry Entry)> GetAllConsumers();
-        void SetActive(string consumerId, bool active);
+        void SetActive(string consumerId, bool active, BillMonth? inactiveFrom = null);
+        IReadOnlyDictionary<string, BillMonth> GetInactiveFrom();
         ConsumerLocation? FindConsumer(string consumerId);
         IReadOnlyList<(string ConsumerId, ConsumerLocation Where)> FindConsumers(IEnumerable<string> consumerIds);
         long CreateFeeder(string name, IReadOnlyList<ConsumerEntry> consumers);

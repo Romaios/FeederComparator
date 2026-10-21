@@ -1,4 +1,4 @@
-using FeederCopy.Core.Models;
+using FeederCopy.Core.Models.Billing;
 using FeederCopy.Core.Models.Consumers;
 using FeederCopy.Core.Models.Feeders;
 using FeederCopy.Core.Services.Data;
@@ -11,17 +11,17 @@ namespace FeederCopy.Core.Presenters.Consumers
         private readonly IConsumersView _view;
         private readonly IFeederService _feeders;
         private readonly IReadingService _readings;
-        private readonly Func<int> _currentYear;
+        private readonly Func<BillMonth> _currentMonth;
         private readonly IErrorLog _log;
-        private ConsumerFilter _filter = ConsumerFilter.All;
+        private ConsumerFilter _filter = new(null, true, null);
         private int? _year;
 
-        public ConsumersPresenter(IConsumersView view, IFeederService feeders, IReadingService readings, Func<int> currentYear, IErrorLog log)
+        public ConsumersPresenter(IConsumersView view, IFeederService feeders, IReadingService readings, Func<BillMonth> currentMonth, IErrorLog log)
         {
             _view = view;
             _feeders = feeders;
             _readings = readings;
-            _currentYear = currentYear;
+            _currentMonth = currentMonth;
             _log = log;
         }
 
@@ -31,19 +31,33 @@ namespace FeederCopy.Core.Presenters.Consumers
 
         public void OnDataChanged() => Run("Refreshing consumers", () => Reload(resetYear: false));
 
-        public void OnFilterChanged(string? feeder, bool? active, int year, string? search)
+        public void OnFilterChanged(string? feeder, bool active, int year, string? search)
         {
             _filter = new ConsumerFilter(feeder, active, search);
             _year = year;
             Run("Filtering consumers", Refresh);
         }
 
-        public void OnSetActiveClicked(string consumerId, bool active)
+        public void OnSetActiveClicked(string consumerId) =>
+            ChangeStatus(consumerId, () => _feeders.SetActive(consumerId, true));
+
+        public void OnSetInactiveClicked(string consumerId, int? month, int year)
+        {
+            if (month is not (>= 1 and <= 12) || year is < 1900 or > 2100)
+            {
+                _view.ShowError("Choose the month the consumer became inactive.");
+                return;
+            }
+            var from = new BillMonth(year, month.Value);
+            ChangeStatus(consumerId, () => _feeders.SetActive(consumerId, false, from));
+        }
+
+        private void ChangeStatus(string consumerId, Action save)
         {
             bool changed = false;
             Run("Setting consumer status", () =>
             {
-                _feeders.SetActive(consumerId, active);
+                save();
                 Refresh();
                 _view.SelectConsumer(consumerId);
                 changed = true;
@@ -54,12 +68,13 @@ namespace FeederCopy.Core.Presenters.Consumers
 
         private void Reload(bool resetYear)
         {
+            int currentYear = _currentMonth().Year;
             IReadOnlyList<int> saved = _readings.GetYears();
-            IReadOnlyList<int> years = ConsumerYearCalculator.Years(saved, _currentYear());
+            IReadOnlyList<int> years = ConsumerYearCalculator.Years(saved, currentYear);
             if (resetYear || _year is null || !years.Contains(_year.Value))
-                _year = ConsumerYearCalculator.DefaultYear(saved, _currentYear());
+                _year = ConsumerYearCalculator.DefaultYear(saved, currentYear);
             IReadOnlyList<string> feederNames = _feeders.GetFeeders().Select(f => f.Name).ToList();
-            _view.ShowFilters(feederNames, years, _year.Value);
+            _view.ShowFilters(feederNames, years, _year.Value, _currentMonth());
             Refresh();
         }
 
@@ -71,11 +86,14 @@ namespace FeederCopy.Core.Presenters.Consumers
                 _view.ShowEmpty("No feeders yet. Import a feeder workbook in the Feeders tab.");
                 return;
             }
-            int year = _year ?? _currentYear();
-            IReadOnlyList<ConsumerYearRow> rows = ConsumerYearCalculator.Build(consumers, _readings.GetYear(year), year, _filter);
-            int active = rows.Count(r => r.Active);
-            string summary = $"{Text.Count(rows.Count, "consumer", "consumers")} · {active:N0} active · {rows.Count - active:N0} inactive";
-            _view.ShowRows(rows, summary);
+            int year = _year ?? _currentMonth().Year;
+            IReadOnlyList<ConsumerYearRow> all = ConsumerYearCalculator.Build(
+                consumers, _readings.GetYear(year), year, _filter with { Active = null }, _feeders.GetInactiveFrom());
+            int active = all.Count(r => r.Active);
+            bool showActive = _filter.Active ?? true;
+            IReadOnlyList<ConsumerYearRow> rows = all.Where(r => r.Active == showActive).ToList();
+            string summary = $"{rows.Count:N0} {(showActive ? "active" : "inactive")} {(rows.Count == 1 ? "consumer" : "consumers")}";
+            _view.ShowRows(rows, summary, active, all.Count - active);
         }
 
         private void Run(string context, Action action)

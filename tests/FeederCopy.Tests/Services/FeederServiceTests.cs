@@ -1,4 +1,5 @@
 using Dapper;
+using FeederCopy.Core.Models.Billing;
 using FeederCopy.Core.Models.Feeders;
 using FeederCopy.Core.Services.Data;
 using Microsoft.Data.Sqlite;
@@ -127,6 +128,37 @@ namespace FeederCopy.Tests.Services
             Assert.Equal([E("A", "c1"), new ConsumerEntry("A", "c2", false)], _service.GetConsumers(id));
             _service.SetActive("c2", true);
             Assert.True(_service.GetConsumers(id)[1].Active);
+        }
+
+        [Fact]
+        public void SetActive_InactiveFromMonth_SavedChangedAndClearedWhenActive()
+        {
+            _service.CreateFeeder("F", [E("A", "c1"), E("A", "c2")]);
+            _service.SetActive("c2", false, new BillMonth(2026, 7));
+            Assert.Equal(new BillMonth(2026, 7), _service.GetInactiveFrom()["c2"]);
+            _service.SetActive("c2", false, new BillMonth(2026, 5));
+            Assert.Equal(new BillMonth(2026, 5), _service.GetInactiveFrom()["c2"]);
+            _service.SetActive("c2", true);
+            Assert.Empty(_service.GetInactiveFrom());
+        }
+
+        [Fact]
+        public void GetInactiveFrom_IgnoresConsumersMadeActiveByImport()
+        {
+            _service.CreateFeeder("F", [E("A", "c1")]);
+            _service.SetActive("c1", false, new BillMonth(2026, 7));
+            _service.ImportFeeders([("F", [E("A", "c1")])]);
+            Assert.Empty(_service.GetInactiveFrom());
+        }
+
+        [Fact]
+        public void SetActive_InactiveWithoutMonth_HasNoMonth()
+        {
+            _service.CreateFeeder("F", [E("A", "c1")]);
+            _service.SetActive("c1", false, new BillMonth(2026, 7));
+            _service.SetActive("c1", false);
+            Assert.Empty(_service.GetInactiveFrom());
+            Assert.False(_service.GetAllConsumers().Single().Entry.Active);
         }
 
         [Fact]

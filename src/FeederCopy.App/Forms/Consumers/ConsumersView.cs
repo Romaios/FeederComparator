@@ -1,4 +1,5 @@
 using FeederCopy.App.Utils;
+using FeederCopy.Core.Models.Billing;
 using FeederCopy.Core.Models.Consumers;
 using FeederCopy.Core.Presenters.Consumers;
 
@@ -12,19 +13,17 @@ namespace FeederCopy.App.Forms.Consumers
         private ConsumersPresenter? _presenter;
         private IReadOnlyList<ConsumerYearRow> _rows = [];
         private bool _populating;
+        private bool _keepPosition;
 
         public ConsumersView()
         {
             InitializeComponent();
             ApplyTheme();
-            _populating = true;
-            cboStatus.SelectedIndex = 0;
-            _populating = false;
         }
 
         public void Attach(ConsumersPresenter presenter) => _presenter = presenter;
 
-        public void ShowFilters(IReadOnlyList<string> feederNames, IReadOnlyList<int> years, int selectedYear)
+        public void ShowFilters(IReadOnlyList<string> feederNames, IReadOnlyList<int> years, int selectedYear, BillMonth suggestedInactiveMonth)
         {
             _populating = true;
             string? feeder = cboFeeder.SelectedItem as string;
@@ -43,16 +42,30 @@ namespace FeederCopy.App.Forms.Consumers
                 cboYear.Items.Add(year);
             cboYear.EndUpdate();
             cboYear.SelectedItem = selectedYear;
+            if (cboInactiveMonth.SelectedIndex < 0)
+                SetInactiveMonth(suggestedInactiveMonth);
             _populating = false;
         }
 
-        public void ShowRows(IReadOnlyList<ConsumerYearRow> rows, string summary)
+        public void ShowRows(IReadOnlyList<ConsumerYearRow> rows, string summary, int activeCount, int inactiveCount)
         {
+            int firstRow = dgvConsumers.FirstDisplayedScrollingRowIndex;
+            int currentRow = dgvConsumers.CurrentCell?.RowIndex ?? -1;
             _rows = rows;
+            rdoActiveTab.Text = $"Active ({activeCount:N0})";
+            rdoInactiveTab.Text = $"Inactive ({inactiveCount:N0})";
             lblSummary.Text = summary;
             lblEmpty.Visible = false;
             dgvConsumers.RowCount = 0;
             dgvConsumers.RowCount = rows.Count;
+            if (_keepPosition && rows.Count > 0 && currentRow >= 0)
+            {
+                int row = Math.Min(currentRow, rows.Count - 1);
+                dgvConsumers.CurrentCell = dgvConsumers.Rows[row].Cells[colConsumer.Index];
+                if (firstRow >= 0 && dgvConsumers.DisplayedRowCount(false) > 0)
+                    dgvConsumers.FirstDisplayedScrollingRowIndex = Math.Min(firstRow, rows.Count - 1);
+            }
+            _keepPosition = false;
             dgvConsumers.Invalidate();
             UpdateSelection();
         }
@@ -61,6 +74,8 @@ namespace FeederCopy.App.Forms.Consumers
         {
             _rows = [];
             dgvConsumers.RowCount = 0;
+            rdoActiveTab.Text = "Active";
+            rdoInactiveTab.Text = "Inactive";
             lblSummary.Text = string.Empty;
             lblEmpty.Text = message;
             lblEmpty.Visible = true;
@@ -88,22 +103,33 @@ namespace FeederCopy.App.Forms.Consumers
         {
             AppTheme.StyleView(this);
             AppTheme.StyleCardPanel(tlpFilters);
-            foreach (Label label in new[] { lblFeeder, lblStatusFilter, lblYear, lblFind })
+            foreach (Label label in new[] { lblFeeder, lblYear, lblFind, lblInactiveFrom })
                 AppTheme.StyleFieldLabel(label);
             AppTheme.StyleComboBox(cboFeeder);
-            AppTheme.StyleComboBox(cboStatus);
             AppTheme.StyleComboBox(cboYear);
             AppTheme.StyleTextBox(txtFind);
             AppTheme.StyleOutlineButton(btnFind);
             lblSummary.Font = AppTheme.BodyStrongFont;
             lblSummary.ForeColor = AppTheme.TextSecondary;
+            AppTheme.StyleHeaderBar(tlpStatusTabs);
+            AppTheme.StyleNavTab(rdoActiveTab);
+            AppTheme.StyleNavTab(rdoInactiveTab);
             AppTheme.StyleEmptyState(lblEmpty);
             AppTheme.StyleGrid(dgvConsumers);
+            AppTheme.AlignRight(colCount);
             for (int i = colJan.Index; i <= colTotal.Index; i++)
                 AppTheme.AlignRight(dgvConsumers.Columns[i]);
             AppTheme.StyleCard(tlpSelected, lblSelected);
-            AppTheme.StyleOutlineButton(btnSetActive);
+            AppTheme.StyleComboBox(cboInactiveMonth);
+            AppTheme.StyleNumeric(numInactiveYear);
             AppTheme.StyleOutlineButton(btnSetInactive);
+            AppTheme.StyleOutlineButton(btnSetActive);
+        }
+
+        private void SetInactiveMonth(BillMonth month)
+        {
+            cboInactiveMonth.SelectedIndex = month.Month - 1;
+            numInactiveYear.Value = Math.Clamp(month.Year, (int)numInactiveYear.Minimum, (int)numInactiveYear.Maximum);
         }
 
         private void NotifyFilter()
@@ -111,26 +137,30 @@ namespace FeederCopy.App.Forms.Consumers
             if (_populating || _presenter is null || cboYear.SelectedItem is not int year)
                 return;
             string? feeder = cboFeeder.SelectedIndex > 0 ? cboFeeder.SelectedItem as string : null;
-            bool? active = cboStatus.SelectedIndex switch
-            {
-                1 => true,
-                2 => false,
-                _ => null,
-            };
-            _presenter.OnFilterChanged(feeder, active, year, txtFind.Text);
+            _presenter.OnFilterChanged(feeder, rdoActiveTab.Checked, year, txtFind.Text);
         }
 
         private void UpdateSelection()
         {
             ConsumerYearRow? row = SelectedRow;
+            btnSetActive.Visible = rdoInactiveTab.Checked;
             btnSetActive.Enabled = row is { Active: false };
-            btnSetInactive.Enabled = row is { Active: true };
+            btnSetInactive.Enabled = row is not null;
+            btnSetInactive.Text = row is { Active: false } ? "Change month" : "Set inactive";
+            if (row?.InactiveFrom is { } from)
+                SetInactiveMonth(from);
             lblSelected.Text = row is null
                 ? "Click a consumer to set its status."
-                : $"Selected: consumer {row.ConsumerId}  ·  {row.Feeder}  ·  bus {row.BusLabel}  ·  {row.StatusLabel}";
+                : $"Selected: {row.Feeder} row {row.Count:N0}  ·  bus {row.BusLabel}  ·  consumer {row.ConsumerId}  ·  {row.StatusLabel}";
         }
 
         private void filter_Changed(object? sender, EventArgs e) => NotifyFilter();
+
+        private void statusTab_CheckedChanged(object? sender, EventArgs e)
+        {
+            if (sender is RadioButton { Checked: true })
+                NotifyFilter();
+        }
 
         private void btnFind_Click(object? sender, EventArgs e) => NotifyFilter();
 
@@ -144,14 +174,18 @@ namespace FeederCopy.App.Forms.Consumers
 
         private void btnSetActive_Click(object? sender, EventArgs e)
         {
-            if (SelectedRow is { } row)
-                _presenter?.OnSetActiveClicked(row.ConsumerId, true);
+            if (SelectedRow is not { } row)
+                return;
+            _keepPosition = true;
+            _presenter?.OnSetActiveClicked(row.ConsumerId);
         }
 
         private void btnSetInactive_Click(object? sender, EventArgs e)
         {
-            if (SelectedRow is { } row)
-                _presenter?.OnSetActiveClicked(row.ConsumerId, false);
+            if (SelectedRow is not { } row)
+                return;
+            _keepPosition = true;
+            _presenter?.OnSetInactiveClicked(row.ConsumerId, cboInactiveMonth.SelectedIndex >= 0 ? cboInactiveMonth.SelectedIndex + 1 : null, (int)numInactiveYear.Value);
         }
 
         private void dgvConsumers_SelectionChanged(object? sender, EventArgs e) => UpdateSelection();
@@ -162,7 +196,8 @@ namespace FeederCopy.App.Forms.Consumers
                 return;
             ConsumerYearRow row = _rows[e.RowIndex];
             int column = e.ColumnIndex;
-            e.Value = column == colFeeder.Index ? row.Feeder
+            e.Value = column == colCount.Index ? row.Count.ToString("N0")
+                : column == colFeeder.Index ? row.Feeder
                 : column == colBus.Index ? row.BusLabel
                 : column == colConsumer.Index ? row.ConsumerId
                 : column == colStatus.Index ? row.StatusLabel
@@ -175,9 +210,11 @@ namespace FeederCopy.App.Forms.Consumers
             if (e.CellStyle is null || e.RowIndex < 0 || e.RowIndex >= _rows.Count)
                 return;
             ConsumerYearRow row = _rows[e.RowIndex];
-            if (!row.Active)
+            bool isMonth = e.ColumnIndex >= colJan.Index && e.ColumnIndex <= colDec.Index;
+            int month = e.ColumnIndex - colJan.Index;
+            if (isMonth ? month >= row.ActiveMonths : !row.Active)
                 AppTheme.StyleMutedCell(e.CellStyle);
-            if (e.ColumnIndex >= colJan.Index && e.ColumnIndex <= colDec.Index && ProblemCells.Contains(row.Months[e.ColumnIndex - colJan.Index]))
+            if (isMonth && ProblemCells.Contains(row.Months[month]))
                 AppTheme.StyleProblemCell(e.CellStyle);
         }
     }

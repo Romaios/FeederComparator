@@ -1,4 +1,5 @@
 using FeederCopy.App.Utils;
+using FeederCopy.Core.Models.Billing;
 using FeederCopy.Core.Presenters.Consumers;
 using FeederCopy.Core.Presenters.Copy;
 using FeederCopy.Core.Presenters.Feeders;
@@ -29,7 +30,7 @@ namespace FeederCopy.App.Forms.Shell
             _feeders = new FeedersPresenter(feedersView, services.Feeders, () => _settings.Current, services.Log);
             _copy = new CopyPresenter(copyView, services.Feeders, services.Readings, services.AsBilled, services.Exporter,
                 () => _settings.Current, _settings.RememberExportStyle, services.Log);
-            _consumers = new ConsumersPresenter(consumersView, services.Feeders, services.Readings, () => DateTime.Today.Year, services.Log);
+            _consumers = new ConsumersPresenter(consumersView, services.Feeders, services.Readings, () => new BillMonth(DateTime.Today.Year, DateTime.Today.Month), services.Log);
             _updates = new UpdatesPresenter(updatesView, services.Updater, services.UpdateSettings, services.Log);
             _feeders.FeedersChanged += _copy.OnFeedersChanged;
             _feeders.FeedersChanged += _settings.OnFeedersChanged;

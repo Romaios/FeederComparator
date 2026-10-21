@@ -202,17 +202,22 @@ namespace FeederCopy.Tests.Support
         public string? SelectedConsumer { get; private set; }
         public List<string> Errors { get; } = [];
 
-        public void ShowFilters(IReadOnlyList<string> feederNames, IReadOnlyList<int> years, int selectedYear)
+        public BillMonth SuggestedInactiveMonth { get; private set; }
+        public (int Active, int Inactive) StatusCounts { get; private set; }
+
+        public void ShowFilters(IReadOnlyList<string> feederNames, IReadOnlyList<int> years, int selectedYear, BillMonth suggestedInactiveMonth)
         {
             FeederNames = feederNames;
             Years = years;
             SelectedYear = selectedYear;
+            SuggestedInactiveMonth = suggestedInactiveMonth;
         }
 
-        public void ShowRows(IReadOnlyList<ConsumerYearRow> rows, string summary)
+        public void ShowRows(IReadOnlyList<ConsumerYearRow> rows, string summary, int activeCount, int inactiveCount)
         {
             Rows = rows;
             Summary = summary;
+            StatusCounts = (activeCount, inactiveCount);
             EmptyMessage = null;
         }
 

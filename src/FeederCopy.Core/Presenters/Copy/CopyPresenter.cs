@@ -1,5 +1,6 @@
 using FeederCopy.Core.Models;
 using FeederCopy.Core.Models.Billing;
+using FeederCopy.Core.Models.Consumers;
 using FeederCopy.Core.Models.Copy;
 using FeederCopy.Core.Models.Settings;
 using FeederCopy.Core.Services.Data;
@@ -113,7 +114,7 @@ namespace FeederCopy.Core.Presenters.Copy
             {
                 CopyResult result = await Task.Run(() =>
                 {
-                    CopyResult filled = KwhCopier.Fill(LoadFeeders(), snapshot, chosen);
+                    CopyResult filled = KwhCopier.Fill(LoadFeeders(chosen), snapshot, chosen);
                     if (filled.Feeders.Count > 0)
                         _readings.SaveMonth(chosen, KwhCopier.Readings(filled));
                     return filled;
@@ -192,10 +193,17 @@ namespace FeederCopy.Core.Presenters.Copy
                 _view.ShowInfo($"Exported {Text.Count(result.Feeders.Count, "feeder", "feeders")}.");
         }
 
-        private IReadOnlyList<FeederSource> LoadFeeders() =>
-            _feeders.GetFeeders()
-                .Select(f => new FeederSource(f.Name, _feeders.GetConsumers(f.Id)))
+        private IReadOnlyList<FeederSource> LoadFeeders(BillMonth month)
+        {
+            IReadOnlyDictionary<string, BillMonth> inactiveFrom = _feeders.GetInactiveFrom();
+            return _feeders.GetFeeders()
+                .Select(f => new FeederSource(f.Name, _feeders.GetConsumers(f.Id)
+                    .Select(e => !e.Active && inactiveFrom.TryGetValue(e.ConsumerId, out BillMonth from) && InactiveMonths.IsActiveIn(false, from, month)
+                        ? e with { Active = true }
+                        : e)
+                    .ToList()))
                 .ToList();
+        }
 
         private bool HasFeeders()
         {

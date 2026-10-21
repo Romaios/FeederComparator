@@ -1,4 +1,5 @@
 using System.Globalization;
+using FeederCopy.Core.Models.Billing;
 using FeederCopy.Core.Models.Copy;
 using FeederCopy.Core.Models.Feeders;
 
@@ -9,9 +10,38 @@ namespace FeederCopy.Core.Models.Consumers
         public static ConsumerFilter All { get; } = new(null, null, null);
     }
 
-    public sealed record ConsumerYearRow(string Feeder, string BusLabel, string ConsumerId, bool Active, IReadOnlyList<string> Months, double Total)
+    public sealed record ConsumerYearRow(
+        string Feeder,
+        int Count,
+        string BusLabel,
+        string ConsumerId,
+        bool Active,
+        BillMonth? InactiveFrom,
+        int ActiveMonths,
+        IReadOnlyList<string> Months,
+        double Total)
     {
-        public string StatusLabel => StatusLabels.For(Active);
+        public string StatusLabel => InactiveMonths.Label(Active, InactiveFrom);
+    }
+
+    public static class InactiveMonths
+    {
+        public static bool IsActiveIn(bool active, BillMonth? inactiveFrom, BillMonth month) =>
+            active || (inactiveFrom is { } from && month < from);
+
+        public static int ActiveMonthsIn(bool active, BillMonth? inactiveFrom, int year)
+        {
+            if (active)
+                return 12;
+            if (inactiveFrom is not { } from)
+                return 0;
+            return Math.Clamp(from.Index - new BillMonth(year, 1).Index, 0, 12);
+        }
+
+        public static string Label(bool active, BillMonth? inactiveFrom) =>
+            active ? StatusLabels.Active
+            : inactiveFrom is { } from ? $"{StatusLabels.Inactive} from {from}"
+            : StatusLabels.Inactive;
     }
 
     public static class ConsumerYearCalculator
@@ -20,7 +50,8 @@ namespace FeederCopy.Core.Models.Consumers
             IReadOnlyList<(string FeederName, ConsumerEntry Entry)> consumers,
             IReadOnlyList<ReadingRecord> readings,
             int year,
-            ConsumerFilter filter)
+            ConsumerFilter filter,
+            IReadOnlyDictionary<string, BillMonth>? inactiveFrom = null)
         {
             string yearKey = year.ToString("D4", CultureInfo.InvariantCulture);
             Dictionary<string, ReadingRecord[]> byConsumer = readings
@@ -28,10 +59,13 @@ namespace FeederCopy.Core.Models.Consumers
                 .GroupBy(r => r.ConsumerId, StringComparer.Ordinal)
                 .ToDictionary(g => g.Key, g => g.ToArray(), StringComparer.Ordinal);
             string? search = string.IsNullOrWhiteSpace(filter.Search) ? null : filter.Search.Trim();
+            var counts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 
             var rows = new List<ConsumerYearRow>();
             foreach ((string feeder, ConsumerEntry entry) in consumers)
             {
+                int count = counts.GetValueOrDefault(feeder) + 1;
+                counts[feeder] = count;
                 if (filter.Feeder is not null && !string.Equals(feeder, filter.Feeder, StringComparison.OrdinalIgnoreCase))
                     continue;
                 if (filter.Active is bool active && entry.Active != active)
@@ -48,7 +82,9 @@ namespace FeederCopy.Core.Models.Consumers
                     months[month - 1] = Cell(reading);
                     total += reading.Kwh ?? 0;
                 }
-                rows.Add(new ConsumerYearRow(feeder, BusLabels.For(entry.BusId), entry.ConsumerId, entry.Active, months, total));
+                BillMonth? from = !entry.Active && inactiveFrom is not null && inactiveFrom.TryGetValue(entry.ConsumerId, out BillMonth m) ? m : null;
+                rows.Add(new ConsumerYearRow(feeder, count, BusLabels.For(entry.BusId), entry.ConsumerId, entry.Active, from,
+                    InactiveMonths.ActiveMonthsIn(entry.Active, from, year), months, total));
             }
             return rows;
         }

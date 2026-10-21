@@ -1,4 +1,5 @@
 using Dapper;
+using FeederCopy.Core.Models.Billing;
 using FeederCopy.Core.Models.Feeders;
 using Microsoft.Data.Sqlite;
 
@@ -52,10 +53,29 @@ namespace FeederCopy.Core.Services.Data
                 .ToList();
         }
 
-        public void SetActive(string consumerId, bool active)
+        public void SetActive(string consumerId, bool active, BillMonth? inactiveFrom = null)
         {
             using SqliteConnection c = _database.Open();
-            c.Execute("UPDATE FeederConsumers SET Active = @active WHERE ConsumerId = @consumerId", new { active = active ? 1 : 0, consumerId });
+            using SqliteTransaction tx = c.BeginTransaction();
+            c.Execute("UPDATE FeederConsumers SET Active = @active WHERE ConsumerId = @consumerId", new { active = active ? 1 : 0, consumerId }, tx);
+            if (!active && inactiveFrom is { } month)
+                c.Execute("INSERT OR REPLACE INTO ConsumerInactiveFrom (ConsumerId, BillMonth) VALUES (@consumerId, @month)", new { consumerId, month = month.Key }, tx);
+            else
+                c.Execute("DELETE FROM ConsumerInactiveFrom WHERE ConsumerId = @consumerId", new { consumerId }, tx);
+            tx.Commit();
+        }
+
+        public IReadOnlyDictionary<string, BillMonth> GetInactiveFrom()
+        {
+            using SqliteConnection c = _database.Open();
+            return c.Query<(string ConsumerId, string BillMonth)>(
+                    """
+                    SELECT i.ConsumerId, i.BillMonth
+                    FROM ConsumerInactiveFrom i
+                    JOIN FeederConsumers fc ON fc.ConsumerId = i.ConsumerId
+                    WHERE fc.Active = 0
+                    """)
+                .ToDictionary(r => r.ConsumerId, r => BillMonth.Parse(r.BillMonth), StringComparer.Ordinal);
         }
 
         public ConsumerLocation? FindConsumer(string consumerId) =>

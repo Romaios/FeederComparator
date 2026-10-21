@@ -1,3 +1,4 @@
+using FeederCopy.Core.Models.Billing;
 using FeederCopy.Core.Models.Feeders;
 using FeederCopy.Core.Models.Settings;
 using FeederCopy.Core.Presenters.Feeders;
@@ -458,7 +459,8 @@ namespace FeederCopy.Tests.Presenters
             public IReadOnlyList<FeederSummary> GetFeeders() => [new FeederSummary(1, "F", 0, 0)];
             public IReadOnlyList<ConsumerEntry> GetConsumers(long feederId) => [];
             public IReadOnlyList<(string FeederName, ConsumerEntry Entry)> GetAllConsumers() => [];
-            public void SetActive(string consumerId, bool active) => throw new InvalidOperationException("boom");
+            public void SetActive(string consumerId, bool active, BillMonth? inactiveFrom = null) => throw new InvalidOperationException("boom");
+            public IReadOnlyDictionary<string, BillMonth> GetInactiveFrom() => new Dictionary<string, BillMonth>();
             public ConsumerLocation? FindConsumer(string consumerId) => null;
             public IReadOnlyList<(string ConsumerId, ConsumerLocation Where)> FindConsumers(IEnumerable<string> consumerIds) => [];
             public long CreateFeeder(string name, IReadOnlyList<ConsumerEntry> consumers) => throw new InvalidOperationException("boom");

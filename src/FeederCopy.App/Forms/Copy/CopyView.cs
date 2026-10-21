@@ -48,6 +48,9 @@ namespace FeederCopy.App.Forms.Copy
             dgvProblems.RowCount = 0;
             dgvProblems.RowCount = problems.Count;
             dgvProblems.Invalidate();
+            rdoTotalsTab.Text = $"Feeders ({totals.Count:N0})";
+            rdoProblemsTab.Text = $"Problems ({problems.Count:N0})";
+            rdoTotalsTab.Checked = true;
         }
 
         public void ClearResult(string message)
@@ -58,6 +61,9 @@ namespace FeederCopy.App.Forms.Copy
             dgvTotals.Rows.Clear();
             _problems = [];
             dgvProblems.RowCount = 0;
+            rdoTotalsTab.Text = "Feeders";
+            rdoProblemsTab.Text = "Problems";
+            rdoTotalsTab.Checked = true;
         }
 
         public void SetExportStyle(ExportStyle style)
@@ -112,8 +118,10 @@ namespace FeederCopy.App.Forms.Copy
             AppTheme.StyleGrid(dgvTotals);
             foreach (DataGridViewColumn column in new[] { colConsumers, colActive, colInactive, colCopied, colMissing, colInactiveBilled, colDuplicates, colUnreadable, colTotalKwh })
                 AppTheme.AlignRight(column);
-            lblProblemsTitle.Font = AppTheme.BodyStrongFont;
-            lblProblemsTitle.ForeColor = AppTheme.TextPrimary;
+            AppTheme.StyleHeaderBar(tlpResultTabs);
+            AppTheme.StyleNavTab(rdoTotalsTab);
+            AppTheme.StyleNavTab(rdoProblemsTab);
+            AppTheme.StyleMutedLabel(lblProblemsTitle);
             AppTheme.StyleOutlineButton(btnSaveProblems);
             AppTheme.StyleGrid(dgvProblems);
             AppTheme.AlignRight(colProblemCount);
@@ -135,6 +143,15 @@ namespace FeederCopy.App.Forms.Copy
         {
             if (_presenter is not null)
                 await _presenter.OnCopyClickedAsync(cboMonth.SelectedIndex >= 0 ? cboMonth.SelectedIndex + 1 : null, (int)numYear.Value);
+        }
+
+        private void resultTab_CheckedChanged(object? sender, EventArgs e)
+        {
+            bool problems = rdoProblemsTab.Checked;
+            dgvTotals.Visible = !problems;
+            dgvProblems.Visible = problems;
+            lblProblemsTitle.Visible = problems;
+            btnSaveProblems.Visible = problems;
         }
 
         private void btnSaveProblems_Click(object? sender, EventArgs e) => _presenter?.OnSaveProblemsClicked();

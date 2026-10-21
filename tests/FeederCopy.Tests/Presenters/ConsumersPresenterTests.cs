@@ -21,7 +21,7 @@ namespace FeederCopy.Tests.Presenters
         {
             _feeders = new FeederService(_temp.Db);
             _readings = new ReadingService(_temp.Db);
-            _presenter = new ConsumersPresenter(_view, _feeders, _readings, () => 2026, _log);
+            _presenter = new ConsumersPresenter(_view, _feeders, _readings, () => new BillMonth(2026, 10), _log);
             _presenter.StatusChanged += () => _statusChanged++;
         }
 
@@ -44,9 +44,22 @@ namespace FeederCopy.Tests.Presenters
             Assert.Equal(["Abuyog", "Bacon"], _view.FeederNames);
             Assert.Equal([2026, 2025], _view.Years);
             Assert.Equal(2025, _view.SelectedYear);
-            Assert.Equal(["c2", "c1"], _view.Rows.Select(r => r.ConsumerId));
-            Assert.Equal("9.00", _view.Rows[1].Months[11]);
-            Assert.Equal("2 consumers · 1 active · 1 inactive", _view.Summary);
+            Assert.Equal(new BillMonth(2026, 10), _view.SuggestedInactiveMonth);
+            Assert.Equal(["c1"], _view.Rows.Select(r => r.ConsumerId));
+            Assert.Equal("9.00", _view.Rows[0].Months[11]);
+            Assert.Equal("1 active consumer", _view.Summary);
+            Assert.Equal((1, 1), _view.StatusCounts);
+        }
+
+        [Fact]
+        public void InactiveTab_ShowsOnlyInactive_WithFeederRowCount()
+        {
+            _feeders.CreateFeeder("Abuyog", [new ConsumerEntry("A", "c1"), new ConsumerEntry("A", "c2", false), new ConsumerEntry("A", "c3")]);
+            _presenter.Load();
+            _presenter.OnFilterChanged(null, false, 2026, null);
+            Assert.Equal([("c2", 2)], _view.Rows.Select(r => (r.ConsumerId, r.Count)));
+            Assert.Equal("1 inactive consumer", _view.Summary);
+            Assert.Equal((2, 1), _view.StatusCounts);
         }
 
         [Fact]
@@ -55,20 +68,52 @@ namespace FeederCopy.Tests.Presenters
             _feeders.CreateFeeder("Abuyog", [new ConsumerEntry("A", "c1"), new ConsumerEntry("A", "c2", false)]);
             _readings.SaveMonth(new BillMonth(2026, 3), [new ReadingRecord("c1", "202603", 4, "Active")]);
             _presenter.Load();
-            _presenter.OnFilterChanged(null, true, 2026, null);
+            _presenter.OnFilterChanged(null, true, 2026, "1");
             Assert.Equal(["c1"], _view.Rows.Select(r => r.ConsumerId));
             Assert.Equal("4.00", _view.Rows[0].Months[2]);
         }
 
         [Fact]
-        public void SetActive_PersistsReselectsRaisesStatusChanged()
+        public void SetInactive_SavesMonth_MovesToInactiveTab_RaisesStatusChanged()
+        {
+            _feeders.CreateFeeder("Abuyog", [new ConsumerEntry("A", "c1")]);
+            _readings.SaveMonth(new BillMonth(2026, 6), [new ReadingRecord("c1", "202606", 12, "Active")]);
+            _presenter.Load();
+            _presenter.OnSetInactiveClicked("c1", 7, 2026);
+            Assert.False(_feeders.GetAllConsumers().Single().Entry.Active);
+            Assert.Empty(_view.Rows);
+            Assert.Equal((0, 1), _view.StatusCounts);
+            Assert.Equal(1, _statusChanged);
+
+            _presenter.OnFilterChanged(null, false, 2026, null);
+            ConsumerYearRow row = _view.Rows.Single();
+            Assert.Equal("Inactive from Jul 2026", row.StatusLabel);
+            Assert.Equal(6, row.ActiveMonths);
+            Assert.Equal("12.00", row.Months[5]);
+        }
+
+        [Fact]
+        public void SetInactive_NoMonth_ShowsErrorAndSavesNothing()
         {
             _feeders.CreateFeeder("Abuyog", [new ConsumerEntry("A", "c1")]);
             _presenter.Load();
-            _presenter.OnSetActiveClicked("c1", false);
-            Assert.False(_feeders.GetAllConsumers().Single().Entry.Active);
-            Assert.Equal("Inactive", _view.Rows.Single().StatusLabel);
+            _presenter.OnSetInactiveClicked("c1", null, 2026);
+            Assert.Equal(["Choose the month the consumer became inactive."], _view.Errors);
+            Assert.True(_feeders.GetAllConsumers().Single().Entry.Active);
+            Assert.Equal(0, _statusChanged);
+        }
+
+        [Fact]
+        public void SetActive_ClearsMonth_ReselectsInActiveTab()
+        {
+            _feeders.CreateFeeder("Abuyog", [new ConsumerEntry("A", "c1")]);
+            _feeders.SetActive("c1", false, new BillMonth(2026, 7));
+            _presenter.Load();
+            _presenter.OnSetActiveClicked("c1");
+            Assert.True(_feeders.GetAllConsumers().Single().Entry.Active);
+            Assert.Empty(_feeders.GetInactiveFrom());
             Assert.Equal("c1", _view.SelectedConsumer);
+            Assert.Equal("Active", _view.Rows.Single().StatusLabel);
             Assert.Equal(1, _statusChanged);
         }
 
@@ -77,7 +122,7 @@ namespace FeederCopy.Tests.Presenters
         {
             _feeders.CreateFeeder("Abuyog", [new ConsumerEntry("A", "c1")]);
             _presenter.Load();
-            _presenter.OnFilterChanged("Abuyog", null, 2026, null);
+            _presenter.OnFilterChanged("Abuyog", true, 2026, null);
             _readings.SaveMonth(new BillMonth(2026, 1), [new ReadingRecord("c1", "202601", 1, "Active")]);
             _presenter.OnDataChanged();
             Assert.Equal("1.00", _view.Rows.Single().Months[0]);

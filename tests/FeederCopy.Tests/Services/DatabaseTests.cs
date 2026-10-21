@@ -15,7 +15,7 @@ namespace FeederCopy.Tests.Services
             Assert.Contains("Feeders", tables);
             Assert.Contains("FeederConsumers", tables);
             Assert.Contains("Readings", tables);
-            Assert.Equal(2L, c.ExecuteScalar<long>("PRAGMA user_version"));
+            Assert.Equal(3L, c.ExecuteScalar<long>("PRAGMA user_version"));
         }
 
         [Fact]
@@ -24,7 +24,7 @@ namespace FeederCopy.Tests.Services
             using var temp = new TempDatabase();
             temp.Db.EnsureSchema();
             using SqliteConnection c = temp.Db.Open();
-            Assert.Equal(2L, c.ExecuteScalar<long>("PRAGMA user_version"));
+            Assert.Equal(3L, c.ExecuteScalar<long>("PRAGMA user_version"));
         }
 
         [Fact]
@@ -46,7 +46,7 @@ namespace FeederCopy.Tests.Services
                 var db = new Database(path);
                 db.EnsureSchema();
                 using SqliteConnection upgraded = db.Open();
-                Assert.Equal(2L, upgraded.ExecuteScalar<long>("PRAGMA user_version"));
+                Assert.Equal(3L, upgraded.ExecuteScalar<long>("PRAGMA user_version"));
                 Assert.Equal(1L, upgraded.ExecuteScalar<long>("SELECT Active FROM FeederConsumers WHERE ConsumerId = '0900001'"));
             }
             finally

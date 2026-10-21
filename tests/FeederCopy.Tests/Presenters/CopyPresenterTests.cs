@@ -44,6 +44,22 @@ namespace FeederCopy.Tests.Presenters
             Assert.Equal(1, _readingsSaved);
         }
 
+        [Fact]
+        public async Task Copy_ConsumerInactiveFromLaterMonth_CountsAsActive()
+        {
+            _service.CreateFeeder("F", [E("A", "c1"), E("A", "c2")]);
+            _service.SetActive("c1", false, new BillMonth(2026, 8));
+            _service.SetActive("c2", false, new BillMonth(2026, 7));
+            _presenter.Load();
+            _view.NextOpenFile = AsBilled(["c1", "10", "202607"], ["c2", "4", "202607"]);
+            await _presenter.OnChooseFileClickedAsync();
+            await _presenter.OnCopyClickedAsync(7, 2026);
+            Assert.Equal(
+                [new FeederCopy.Core.Models.Copy.ReadingRecord("c1", "202607", 10, "Active"),
+                 new FeederCopy.Core.Models.Copy.ReadingRecord("c2", "202607", 4, "Inactive but billed")],
+                _readings.GetYear(2026).OrderBy(r => r.ConsumerId).ToList());
+        }
+
         public void Dispose() => _temp.Dispose();
 
         private static ConsumerEntry E(string? bus, string id) => new(bus, id);

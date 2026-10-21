@@ -1,3 +1,4 @@
+using FeederCopy.Core.Models.Billing;
 using FeederCopy.Core.Models.Consumers;
 using FeederCopy.Core.Models.Copy;
 using FeederCopy.Core.Models.Feeders;
@@ -61,6 +62,48 @@ namespace FeederCopy.Tests.Models
             Assert.Equal(["c1", "c2"], Build(new ConsumerFilter("abuyog", null, null)).Select(r => r.ConsumerId));
             Assert.Equal(["c2"], Build(new ConsumerFilter(null, false, null)).Select(r => r.ConsumerId));
             Assert.Equal(["0900001"], Build(new ConsumerFilter(null, null, " 9000 ")).Select(r => r.ConsumerId));
+        }
+
+        [Fact]
+        public void Build_CountIsRowInItsFeeder_EvenWhenFiltered()
+        {
+            Assert.Equal([1, 2, 1], Build().Select(r => r.Count));
+            Assert.Equal([2], Build(new ConsumerFilter(null, false, null)).Select(r => r.Count));
+            Assert.Equal([1], Build(new ConsumerFilter("Bacon", null, null)).Select(r => r.Count));
+        }
+
+        [Fact]
+        public void Build_InactiveFrom_SetsLabelAndActiveMonths()
+        {
+            var inactiveFrom = new Dictionary<string, BillMonth> { ["c2"] = new(2026, 7), ["c1"] = new(2026, 3) };
+            IReadOnlyList<ConsumerYearRow> rows = ConsumerYearCalculator.Build(Consumers, Readings, 2026, ConsumerFilter.All, inactiveFrom);
+            Assert.Equal(["Active", "Inactive from Jul 2026", "Active"], rows.Select(r => r.StatusLabel));
+            Assert.Equal([12, 6, 12], rows.Select(r => r.ActiveMonths));
+            Assert.Null(rows[0].InactiveFrom);
+            Assert.Equal(new BillMonth(2026, 7), rows[1].InactiveFrom);
+        }
+
+        [Fact]
+        public void InactiveMonths_ByYear()
+        {
+            var july = new BillMonth(2026, 7);
+            Assert.Equal(12, InactiveMonths.ActiveMonthsIn(true, null, 2026));
+            Assert.Equal(0, InactiveMonths.ActiveMonthsIn(false, null, 2026));
+            Assert.Equal(6, InactiveMonths.ActiveMonthsIn(false, july, 2026));
+            Assert.Equal(12, InactiveMonths.ActiveMonthsIn(false, july, 2025));
+            Assert.Equal(0, InactiveMonths.ActiveMonthsIn(false, july, 2027));
+            Assert.Equal(0, InactiveMonths.ActiveMonthsIn(false, new BillMonth(2026, 1), 2026));
+        }
+
+        [Fact]
+        public void InactiveMonths_IsActiveIn()
+        {
+            var july = new BillMonth(2026, 7);
+            Assert.True(InactiveMonths.IsActiveIn(true, null, july));
+            Assert.False(InactiveMonths.IsActiveIn(false, null, july));
+            Assert.True(InactiveMonths.IsActiveIn(false, july, new BillMonth(2026, 6)));
+            Assert.False(InactiveMonths.IsActiveIn(false, july, july));
+            Assert.Equal("Inactive", InactiveMonths.Label(false, null));
         }
 
         [Fact]
