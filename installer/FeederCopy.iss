@@ -14,6 +14,7 @@ AppName=Feeder kWh Copy
 AppVersion={#AppVersion}
 AppVerName=Feeder kWh Copy {#AppVersion}
 AppPublisher=SORECO II
+SetupIconFile=..\src\FeederCopy.App\Resources\AppIcon\app.ico
 DefaultDirName={userdocs}\Feeder kWh Copy
 DisableDirPage=no
 DisableProgramGroupPage=yes

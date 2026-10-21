@@ -5,7 +5,7 @@ namespace FeederCopy.Tests.Presenters
 {
     public class UpdatesPresenterTests
     {
-        private static readonly UpdateSettings Configured = new("Romaios/FeederCopy", "secret");
+        private static readonly UpdateSettings Configured = new("Romaios/FeederComparator", "secret");
         private static readonly UpdateOffer Offer = new("2.4.0", 52428800, new object());
         private readonly FakeUpdatesView _view = new();
         private readonly FakeUpdateService _service = new();
@@ -33,7 +33,7 @@ namespace FeederCopy.Tests.Presenters
         {
             _presenter.Load();
 
-            Assert.Equal(("Romaios/FeederCopy", false, "2.3.0"), _view.Source);
+            Assert.Equal(("Romaios/FeederComparator", false, "2.3.0"), _view.Source);
             Assert.Equal(UpdateStage.NeedsSettings, _view.Screen.Stage);
         }
 
@@ -78,7 +78,7 @@ namespace FeederCopy.Tests.Presenters
         {
             _presenter.Load();
 
-            _presenter.OnSaveSourceClicked("Romaios/FeederCopy", "");
+            _presenter.OnSaveSourceClicked("Romaios/FeederComparator", "");
 
             Assert.Null(_store.Saved);
             Assert.Equal(("Enter the access token.", true), _view.SourceMessage);

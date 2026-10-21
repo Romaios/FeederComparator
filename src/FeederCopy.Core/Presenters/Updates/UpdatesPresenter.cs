@@ -54,7 +54,7 @@ namespace FeederCopy.Core.Presenters.Updates
             var updated = new UpdateSettings(repository.Trim(), token.Trim().Length > 0 ? token.Trim() : _settings.Token);
             if (updated.RepositoryUrl is null)
             {
-                _view.ShowSourceMessage("Enter the repository as owner/name, for example Romaios/FeederCopy.", isError: true);
+                _view.ShowSourceMessage("Enter the repository as owner/name, for example Romaios/FeederComparator.", isError: true);
                 return;
             }
             if (updated.Token.Length == 0)

@@ -2,7 +2,7 @@ namespace FeederCopy.Core.Models.Updates
 {
     public sealed record UpdateSettings(string Repository, string Token)
     {
-        public const string DefaultRepository = "Romaios/FeederCopy";
+        public const string DefaultRepository = "Romaios/FeederComparator";
 
         public static UpdateSettings Empty { get; } = new(DefaultRepository, string.Empty);
 

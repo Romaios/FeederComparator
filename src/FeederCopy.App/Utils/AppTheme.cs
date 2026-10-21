@@ -139,6 +139,45 @@ namespace FeederCopy.App.Utils
         public static readonly Font SmallFontBold = new("Segoe UI Semibold", 9F);
         public static readonly Font ButtonFont = new("Segoe UI Semibold", 9.5F);
         public static readonly Font MonoFont = new("Consolas", 9.5F);
+        public static readonly Font BrandFont = new("Bahnschrift SemiBold", 13F);
+        public static readonly Font NavFont = new("Segoe UI Semibold", 10F);
+        public static readonly Font IconFont = new("Segoe MDL2 Assets", 13F);
+
+        public const int TopTabExpandedWidth = 150;
+        public const int TopTabCollapsedWidth = 52;
+        public const int TopTabExpandedHeight = 46;
+        public const int TopTabCollapsedHeight = 36;
+        public const int HeaderExpandedHeight = 62;
+        public const int HeaderCollapsedHeight = 46;
+        private const int TopTabIconWidth = 40;
+        private const int TopTabCorner = 8;
+        private const int TopTabBar = 3;
+
+        private static readonly Color[] LightNavPalette =
+        [
+            Color.FromArgb(13, 148, 136),
+            Color.FromArgb(124, 58, 237),
+            Color.FromArgb(37, 99, 235),
+            Color.FromArgb(217, 119, 6),
+            Color.FromArgb(219, 39, 119),
+            Color.FromArgb(234, 88, 12),
+        ];
+
+        private static readonly Color[] DarkNavPalette =
+        [
+            Color.FromArgb(45, 212, 191),
+            Color.FromArgb(167, 139, 250),
+            Color.FromArgb(96, 165, 250),
+            Color.FromArgb(251, 191, 36),
+            Color.FromArgb(244, 114, 182),
+            Color.FromArgb(251, 146, 60),
+        ];
+
+        public static Color NavColor(int index)
+        {
+            Color[] palette = IsDark ? DarkNavPalette : LightNavPalette;
+            return palette[index % palette.Length];
+        }
 
         private const int AccentWidth = 4;
 
@@ -352,6 +391,49 @@ namespace FeederCopy.App.Utils
             tab.Paint += DrawNavTabUnderline;
         }
 
+        public static void StyleBrand(Label title, PictureBox logo)
+        {
+            title.Font = BrandFont;
+            title.ForeColor = IsDark ? Highlight : Primary;
+            title.BackColor = CardBackground;
+            logo.BackColor = CardBackground;
+            logo.Image = AppAssets.Logo;
+        }
+
+        public static void StyleTopTab(RadioButton tab, Color accent)
+        {
+            tab.Appearance = Appearance.Button;
+            tab.FlatStyle = FlatStyle.Flat;
+            tab.FlatAppearance.BorderSize = 0;
+            tab.FlatAppearance.CheckedBackColor = CardBackground;
+            tab.FlatAppearance.MouseOverBackColor = CardBackground;
+            tab.FlatAppearance.MouseDownBackColor = CardBackground;
+            tab.BackColor = CardBackground;
+            tab.ForeColor = accent;
+            tab.Font = NavFont;
+            tab.Cursor = Cursors.Hand;
+            tab.Paint -= DrawTopTab;
+            tab.Paint += DrawTopTab;
+            tab.MouseEnter -= RedrawControl;
+            tab.MouseEnter += RedrawControl;
+            tab.MouseLeave -= RedrawControl;
+            tab.MouseLeave += RedrawControl;
+            tab.CheckedChanged -= RedrawControl;
+            tab.CheckedChanged += RedrawControl;
+        }
+
+        public static void StyleHeaderIconButton(Button button)
+        {
+            button.FlatStyle = FlatStyle.Flat;
+            button.FlatAppearance.BorderSize = 0;
+            button.FlatAppearance.MouseOverBackColor = SurfaceAlt;
+            button.FlatAppearance.MouseDownBackColor = PrimaryLight;
+            button.BackColor = CardBackground;
+            button.ForeColor = TextSecondary;
+            button.Font = IconFont;
+            button.Cursor = Cursors.Hand;
+        }
+
         public static void StyleGrid(DataGridView grid)
         {
             grid.BackgroundColor = CardBackground;
@@ -455,6 +537,68 @@ namespace FeederCopy.App.Utils
             var text = new Rectangle(e.Bounds.Left + 4, e.Bounds.Top, e.Bounds.Width - 6, e.Bounds.Height);
             TextRenderer.DrawText(e.Graphics, combo.GetItemText(combo.Items[e.Index]), combo.Font, text, fore,
                 TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix | TextFormatFlags.SingleLine | TextFormatFlags.EndEllipsis);
+        }
+
+        private static void RedrawControl(object? sender, EventArgs e) => (sender as Control)?.Invalidate();
+
+        private static Color Blend(Color top, Color bottom, double amount) => Color.FromArgb(
+            (int)Math.Round(top.R * amount + bottom.R * (1 - amount)),
+            (int)Math.Round(top.G * amount + bottom.G * (1 - amount)),
+            (int)Math.Round(top.B * amount + bottom.B * (1 - amount)));
+
+        private static void DrawTopTab(object? sender, PaintEventArgs e)
+        {
+            if (sender is not RadioButton tab)
+                return;
+            Color accent = tab.ForeColor;
+            bool active = tab.Checked;
+            bool hover = tab.ClientRectangle.Contains(tab.PointToClient(Cursor.Position));
+            Graphics g = e.Graphics;
+            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+            using (var clear = new SolidBrush(CardBackground))
+                g.FillRectangle(clear, tab.ClientRectangle);
+
+            int inset = tab.LogicalToDeviceUnits(2);
+            var pill = Rectangle.Inflate(tab.ClientRectangle, -inset, -inset);
+            if (active || hover)
+            {
+                Color fill = active ? Blend(accent, CardBackground, IsDark ? 0.22 : 0.12) : SurfaceAlt;
+                using var path = RoundedRectangle(pill, tab.LogicalToDeviceUnits(TopTabCorner));
+                using var brush = new SolidBrush(fill);
+                g.FillPath(brush, path);
+            }
+            if (active)
+            {
+                int bar = tab.LogicalToDeviceUnits(TopTabBar);
+                int margin = tab.LogicalToDeviceUnits(10);
+                using var accentBrush = new SolidBrush(accent);
+                g.FillRectangle(accentBrush, pill.Left + margin, pill.Bottom - bar, Math.Max(1, pill.Width - margin * 2), bar);
+            }
+
+            bool collapsed = tab.Width <= tab.LogicalToDeviceUnits(TopTabCollapsedWidth);
+            int iconWidth = tab.LogicalToDeviceUnits(TopTabIconWidth);
+            var icon = collapsed ? tab.ClientRectangle : new Rectangle(tab.LogicalToDeviceUnits(6), 0, iconWidth, tab.Height);
+            Color iconColor = active || hover ? accent : Blend(accent, CardBackground, 0.75);
+            if (tab.Tag is string glyph)
+                TextRenderer.DrawText(g, glyph, IconFont, icon, iconColor,
+                    TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix);
+            if (collapsed)
+                return;
+            var text = new Rectangle(icon.Right, 0, tab.Width - icon.Right - tab.LogicalToDeviceUnits(6), tab.Height);
+            TextRenderer.DrawText(g, tab.Text, NavFont, text, active ? TextPrimary : TextSecondary,
+                TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix | TextFormatFlags.EndEllipsis);
+        }
+
+        private static System.Drawing.Drawing2D.GraphicsPath RoundedRectangle(Rectangle bounds, int radius)
+        {
+            int d = Math.Min(radius * 2, Math.Min(bounds.Width, bounds.Height));
+            var path = new System.Drawing.Drawing2D.GraphicsPath();
+            path.AddArc(bounds.Left, bounds.Top, d, d, 180, 90);
+            path.AddArc(bounds.Right - d, bounds.Top, d, d, 270, 90);
+            path.AddArc(bounds.Right - d, bounds.Bottom - d, d, d, 0, 90);
+            path.AddArc(bounds.Left, bounds.Bottom - d, d, d, 90, 90);
+            path.CloseFigure();
+            return path;
         }
 
         private static void PaintNavTab(object? sender, EventArgs e)

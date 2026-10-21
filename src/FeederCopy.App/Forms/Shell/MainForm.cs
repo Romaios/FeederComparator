@@ -12,6 +12,8 @@ namespace FeederCopy.App.Forms.Shell
     public sealed partial class MainForm : Form
     {
         private const string ReadyText = "Ready";
+        private const string CollapseGlyph = "";
+        private const string ExpandGlyph = "";
 
         private readonly SettingsPresenter _settings;
         private readonly FeedersPresenter _feeders;
@@ -19,10 +21,12 @@ namespace FeederCopy.App.Forms.Shell
         private readonly ConsumersPresenter _consumers;
         private readonly BusSortPresenter _busSort;
         private readonly UpdatesPresenter _updates;
+        private bool _headerCollapsed;
 
         public MainForm(AppServices services)
         {
             InitializeComponent();
+            Icon = AppAssets.Icon;
             ApplyTheme();
             Text = $"{Dialogs.AppName} {typeof(MainForm).Assembly.GetName().Version?.ToString(3)}";
 
@@ -60,19 +64,39 @@ namespace FeederCopy.App.Forms.Shell
         {
             AppTheme.StyleForm(this);
             AppTheme.StyleHeaderBar(tlpHeader);
-            AppTheme.StyleTitleLabel(lblAppTitle);
-            AppTheme.StyleNavTab(rdoFeeders);
-            AppTheme.StyleNavTab(rdoCopy);
-            AppTheme.StyleNavTab(rdoConsumers);
-            AppTheme.StyleNavTab(rdoBusSort);
-            AppTheme.StyleNavTab(rdoSettings);
-            AppTheme.StyleNavTab(rdoUpdates);
+            AppTheme.StyleBrand(lblAppTitle, picLogo);
+            flpTabs.BackColor = AppTheme.CardBackground;
+            RadioButton[] tabs = [rdoFeeders, rdoCopy, rdoConsumers, rdoBusSort, rdoSettings, rdoUpdates];
+            for (int i = 0; i < tabs.Length; i++)
+                AppTheme.StyleTopTab(tabs[i], AppTheme.NavColor(i));
+            AppTheme.StyleHeaderIconButton(btnCollapse);
             AppTheme.StyleWarningBanner(tlpWarning, lblWarning, btnDismissWarning);
             AppTheme.StylePrimaryButton(btnWarningAction);
             AppTheme.StyleStatusStrip(statusStrip);
         }
 
         private void SetStatus(string? message) => lblStatus.Text = message ?? ReadyText;
+
+        private void ApplyHeaderSize()
+        {
+            SuspendLayout();
+            tlpShell.RowStyles[0].Height = LogicalToDeviceUnits(_headerCollapsed ? AppTheme.HeaderCollapsedHeight : AppTheme.HeaderExpandedHeight);
+            var size = new Size(
+                LogicalToDeviceUnits(_headerCollapsed ? AppTheme.TopTabCollapsedWidth : AppTheme.TopTabExpandedWidth),
+                LogicalToDeviceUnits(_headerCollapsed ? AppTheme.TopTabCollapsedHeight : AppTheme.TopTabExpandedHeight));
+            foreach (Control tab in flpTabs.Controls)
+                tab.Size = size;
+            lblAppTitle.Visible = !_headerCollapsed;
+            btnCollapse.Text = _headerCollapsed ? ExpandGlyph : CollapseGlyph;
+            tipNav.SetToolTip(btnCollapse, _headerCollapsed ? "Expand the tab bar" : "Collapse the tab bar");
+            ResumeLayout(true);
+        }
+
+        private void btnCollapse_Click(object? sender, EventArgs e)
+        {
+            _headerCollapsed = !_headerCollapsed;
+            ApplyHeaderSize();
+        }
 
         private void ShowWarning(string message, bool updateOffer)
         {
