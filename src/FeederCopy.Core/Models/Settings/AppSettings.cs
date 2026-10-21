@@ -29,6 +29,7 @@ namespace FeederCopy.Core.Models.Settings
         public required FeederColumns Feeder { get; init; }
         public required AsBilledColumns AsBilled { get; init; }
         public required ExportStyle Export { get; init; }
+        public string HandPlacedBusTags { get; init; } = "sp, jnc";
 
         public static AppSettings Defaults { get; } = new()
         {

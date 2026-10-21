@@ -91,6 +91,10 @@ namespace FeederCopy.Tests.Support
 
         public void ShowCreateError(string? message) => CreateError = message;
 
+        public List<string> Infos { get; } = [];
+
+        public void ShowInfo(string message) => Infos.Add(message);
+
         public void ClearCreateForm() => CreateCleared++;
 
         public string? PickOpenFile(string title, string filter) => NextOpenFile;

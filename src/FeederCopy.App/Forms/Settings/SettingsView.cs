@@ -21,6 +21,7 @@ namespace FeederCopy.App.Forms.Settings
             txtBusId.Text = settings.Feeder.BusId;
             txtConsumerId.Text = settings.Feeder.ConsumerId;
             txtStatusColumn.Text = settings.Feeder.Status;
+            txtHandTags.Text = settings.HandPlacedBusTags;
             txtAccount.Text = settings.AsBilled.AccountNumber;
             txtKwh.Text = settings.AsBilled.KwhUsed;
             txtMonth.Text = settings.AsBilled.BillMonth;
@@ -33,6 +34,7 @@ namespace FeederCopy.App.Forms.Settings
             Feeder = new FeederColumns { BusId = txtBusId.Text.Trim(), ConsumerId = txtConsumerId.Text.Trim(), Status = txtStatusColumn.Text.Trim() },
             AsBilled = new AsBilledColumns { AccountNumber = txtAccount.Text.Trim(), KwhUsed = txtKwh.Text.Trim(), BillMonth = txtMonth.Text.Trim() },
             Export = cboExportStyle.SelectedIndex == (int)ExportStyle.SeparateFiles ? ExportStyle.SeparateFiles : ExportStyle.OneWorkbook,
+            HandPlacedBusTags = txtHandTags.Text.Trim(),
         };
 
         public void ShowValidation(IReadOnlyList<string> errors)
@@ -52,9 +54,9 @@ namespace FeederCopy.App.Forms.Settings
             AppTheme.StyleCard(tlpFeederCard, lblFeederTitle);
             AppTheme.StyleCard(tlpAsBilledCard, lblAsBilledTitle);
             AppTheme.StyleCard(tlpExportCard, lblExportTitle);
-            foreach (Label label in new[] { lblBusId, lblConsumerId, lblStatusColumn, lblAccount, lblKwh, lblMonth, lblExportStyle })
+            foreach (Label label in new[] { lblBusId, lblConsumerId, lblStatusColumn, lblHandTags, lblAccount, lblKwh, lblMonth, lblExportStyle })
                 AppTheme.StyleFieldLabel(label);
-            foreach (TextBox box in new[] { txtBusId, txtConsumerId, txtStatusColumn, txtAccount, txtKwh, txtMonth })
+            foreach (TextBox box in new[] { txtBusId, txtConsumerId, txtStatusColumn, txtHandTags, txtAccount, txtKwh, txtMonth })
                 AppTheme.StyleTextBox(box);
             AppTheme.StyleComboBox(cboExportStyle);
             AppTheme.StylePrimaryButton(btnSave);

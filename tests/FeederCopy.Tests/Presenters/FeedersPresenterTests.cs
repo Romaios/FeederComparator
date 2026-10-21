@@ -371,6 +371,60 @@ namespace FeederCopy.Tests.Presenters
         }
 
         [Fact]
+        public void Sort_ConfirmYes_SortsAndSaves()
+        {
+            long id = Seed("F", E("A2", "c1"), E("A1", "c2"));
+            _presenter.OnSortClicked();
+            Assert.Equal(["Sort the bus IDs in F? 1 of 2 rows will move. Buses with sp/jnc stay under their parent bus in the order you placed them."], _view.ConfirmMessages);
+            Assert.Equal([E("A1", "c2"), E("A2", "c1")], _service.GetConsumers(id));
+            Assert.Equal(1, _changed);
+        }
+
+        [Fact]
+        public void Sort_ConfirmNo_NoChange()
+        {
+            long id = Seed("F", E("A2", "c1"), E("A1", "c2"));
+            _view.ConfirmAnswer = false;
+            _presenter.OnSortClicked();
+            Assert.Equal([E("A2", "c1"), E("A1", "c2")], _service.GetConsumers(id));
+            Assert.Equal(0, _changed);
+        }
+
+        [Fact]
+        public void Sort_AlreadyInOrder_SaysSo()
+        {
+            Seed("F", E("A1", "c1"), E("A2", "c2"));
+            _presenter.OnSortClicked();
+            Assert.Empty(_view.ConfirmMessages);
+            Assert.Equal(["The bus IDs in F are already in order."], _view.Infos);
+        }
+
+        [Fact]
+        public void Add_NewHandPlacedBus_Automatic_AsksWhereItGoes()
+        {
+            long id = Seed("F", E("A1", "c1"), E("A2", "c2"));
+            _presenter.OnAddClicked("A1jnc1", "c9", null);
+            Assert.Equal("A1jnc1 has sp/jnc. Choose where it goes in 'Place new bus after'.", _view.AddError);
+            Assert.Equal(2, _service.GetConsumers(id).Count);
+        }
+
+        [Fact]
+        public void Add_PlaceAfter_InsertsRightAfterThatBus()
+        {
+            long id = Seed("F", E("A1", "c1"), E("A2", "c2"));
+            _presenter.OnAddClicked("A1jnc1", "c9", "A1");
+            Assert.Equal([E("A1", "c1"), E("A1jnc1", "c9"), E("A2", "c2")], _service.GetConsumers(id));
+        }
+
+        [Fact]
+        public void Add_PlaceAfter_IgnoredWhenBusAlreadyExists()
+        {
+            long id = Seed("F", E("A1", "c1"), E("A2", "c2"));
+            _presenter.OnAddClicked("A2", "c9", "A1");
+            Assert.Equal([E("A1", "c1"), E("A2", "c2"), E("A2", "c9")], _service.GetConsumers(id));
+        }
+
+        [Fact]
         public void ServiceThrows_LoggedAndShown()
         {
             var presenter = new FeedersPresenter(_view, new FailingSaveService(), () => AppSettings.Defaults, _log);

@@ -131,7 +131,26 @@ namespace FeederCopy.Core.Presenters.Feeders
             });
         }
 
-        public void OnAddClicked(string? busId, string? consumerId)
+        public void OnSortClicked()
+        {
+            if (Selected is not { } feeder)
+                return;
+            IReadOnlyList<string> tags = BusSorter.ParseTags(_settings().HandPlacedBusTags);
+            IReadOnlyList<ConsumerEntry> current = FeederLayout.Arrange(_feeders.GetConsumers(feeder.Id));
+            List<ConsumerEntry> sorted = BusSorter.Sort(current, tags);
+            int moved = BusSorter.MovedRows(current, sorted);
+            if (moved == 0)
+            {
+                _view.ShowInfo($"The bus IDs in {feeder.Name} are already in order.");
+                return;
+            }
+            string tagText = tags.Count == 0 ? string.Empty : $" Buses with {string.Join("/", tags)} stay under their parent bus in the order you placed them.";
+            if (!_view.Confirm("Sort bus IDs", $"Sort the bus IDs in {feeder.Name}? {moved:N0} of {current.Count:N0} rows will move.{tagText}"))
+                return;
+            Change("Sorting bus IDs", "Could not save the sorted list.", () => Save(feeder.Id, sorted));
+        }
+
+        public void OnAddClicked(string? busId, string? consumerId, string? placeAfterBus = null)
         {
             if (Selected is not { } feeder)
                 return;
@@ -149,7 +168,18 @@ namespace FeederCopy.Core.Presenters.Feeders
                     _view.ShowAddError(FeederRules.AlreadyIn(id, where));
                     return false;
                 }
-                Save(feeder.Id, FeederLayout.Add(_feeders.GetConsumers(feeder.Id), busId, id));
+                IReadOnlyList<ConsumerEntry> entries = _feeders.GetConsumers(feeder.Id);
+                string? bus = FeederLayout.NormalizeBus(busId);
+                bool isNewBus = bus is not null && !entries.Any(e => string.Equals(e.BusId, bus, StringComparison.OrdinalIgnoreCase));
+                IReadOnlyList<string> tags = BusSorter.ParseTags(_settings().HandPlacedBusTags);
+                if (isNewBus && string.IsNullOrWhiteSpace(placeAfterBus) && BusSorter.IsHandPlaced(bus!, tags))
+                {
+                    _view.ShowAddError($"{bus} has {string.Join("/", tags)}. Choose where it goes in 'Place new bus after'.");
+                    return false;
+                }
+                Save(feeder.Id, string.IsNullOrWhiteSpace(placeAfterBus)
+                    ? FeederLayout.Add(entries, bus, id)
+                    : FeederLayout.AddAfter(entries, new ConsumerEntry(bus, id), placeAfterBus));
                 _view.ClearAddForm();
                 _view.ShowAddError(null);
                 return true;

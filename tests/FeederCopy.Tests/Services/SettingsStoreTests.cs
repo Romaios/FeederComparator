@@ -55,6 +55,7 @@ namespace FeederCopy.Tests.Services
             SettingsLoadResult result = new SettingsStore(TestFiles.WriteRawText(json, ".json")).Load();
             Assert.Null(result.Problem);
             Assert.Equal("Status", result.Settings.Feeder.Status);
+            Assert.Equal("sp, jnc", result.Settings.HandPlacedBusTags);
         }
 
         [Fact]

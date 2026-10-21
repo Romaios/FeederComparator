@@ -53,6 +53,18 @@ namespace FeederCopy.Core.Models.Feeders
             return Arrange(list.Append(normalized));
         }
 
+        public static List<ConsumerEntry> AddAfter(IReadOnlyList<ConsumerEntry> entries, ConsumerEntry entry, string afterBus)
+        {
+            ConsumerEntry normalized = entry with { BusId = NormalizeBus(entry.BusId), ConsumerId = NormalizeConsumer(entry.ConsumerId) };
+            List<ConsumerEntry> list = Arrange(entries);
+            bool busExists = list.Any(e => string.Equals(e.BusId, normalized.BusId, StringComparison.OrdinalIgnoreCase));
+            int last = list.FindLastIndex(e => string.Equals(e.BusId, afterBus.Trim(), StringComparison.OrdinalIgnoreCase));
+            if (busExists || normalized.BusId is null || last < 0)
+                return Add(list, normalized);
+            list.Insert(last + 1, normalized);
+            return Arrange(list);
+        }
+
         private static int EntryIndexOfBlock(IReadOnlyList<ConsumerEntry> arranged, int block)
         {
             int seen = -1;

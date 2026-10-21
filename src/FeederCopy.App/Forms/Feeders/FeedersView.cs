@@ -6,6 +6,8 @@ namespace FeederCopy.App.Forms.Feeders
 {
     public sealed partial class FeedersView : UserControl, IFeedersView
     {
+        private const string AutomaticPlace = "(automatic)";
+
         private FeedersPresenter? _presenter;
         private IReadOnlyList<ConsumerRow> _rows = [];
         private bool _populating;
@@ -52,6 +54,13 @@ namespace FeederCopy.App.Forms.Feeders
             txtRename.Text = feeder.Name;
             SetItems(cboAddBus, buses);
             SetItems(cboSetBus, buses);
+            cboPlaceAfter.BeginUpdate();
+            cboPlaceAfter.Items.Clear();
+            cboPlaceAfter.Items.Add(AutomaticPlace);
+            foreach (string bus in buses)
+                cboPlaceAfter.Items.Add(bus);
+            cboPlaceAfter.EndUpdate();
+            cboPlaceAfter.SelectedIndex = 0;
             cboMoveTo.Items.Clear();
             foreach (FeederSummary other in otherFeeders)
                 cboMoveTo.Items.Add(new FeederItem(other));
@@ -104,6 +113,8 @@ namespace FeederCopy.App.Forms.Feeders
         public void ClearAddForm()
         {
             txtAddConsumer.Clear();
+            if (cboPlaceAfter.Items.Count > 0)
+                cboPlaceAfter.SelectedIndex = 0;
             txtAddConsumer.Focus();
         }
 
@@ -132,6 +143,10 @@ namespace FeederCopy.App.Forms.Feeders
         public bool Confirm(string title, string message) => Dialogs.Confirm(Owner, title, message);
 
         public void ShowError(string message) => Dialogs.ShowError(Owner, message);
+
+        public void ShowInfo(string message) => Dialogs.ShowInfo(Owner, message);
+
+        private string? PlaceAfter => cboPlaceAfter.SelectedIndex > 0 ? cboPlaceAfter.SelectedItem as string : null;
 
         private IWin32Window Owner => (IWin32Window?)FindForm() ?? this;
 
@@ -162,6 +177,9 @@ namespace FeederCopy.App.Forms.Feeders
             AppTheme.StyleSuccessLabel(lblCopied);
             AppTheme.StyleSectionLabel(lblFeederName);
             AppTheme.StyleTextBox(txtRename);
+            AppTheme.StyleOutlineButton(btnSort);
+            AppTheme.StyleFieldLabel(lblPlaceAfter);
+            AppTheme.StyleComboBox(cboPlaceAfter);
             AppTheme.StyleOutlineButton(btnRename);
             AppTheme.StyleDangerButton(btnDelete);
             AppTheme.StyleCard(tlpAdd, lblAddTitle);
@@ -283,14 +301,16 @@ namespace FeederCopy.App.Forms.Feeders
 
         private void btnDelete_Click(object? sender, EventArgs e) => _presenter?.OnDeleteClicked();
 
-        private void btnAdd_Click(object? sender, EventArgs e) => _presenter?.OnAddClicked(cboAddBus.Text, txtAddConsumer.Text);
+        private void btnAdd_Click(object? sender, EventArgs e) => _presenter?.OnAddClicked(cboAddBus.Text, txtAddConsumer.Text, PlaceAfter);
+
+        private void btnSort_Click(object? sender, EventArgs e) => _presenter?.OnSortClicked();
 
         private void txtAddConsumer_KeyDown(object? sender, KeyEventArgs e)
         {
             if (e.KeyCode != Keys.Enter)
                 return;
             e.SuppressKeyPress = true;
-            _presenter?.OnAddClicked(cboAddBus.Text, txtAddConsumer.Text);
+            _presenter?.OnAddClicked(cboAddBus.Text, txtAddConsumer.Text, PlaceAfter);
         }
 
         private void btnSearch_Click(object? sender, EventArgs e) => _presenter?.OnSearch(txtSearch.Text);

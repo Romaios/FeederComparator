@@ -19,5 +19,6 @@ namespace FeederCopy.Core.Presenters.Feeders
         string? PickOpenFile(string title, string filter);
         bool Confirm(string title, string message);
         void ShowError(string message);
+        void ShowInfo(string message);
     }
 }
