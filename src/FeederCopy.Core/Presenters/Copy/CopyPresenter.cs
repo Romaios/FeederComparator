@@ -24,7 +24,7 @@ namespace FeederCopy.Core.Presenters.Copy
         private readonly Func<AppSettings> _settings;
         private readonly Action<ExportStyle> _rememberStyle;
         private readonly IErrorLog _log;
-        private KwhSnapshot? _snapshot;
+        private List<KwhSnapshot> _snapshots = [];
         private CopyResult? _result;
 
         public CopyPresenter(
@@ -83,38 +83,43 @@ namespace FeederCopy.Core.Presenters.Copy
 
         public async Task OnChooseFileClickedAsync()
         {
-            string? path = _view.PickOpenFile("Choose the As-Billed file", AsBilledFilter);
-            if (path is null)
+            IReadOnlyList<string> paths = _view.PickOpenFiles("Choose the As-Billed file (hold Ctrl to pick several months)", AsBilledFilter);
+            if (paths.Count == 0)
                 return;
 
-            _view.SetBusy(true, "Reading As-Billed file…");
             try
             {
                 AsBilledColumns columns = _settings().AsBilled;
-                var progress = new Progress<int>(rows => _view.SetBusy(true, $"Reading… {rows:N0} rows"));
-                KwhSnapshot snapshot = await Task.Run(() => _reader.Read(path, columns, progress));
+                var read = new List<KwhSnapshot>();
+                var skipped = new List<string>();
+                for (int i = 0; i < paths.Count; i++)
+                {
+                    string path = paths[i];
+                    string name = Path.GetFileName(path);
+                    string step = paths.Count == 1 ? "Reading" : $"Reading {name} ({i + 1} of {paths.Count})";
+                    _view.SetBusy(true, $"{step}…");
+                    var progress = new Progress<int>(rows => _view.SetBusy(true, $"{step}… {rows:N0} rows"));
+                    KwhSnapshot snapshot = await Task.Run(() => _reader.Read(path, columns, progress));
+                    if (snapshot.FatalError is not null)
+                        skipped.Add(paths.Count == 1 ? snapshot.FatalError : $"{name}: {snapshot.FatalError}");
+                    else if (paths.Count > 1 && snapshot.Month is null)
+                        skipped.Add($"{name}: the bill month was not found in the file. Choose this file on its own and pick its month.");
+                    else if (read.FirstOrDefault(r => r.Month == snapshot.Month) is { } same)
+                        skipped.Add($"{name}: {snapshot.Month} is already in {same.FileName}.");
+                    else
+                        read.Add(snapshot);
+                }
                 _view.SetBusy(false, null);
                 _result = null;
                 _view.SetExportEnabled(false);
-
-                if (snapshot.FatalError is not null)
-                {
-                    _snapshot = null;
-                    _view.ShowError(snapshot.FatalError);
-                    RefreshIdleState();
-                    return;
-                }
-
-                _snapshot = snapshot;
-                _view.ShowFileRead(snapshot.FileName, snapshot.Month, snapshot.RowsRead, snapshot.Errors.Count);
-                _view.SetMonth(snapshot.Month?.Month, snapshot.Month?.Year);
-                RefreshIdleState();
-                if (snapshot.Month is { } fileMonth && _readings.GetMonths().Contains(fileMonth))
-                    _view.ClearResult($"{fileMonth} was copied before. Click Copy kWh to copy it again from this file.");
+                _snapshots = read.OrderBy(r => r.Month).ToList();
+                if (skipped.Count > 0)
+                    _view.ShowError(paths.Count == 1 ? skipped[0] : "These files were skipped:\n" + string.Join("\n", skipped));
+                ShowChosenFiles();
             }
             catch (Exception ex)
             {
-                _log.Error($"Reading As-Billed file {path}", ex);
+                _log.Error($"Reading As-Billed files {string.Join(", ", paths)}", ex);
                 _view.SetBusy(false, null);
                 _view.ShowError($"Could not read the As-Billed file. {ex.Message}");
             }
@@ -122,49 +127,69 @@ namespace FeederCopy.Core.Presenters.Copy
 
         public async Task OnCopyClickedAsync(int? month, int? year)
         {
-            if (_snapshot is not { } snapshot)
+            if (_snapshots.Count == 0)
                 return;
-            if (month is not (>= 1 and <= 12) || year is not (>= 1900 and <= 2100))
-            {
-                _view.ShowError("Choose the month and year.");
-                return;
-            }
 
-            var chosen = new BillMonth(year.Value, month.Value);
-            if (snapshot.Month is { } fileMonth && fileMonth != chosen
-                && !_view.Confirm("Different month", $"You chose {chosen}, but the file contains {fileMonth}. Use {chosen}?"))
-                return;
+            List<(KwhSnapshot Snapshot, BillMonth Month)> jobs;
+            if (_snapshots.Count == 1)
+            {
+                if (month is not (>= 1 and <= 12) || year is not (>= 1900 and <= 2100))
+                {
+                    _view.ShowError("Choose the month and year.");
+                    return;
+                }
+                KwhSnapshot snapshot = _snapshots[0];
+                var chosen = new BillMonth(year.Value, month.Value);
+                if (snapshot.Month is { } fileMonth && fileMonth != chosen
+                    && !_view.Confirm("Different month", $"You chose {chosen}, but the file contains {fileMonth}. Use {chosen}?"))
+                    return;
+                jobs = [(snapshot, chosen)];
+            }
+            else
+            {
+                jobs = _snapshots.Select(snapshot => (snapshot, snapshot.Month!.Value)).ToList();
+            }
 
             _view.SetBusy(true, "Copying kWh…");
             try
             {
                 bool negativeAsZero = _settings().NegativeKwhAsZero;
-                (CopyResult result, bool statusUpdated, BillMonth newest) = await Task.Run(() =>
+                CopyResult? last = null;
+                bool lastUpdated = false;
+                bool anyUpdated = false;
+                BillMonth newest = jobs[^1].Month;
+                for (int i = 0; i < jobs.Count; i++)
                 {
-                    CopyResult filled = KwhCopier.Fill(LoadFeeders(), snapshot, chosen, negativeAsZero);
-                    if (filled.Feeders.Count == 0)
-                        return (filled, false, chosen);
-                    _readings.SaveMonth(chosen, KwhCopier.Readings(filled));
-                    BillMonth latest = _readings.GetMonths().Max();
-                    bool update = chosen >= latest;
-                    if (update)
-                        _feeders.ApplyMonthStatus(KwhCopier.Statuses(filled), chosen);
-                    return (filled, update, latest);
-                });
-                _view.SetBusy(false, null);
-                if (result.Feeders.Count == 0)
-                {
-                    _view.ShowError(NoFeeders);
-                    return;
+                    (KwhSnapshot snapshot, BillMonth target) = jobs[i];
+                    if (jobs.Count > 1)
+                        _view.SetBusy(true, $"Copying {target} ({i + 1} of {jobs.Count})…");
+                    (CopyResult result, bool updated, BillMonth latest) = await Task.Run(() => CopyMonth(snapshot, target, negativeAsZero));
+                    if (result.Feeders.Count == 0)
+                    {
+                        _view.SetBusy(false, null);
+                        _view.ShowError(NoFeeders);
+                        return;
+                    }
+                    last = result;
+                    lastUpdated = updated;
+                    anyUpdated |= updated;
+                    newest = latest;
                 }
+                _view.SetBusy(false, null);
 
                 ReadingsSaved?.Invoke();
-                if (statusUpdated)
+                if (anyUpdated)
                     StatusesUpdated?.Invoke();
-                string status = statusUpdated
+                string status = lastUpdated
                     ? "current status set from this month's bills"
                     : $"current status kept from {newest} (newer month)";
-                Show(result, $"{chosen} · copied · {status}");
+                BillMonth shown = last!.Month;
+                string label = jobs.Count == 1
+                    ? $"{shown} · copied · {status}"
+                    : $"{jobs.Count} months copied ({jobs[0].Month} – {shown}) · showing {shown} · {status}";
+                _view.SetMonth(shown.Month, shown.Year);
+                _view.SetMonthEnabled(true);
+                Show(last, label);
             }
             catch (Exception ex)
             {
@@ -183,7 +208,7 @@ namespace FeederCopy.Core.Presenters.Copy
             }
             Run("Refreshing saved month", () =>
             {
-                _view.SetCopyEnabled(HasFeeders() && _snapshot is not null);
+                _view.SetCopyEnabled(HasFeeders() && _snapshots.Count > 0);
                 ShowSaved(result.Month);
             });
         }
@@ -228,6 +253,50 @@ namespace FeederCopy.Core.Presenters.Copy
                 _view.ShowInfo($"Exported {Text.Count(result.Feeders.Count, "feeder", "feeders")}.");
         }
 
+        private (CopyResult Result, bool Updated, BillMonth Latest) CopyMonth(KwhSnapshot snapshot, BillMonth month, bool negativeAsZero)
+        {
+            CopyResult filled = KwhCopier.Fill(LoadFeeders(), snapshot, month, negativeAsZero);
+            if (filled.Feeders.Count == 0)
+                return (filled, false, month);
+            _readings.SaveMonth(month, KwhCopier.Readings(filled));
+            BillMonth latest = _readings.GetMonths().Max();
+            bool update = month >= latest;
+            if (update)
+                _feeders.ApplyMonthStatus(KwhCopier.Statuses(filled), month);
+            return (filled, update, latest);
+        }
+
+        private void ShowChosenFiles()
+        {
+            _view.SetMonthEnabled(_snapshots.Count <= 1);
+            RefreshIdleState();
+            if (_snapshots.Count == 0)
+            {
+                _view.ShowFileText("No file chosen yet.");
+                return;
+            }
+
+            int rows = _snapshots.Sum(snapshot => snapshot.RowsRead);
+            int skippedRows = _snapshots.Sum(snapshot => snapshot.Errors.Count);
+            IReadOnlyList<BillMonth> saved = _readings.GetMonths();
+            if (_snapshots.Count == 1)
+            {
+                KwhSnapshot only = _snapshots[0];
+                _view.ShowFileText($"{only.FileName}  ·  {only.Month?.ToString() ?? "month not found"}  ·  {rows:N0} rows  ·  {skippedRows:N0} skipped");
+                _view.SetMonth(only.Month?.Month, only.Month?.Year);
+                if (only.Month is { } fileMonth && saved.Contains(fileMonth))
+                    _view.ClearResult($"{fileMonth} was copied before. Click Copy kWh to copy it again from this file.");
+                return;
+            }
+
+            List<BillMonth> months = _snapshots.Select(snapshot => snapshot.Month!.Value).ToList();
+            _view.ShowFileText($"{_snapshots.Count} files  ·  {months[0]} – {months[^1]}  ·  {rows:N0} rows  ·  {skippedRows:N0} skipped");
+            _view.SetMonth(months[^1].Month, months[^1].Year);
+            int again = months.Count(saved.Contains);
+            string replaced = again == 0 ? string.Empty : $" {Text.Count(again, "month was", "months were")} copied before and will be replaced.";
+            _view.ClearResult($"Click Copy kWh to copy {Text.Count(months.Count, "month", "months")}: {string.Join(", ", months)}.{replaced}");
+        }
+
         private IReadOnlyList<FeederSource> LoadFeeders() =>
             _feeders.GetFeeders()
                 .Select(f => new FeederSource(f.Name, _feeders.GetConsumers(f.Id)))
@@ -242,7 +311,7 @@ namespace FeederCopy.Core.Presenters.Copy
                 _result = null;
                 _view.SetExportEnabled(false);
                 _view.ClearResult(!hasFeeders ? NoFeeders
-                    : _snapshot is null ? $"Nothing saved for {month} yet. Choose its As-Billed file, then click Copy kWh."
+                    : _snapshots.Count == 0 ? $"Nothing saved for {month} yet. Choose its As-Billed file, then click Copy kWh."
                     : "Check the month, then click Copy kWh.");
                 return;
             }
@@ -288,10 +357,10 @@ namespace FeederCopy.Core.Presenters.Copy
         private void RefreshIdleState()
         {
             bool hasFeeders = HasFeeders();
-            _view.SetCopyEnabled(hasFeeders && _snapshot is not null);
+            _view.SetCopyEnabled(hasFeeders && _snapshots.Count > 0);
             if (!hasFeeders)
                 _view.ClearResult(NoFeeders);
-            else if (_snapshot is null)
+            else if (_snapshots.Count == 0)
                 _view.ClearResult(ChooseFile);
             else
                 _view.ClearResult("Check the month, then click Copy kWh.");

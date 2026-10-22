@@ -5,7 +5,16 @@ using FeederCopy.Core.Models.Feeders;
 
 namespace FeederCopy.Core.Models.Consumers
 {
-    public sealed record ConsumerFilter(string? Feeder, bool? Active, string? Search)
+    public enum ConsumerProblem
+    {
+        All,
+        Duplicate,
+        Unreadable,
+        NoBill,
+        Any,
+    }
+
+    public sealed record ConsumerFilter(string? Feeder, bool? Active, string? Search, ConsumerProblem Problem = ConsumerProblem.All)
     {
         public static ConsumerFilter All { get; } = new(null, null, null);
     }
@@ -104,12 +113,28 @@ namespace FeederCopy.Core.Models.Consumers
                     continue;
 
                 (IReadOnlyList<string> months, double total) = readings.ByConsumer.TryGetValue(entry.ConsumerId, out var found) ? found : (NoMonths, 0);
+                if (!HasProblem(months, filter.Problem))
+                    continue;
                 BillMonth? from = !entry.Active && inactiveFrom is not null && inactiveFrom.TryGetValue(entry.ConsumerId, out BillMonth m) ? m : null;
                 rows.Add(new ConsumerYearRow(feeder, count, BusLabels.For(entry.BusId), entry.ConsumerId, entry.Active, from,
                     InactiveMonths.ActiveMonthsIn(entry.Active, from, readings.Year), months, total));
             }
             return rows;
         }
+
+        public static bool HasProblem(IReadOnlyList<string> months, ConsumerProblem problem) => problem switch
+        {
+            ConsumerProblem.All => true,
+            ConsumerProblem.Duplicate => months.Contains(DuplicateCell),
+            ConsumerProblem.Unreadable => months.Contains(UnreadableCell),
+            ConsumerProblem.NoBill => months.Any(IsNoBill),
+            _ => months.Any(m => m == DuplicateCell || m == UnreadableCell || IsNoBill(m)),
+        };
+
+        private const string DuplicateCell = "Duplicate";
+        private const string UnreadableCell = "Unreadable";
+
+        private static bool IsNoBill(string cell) => cell is StatusLabels.Inactive or "Missing";
 
         public static IReadOnlyList<int> Years(IReadOnlyList<int> savedYears, int currentYear) =>
             savedYears.Append(currentYear).Distinct().OrderDescending().ToList();
@@ -122,8 +147,8 @@ namespace FeederCopy.Core.Models.Consumers
             : reading.Status switch
             {
                 StatusLabels.MissingReading => "Missing",
-                StatusLabels.DuplicateInAsBilled => "Duplicate",
-                StatusLabels.Unreadable => "Unreadable",
+                StatusLabels.DuplicateInAsBilled => DuplicateCell,
+                StatusLabels.Unreadable => UnreadableCell,
                 _ => reading.Status,
             };
     }

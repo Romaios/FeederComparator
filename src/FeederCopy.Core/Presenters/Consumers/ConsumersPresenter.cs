@@ -53,9 +53,9 @@ namespace FeederCopy.Core.Presenters.Consumers
 
         public void OnReadingsChanged() => MarkStale(feeders: false, readings: true);
 
-        public void OnFilterChanged(string? feeder, bool active, int year, string? search)
+        public void OnFilterChanged(string? feeder, bool active, int year, string? search, ConsumerProblem problem = ConsumerProblem.All)
         {
-            _filter = new ConsumerFilter(feeder, active, search);
+            _filter = new ConsumerFilter(feeder, active, search, problem);
             _year = year;
             Run("Filtering consumers", Update);
         }

@@ -124,7 +124,6 @@ namespace FeederCopy.Tests.Support
         private readonly object _gate = new();
         private readonly List<(bool Busy, string? Message)> _busy = [];
 
-        public (string FileName, BillMonth? Month, int Rows, int Skipped)? FileRead { get; private set; }
         public (int? Month, int? Year) Month { get; private set; }
         public IReadOnlyList<FeederTotals>? Totals { get; private set; }
         public IReadOnlyList<CopyProblem>? Problems { get; private set; }
@@ -147,7 +146,13 @@ namespace FeederCopy.Tests.Support
             get { lock (_gate) return _busy.ToList(); }
         }
 
-        public void ShowFileRead(string fileName, BillMonth? fileMonth, int rows, int skipped) => FileRead = (fileName, fileMonth, rows, skipped);
+        public string? FileText { get; private set; }
+        public bool MonthEnabled { get; private set; } = true;
+        public IReadOnlyList<string>? NextOpenFiles { get; set; }
+
+        public void ShowFileText(string text) => FileText = text;
+
+        public void SetMonthEnabled(bool enabled) => MonthEnabled = enabled;
 
         public void SetMonth(int? month, int? year) => Month = (month, year);
 
@@ -179,7 +184,8 @@ namespace FeederCopy.Tests.Support
 
         public void SetExportEnabled(bool enabled) => ExportEnabled = enabled;
 
-        public string? PickOpenFile(string title, string filter) => NextOpenFile;
+        public IReadOnlyList<string> PickOpenFiles(string title, string filter) =>
+            NextOpenFiles ?? (NextOpenFile is null ? [] : [NextOpenFile]);
 
         public string? PickSaveFile(string filter, string defaultName)
         {

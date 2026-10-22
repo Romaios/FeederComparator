@@ -114,6 +114,49 @@ namespace FeederCopy.Tests.Presenters
             Assert.StartsWith("Jul 2026 · saved copy", _view.Heading);
         }
 
+        [Fact]
+        public async Task ChooseSeveralFiles_CopiesEachMonthOldestFirst_NewestSetsStatus()
+        {
+            int updates = 0;
+            _presenter.StatusesUpdated += () => updates++;
+            _service.CreateFeeder("F", [E("A", "c1"), E("A", "c2")]);
+            _presenter.Load();
+            _view.NextOpenFiles =
+            [
+                AsBilled(["c1", "30", "202607"]),
+                AsBilled(["c1", "10", "202605"], ["c2", "4", "202605"]),
+                AsBilled(["c1", "20", "202606"], ["c2", "5", "202606"]),
+            ];
+            await _presenter.OnChooseFileClickedAsync();
+            Assert.False(_view.MonthEnabled);
+            Assert.StartsWith("3 files  ·  May 2026 – Jul 2026", _view.FileText);
+            Assert.Equal("Click Copy kWh to copy 3 months: May 2026, Jun 2026, Jul 2026.", _view.ClearedMessage);
+            Assert.True(_view.CopyEnabled);
+
+            await _presenter.OnCopyClickedAsync(null, null);
+            Assert.Equal([new BillMonth(2026, 5), new BillMonth(2026, 6), new BillMonth(2026, 7)], _readings.GetMonths());
+            Assert.Equal([("c1", true), ("c2", false)], _service.GetAllConsumers().Select(c => (c.Entry.ConsumerId, c.Entry.Active)));
+            Assert.Equal(1, updates);
+            Assert.StartsWith("3 months copied (May 2026 – Jul 2026) · showing Jul 2026 · current status set from this month's bills", _view.Heading);
+            Assert.Equal((7, 2026), _view.Month);
+            Assert.True(_view.MonthEnabled);
+            Assert.True(_view.ExportEnabled);
+        }
+
+        [Fact]
+        public async Task ChooseSeveralFiles_SameMonthTwice_SkipsTheSecond()
+        {
+            _service.CreateFeeder("F", [E("A", "c1")]);
+            _presenter.Load();
+            string first = AsBilled(["c1", "10", "202606"]);
+            string second = AsBilled(["c1", "11", "202606"]);
+            _view.NextOpenFiles = [first, second];
+            await _presenter.OnChooseFileClickedAsync();
+            Assert.Equal($"These files were skipped:\n{Path.GetFileName(second)}: Jun 2026 is already in {Path.GetFileName(first)}.", _view.Errors.Single());
+            Assert.True(_view.MonthEnabled);
+            Assert.StartsWith(Path.GetFileName(first), _view.FileText);
+        }
+
         public void Dispose() => _temp.Dispose();
 
         private static ConsumerEntry E(string? bus, string id) => new(bus, id);
@@ -163,9 +206,8 @@ namespace FeederCopy.Tests.Presenters
         {
             await ReadyAsync();
             Assert.Equal((7, 2026), _view.Month);
-            Assert.Equal(new BillMonth(2026, 7), _view.FileRead!.Value.Month);
-            Assert.Equal(3, _view.FileRead.Value.Rows);
-            Assert.Equal(1, _view.FileRead.Value.Skipped);
+            Assert.EndsWith("  ·  Jul 2026  ·  3 rows  ·  1 skipped", _view.FileText);
+            Assert.True(_view.MonthEnabled);
             Assert.True(_view.CopyEnabled);
             Assert.False(_view.ExportEnabled);
         }

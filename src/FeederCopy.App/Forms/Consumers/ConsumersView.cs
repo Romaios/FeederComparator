@@ -28,6 +28,9 @@ namespace FeederCopy.App.Forms.Consumers
         {
             InitializeComponent();
             ApplyTheme();
+            _populating = true;
+            cboShow.SelectedIndex = 0;
+            _populating = false;
         }
 
         public void Attach(ConsumersPresenter presenter) => _presenter = presenter;
@@ -153,10 +156,11 @@ namespace FeederCopy.App.Forms.Consumers
         {
             AppTheme.StyleView(this);
             AppTheme.StyleCardPanel(tlpFilters);
-            foreach (Label label in new[] { lblFeeder, lblYear, lblFind, lblInactiveFrom })
+            foreach (Label label in new[] { lblFeeder, lblYear, lblShow, lblFind, lblInactiveFrom })
                 AppTheme.StyleFieldLabel(label);
             AppTheme.StyleComboBox(cboFeeder);
             AppTheme.StyleComboBox(cboYear);
+            AppTheme.StyleComboBox(cboShow);
             AppTheme.StyleTextBox(txtFind);
             AppTheme.StyleOutlineButton(btnFind);
             lblSummary.Font = AppTheme.BodyStrongFont;
@@ -187,7 +191,7 @@ namespace FeederCopy.App.Forms.Consumers
             if (_populating || _presenter is null || cboYear.SelectedItem is not int year)
                 return;
             string? feeder = cboFeeder.SelectedIndex > 0 ? cboFeeder.SelectedItem as string : null;
-            _presenter.OnFilterChanged(feeder, rdoActiveTab.Checked, year, txtFind.Text);
+            _presenter.OnFilterChanged(feeder, rdoActiveTab.Checked, year, txtFind.Text, (ConsumerProblem)Math.Max(0, cboShow.SelectedIndex));
         }
 
         private void UpdateSelection()

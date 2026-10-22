@@ -120,5 +120,15 @@ namespace FeederCopy.Tests.Models
             Assert.Equal(2025, ConsumerYearCalculator.DefaultYear([2025], 2026));
             Assert.Equal(2026, ConsumerYearCalculator.DefaultYear([], 2026));
         }
+
+        [Fact]
+        public void Build_ProblemFilter()
+        {
+            Assert.Equal(["0900001"], Build(new ConsumerFilter(null, null, null, ConsumerProblem.Duplicate)).Select(r => r.ConsumerId));
+            Assert.Equal(["0900001"], Build(new ConsumerFilter(null, null, null, ConsumerProblem.Unreadable)).Select(r => r.ConsumerId));
+            Assert.Equal(["c1", "c2"], Build(new ConsumerFilter(null, null, null, ConsumerProblem.NoBill)).Select(r => r.ConsumerId));
+            Assert.Equal(["c1", "c2", "0900001"], Build(new ConsumerFilter(null, null, null, ConsumerProblem.Any)).Select(r => r.ConsumerId));
+            Assert.Equal(3, Build(new ConsumerFilter(null, null, null, ConsumerProblem.All)).Count);
+        }
     }
 }

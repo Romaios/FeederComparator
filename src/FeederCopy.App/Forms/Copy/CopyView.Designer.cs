@@ -103,12 +103,12 @@ namespace FeederCopy.App.Forms.Copy
             tlpFile.SetColumnSpan(lblFileTitle, 2);
             lblFileTitle.Margin = new Padding(3, 0, 3, 8);
             lblFileTitle.Name = "lblFileTitle";
-            lblFileTitle.Text = "1. Choose this month's As-Billed file, 2. check the month, 3. click Copy kWh";
+            lblFileTitle.Text = "1. Choose the As-Billed file (hold Ctrl or Shift to pick several months), 2. check the month, 3. click Copy kWh";
             btnChooseFile.AutoSize = true;
             btnChooseFile.MinimumSize = new Size(190, 34);
             btnChooseFile.Name = "btnChooseFile";
             btnChooseFile.TabIndex = 0;
-            btnChooseFile.Text = "Choose As-Billed file…";
+            btnChooseFile.Text = "Choose As-Billed files…";
             btnChooseFile.Click += btnChooseFile_Click;
             lblFile.Anchor = AnchorStyles.Left;
             lblFile.AutoSize = true;

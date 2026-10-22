@@ -23,10 +23,12 @@ namespace FeederCopy.App.Forms.Copy
 
         public void Attach(CopyPresenter presenter) => _presenter = presenter;
 
-        public void ShowFileRead(string fileName, BillMonth? fileMonth, int rows, int skipped)
+        public void ShowFileText(string text) => lblFile.Text = text;
+
+        public void SetMonthEnabled(bool enabled)
         {
-            string month = fileMonth?.ToString() ?? "month not found";
-            lblFile.Text = $"{fileName}  ·  {month}  ·  {rows:N0} rows  ·  {skipped:N0} skipped";
+            cboMonth.Enabled = enabled;
+            numYear.Enabled = enabled;
         }
 
         public void SetMonth(int? month, int? year)
@@ -89,7 +91,7 @@ namespace FeederCopy.App.Forms.Copy
             btnSaveProblems.Enabled = enabled;
         }
 
-        public string? PickOpenFile(string title, string filter) => Dialogs.PickOpenFile(Owner, title, filter);
+        public IReadOnlyList<string> PickOpenFiles(string title, string filter) => Dialogs.PickOpenFiles(Owner, title, filter);
 
         public string? PickSaveFile(string filter, string defaultName) => Dialogs.PickSaveFile(Owner, filter, defaultName);
 

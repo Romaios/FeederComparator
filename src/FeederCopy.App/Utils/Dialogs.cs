@@ -25,6 +25,12 @@ namespace FeederCopy.App.Utils
             return dialog.ShowDialog(owner) == DialogResult.OK ? dialog.FileName : null;
         }
 
+        public static IReadOnlyList<string> PickOpenFiles(IWin32Window owner, string title, string filter)
+        {
+            using var dialog = new OpenFileDialog { Title = title, Filter = filter, Multiselect = true };
+            return dialog.ShowDialog(owner) == DialogResult.OK ? dialog.FileNames : [];
+        }
+
         public static string? PickFolder(IWin32Window owner)
         {
             using var dialog = new FolderBrowserDialog { Description = "Choose the folder for the feeder files", UseDescriptionForTitle = true };
