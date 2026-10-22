@@ -8,7 +8,7 @@ namespace FeederCopy.App.Forms.Consumers
     public sealed partial class ConsumersView : UserControl, IConsumersView
     {
         private const string AllFeeders = "All feeders";
-        private static readonly HashSet<string> ProblemCells = ["Missing", "Duplicate", "Unreadable"];
+        private static readonly HashSet<string> ProblemCells = ["Duplicate", "Unreadable"];
         private const string InactiveCell = "Inactive";
         private const int DropLineHeight = 3;
         private const int ScrollZone = 24;

@@ -134,7 +134,7 @@ namespace FeederCopy.Core.Models.Consumers
         private const string DuplicateCell = "Duplicate";
         private const string UnreadableCell = "Unreadable";
 
-        private static bool IsNoBill(string cell) => cell is StatusLabels.Inactive or "Missing";
+        private static bool IsNoBill(string cell) => cell == StatusLabels.Inactive;
 
         public static IReadOnlyList<int> Years(IReadOnlyList<int> savedYears, int currentYear) =>
             savedYears.Append(currentYear).Distinct().OrderDescending().ToList();
@@ -146,7 +146,7 @@ namespace FeederCopy.Core.Models.Consumers
             ? kwh.ToString("N2", CultureInfo.InvariantCulture)
             : reading.Status switch
             {
-                StatusLabels.MissingReading => "Missing",
+                StatusLabels.MissingReading => StatusLabels.Inactive,
                 StatusLabels.DuplicateInAsBilled => DuplicateCell,
                 StatusLabels.Unreadable => UnreadableCell,
                 _ => reading.Status,

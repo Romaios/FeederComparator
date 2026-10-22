@@ -42,7 +42,7 @@ namespace FeederCopy.Tests.Models
             IReadOnlyList<ConsumerYearRow> rows = Build();
             Assert.Equal(12, rows[0].Months.Count);
             Assert.Equal("100.00", rows[0].Months[0]);
-            Assert.Equal("Missing", rows[0].Months[1]);
+            Assert.Equal("Inactive", rows[0].Months[1]);
             Assert.Equal("", rows[0].Months[2]);
             Assert.Equal("50.50", rows[0].Months[11]);
             Assert.Equal(["Inactive", "7.00"], rows[1].Months.Take(2));
