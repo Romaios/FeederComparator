@@ -42,7 +42,7 @@ namespace FeederCopy.Tests.Models
             IReadOnlyList<ConsumerYearRow> rows = Build();
             Assert.Equal(12, rows[0].Months.Count);
             Assert.Equal("100.00", rows[0].Months[0]);
-            Assert.Equal("Inactive", rows[0].Months[1]);
+            Assert.Equal("Missing", rows[0].Months[1]);
             Assert.Equal("", rows[0].Months[2]);
             Assert.Equal("50.50", rows[0].Months[11]);
             Assert.Equal(["Inactive", "7.00"], rows[1].Months.Take(2));
@@ -129,6 +129,16 @@ namespace FeederCopy.Tests.Models
             Assert.Equal(["c1", "c2"], Build(new ConsumerFilter(null, null, null, ConsumerProblem.NoBill)).Select(r => r.ConsumerId));
             Assert.Equal(["c1", "c2", "0900001"], Build(new ConsumerFilter(null, null, null, ConsumerProblem.Any)).Select(r => r.ConsumerId));
             Assert.Equal(3, Build(new ConsumerFilter(null, null, null, ConsumerProblem.All)).Count);
+        }
+
+        [Fact]
+        public void Build_NoBillMonth_MissingWhenActive_InactiveWhenInactive()
+        {
+            (string, ConsumerEntry)[] consumers = [("F", new ConsumerEntry("A", "a1")), ("F", new ConsumerEntry("A", "a2", false))];
+            ReadingRecord[] readings = [new("a1", "202606", null, "Inactive"), new("a2", "202606", null, "Inactive")];
+            IReadOnlyList<ConsumerYearRow> rows = ConsumerYearCalculator.Build(consumers, readings, 2026, ConsumerFilter.All);
+            Assert.Equal(["Missing", "Inactive"], rows.Select(r => r.Months[5]));
+            Assert.Equal(2, ConsumerYearCalculator.Build(consumers, readings, 2026, new ConsumerFilter(null, null, null, ConsumerProblem.NoBill)).Count);
         }
     }
 }

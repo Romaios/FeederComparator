@@ -113,6 +113,8 @@ namespace FeederCopy.Core.Models.Consumers
                     continue;
 
                 (IReadOnlyList<string> months, double total) = readings.ByConsumer.TryGetValue(entry.ConsumerId, out var found) ? found : (NoMonths, 0);
+                if (entry.Active && months.Contains(StatusLabels.Inactive))
+                    months = months.Select(cell => cell == StatusLabels.Inactive ? MissingCell : cell).ToArray();
                 if (!HasProblem(months, filter.Problem))
                     continue;
                 BillMonth? from = !entry.Active && inactiveFrom is not null && inactiveFrom.TryGetValue(entry.ConsumerId, out BillMonth m) ? m : null;
@@ -131,10 +133,12 @@ namespace FeederCopy.Core.Models.Consumers
             _ => months.Any(m => m == DuplicateCell || m == UnreadableCell || IsNoBill(m)),
         };
 
+        public const string MissingCell = "Missing";
+
         private const string DuplicateCell = "Duplicate";
         private const string UnreadableCell = "Unreadable";
 
-        private static bool IsNoBill(string cell) => cell == StatusLabels.Inactive;
+        private static bool IsNoBill(string cell) => cell is StatusLabels.Inactive or MissingCell;
 
         public static IReadOnlyList<int> Years(IReadOnlyList<int> savedYears, int currentYear) =>
             savedYears.Append(currentYear).Distinct().OrderDescending().ToList();
