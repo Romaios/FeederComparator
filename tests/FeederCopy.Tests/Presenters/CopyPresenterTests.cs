@@ -97,7 +97,8 @@ namespace FeederCopy.Tests.Presenters
             presenter.OnExportClicked(ExportStyle.OneWorkbook);
             using var wb = new XLWorkbook(view.NextSaveFile);
             Assert.Equal(1, wb.Worksheet(1).Cell("D3").GetDouble());
-            Assert.Equal(0, wb.Worksheet(1).Cell("D4").GetDouble());
+            Assert.True(wb.Worksheet(1).Cell("C4").IsEmpty());
+            Assert.Equal(0, wb.Worksheet("Inactive").Cell("D3").GetDouble());
         }
 
         [Fact]
@@ -233,7 +234,7 @@ namespace FeederCopy.Tests.Presenters
             Assert.Equal(["Excel workbook|*.xlsx"], _view.SavePrompts.Select(p => p.Filter));
             Assert.Equal("Feeders - Jul 2026.xlsx", _view.SavePrompts[0].DefaultName);
             using (var wb = new XLWorkbook(_view.NextSaveFile))
-                Assert.Equal(2, wb.Worksheets.Count);
+                Assert.Equal(["New York Feeder", "Washington Feeder", "Inactive"], wb.Worksheets.Select(w => w.Name));
             Assert.Equal([ExportStyle.OneWorkbook], _remembered);
             Assert.Equal(["Exported 2 feeders."], _view.Infos);
         }
@@ -261,7 +262,7 @@ namespace FeederCopy.Tests.Presenters
             string folder = TestFiles.TempFolder();
             _view.NextFolder = folder;
             _presenter.OnExportClicked(ExportStyle.SeparateFiles);
-            Assert.Equal(2, Directory.GetFiles(folder).Length);
+            Assert.Equal(3, Directory.GetFiles(folder).Length);
             Assert.Empty(_view.Confirms);
             Assert.Equal([ExportStyle.SeparateFiles], _remembered);
         }

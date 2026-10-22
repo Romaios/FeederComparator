@@ -27,7 +27,7 @@ namespace FeederCopy.Tests.Services
             string path = TestFiles.TempPath(".xlsx");
             new FeederExporter().WriteWorkbook(path, Result());
             using var wb = new XLWorkbook(path);
-            Assert.Equal(["New York Feeder", "Washington Feeder"], wb.Worksheets.Select(w => w.Name));
+            Assert.Equal(["New York Feeder", "Washington Feeder", "Inactive"], wb.Worksheets.Select(w => w.Name));
         }
 
         [Fact]
@@ -52,13 +52,47 @@ namespace FeederCopy.Tests.Services
             Assert.Equal(XLDataType.Number, ws.Cell("E3").DataType);
             Assert.Equal(152, ws.Cell("E3").GetDouble());
 
-            Assert.Equal(0, ws.Cell("D4").GetDouble());
+            Assert.Equal("0103", ws.Cell("C4").GetText());
+            Assert.Equal(1, ws.Cell("D4").GetDouble());
             Assert.True(ws.Cell("E4").IsEmpty());
-            Assert.NotEqual(XLColor.FromArgb(255, 242, 204), ws.Cell("D4").Style.Fill.BackgroundColor);
-            Assert.Equal(1, ws.Cell("D5").GetDouble());
-            Assert.Equal(XLColor.FromArgb(255, 242, 204), ws.Cell("D5").Style.Fill.BackgroundColor);
-            Assert.Equal(XLColor.FromArgb(255, 242, 204), ws.Cell("E5").Style.Fill.BackgroundColor);
+            Assert.Equal(XLColor.FromArgb(255, 242, 204), ws.Cell("D4").Style.Fill.BackgroundColor);
+            Assert.Equal(XLColor.FromArgb(255, 242, 204), ws.Cell("E4").Style.Fill.BackgroundColor);
+            Assert.True(ws.Cell("C5").IsEmpty());
             Assert.Equal(2, ws.SheetView.SplitRow);
+        }
+
+        [Fact]
+        public void Workbook_InactiveSheet_ListsStatusZeroWithFeeder()
+        {
+            string path = TestFiles.TempPath(".xlsx");
+            new FeederExporter().WriteWorkbook(path, Result());
+            using var wb = new XLWorkbook(path);
+            IXLWorksheet ws = wb.Worksheet("Inactive");
+            Assert.Equal("Inactive consumers (Jul 2026)", ws.Cell("A1").GetText());
+            Assert.Equal(["Feeder", "Bus ID", "Consumer ID", "Status"], Enumerable.Range(1, 4).Select(c => ws.Cell(2, c).GetText()));
+            Assert.Equal(["New York Feeder", "Unknown", "0102"], Enumerable.Range(1, 3).Select(c => ws.Cell(3, c).GetText()));
+            Assert.Equal(0, ws.Cell("D3").GetDouble());
+            Assert.True(ws.Cell("A4").IsEmpty());
+        }
+
+        [Fact]
+        public void Workbook_NoInactive_NoInactiveSheet()
+        {
+            string path = TestFiles.TempPath(".xlsx");
+            var result = new CopyResult(Jul, "x.xls", [new FilledFeeder("F", [new FilledRow(1, "B", "0201", true, "Active", 1, null)])], [], []);
+            new FeederExporter().WriteWorkbook(path, result);
+            using var wb = new XLWorkbook(path);
+            Assert.Equal(["F"], wb.Worksheets.Select(w => w.Name));
+        }
+
+        [Fact]
+        public void Workbook_FeederNamedInactive_SheetNamesStayUnique()
+        {
+            string path = TestFiles.TempPath(".xlsx");
+            var result = new CopyResult(Jul, "x.xls", [new FilledFeeder("Inactive", [new FilledRow(1, "B", "0201", false, "Inactive", null, null)])], [], []);
+            new FeederExporter().WriteWorkbook(path, result);
+            using var wb = new XLWorkbook(path);
+            Assert.Equal(["Inactive", "Inactive (2)"], wb.Worksheets.Select(w => w.Name));
         }
 
         [Fact]
@@ -68,6 +102,7 @@ namespace FeederCopy.Tests.Services
             new FeederExporter().WriteSeparate(folder, Result());
             Assert.True(File.Exists(Path.Combine(folder, "New York Feeder - Jul 2026.xlsx")));
             Assert.True(File.Exists(Path.Combine(folder, "Washington Feeder - Jul 2026.xlsx")));
+            Assert.True(File.Exists(Path.Combine(folder, "Inactive - Jul 2026.xlsx")));
             using var wb = new XLWorkbook(Path.Combine(folder, "Washington Feeder - Jul 2026.xlsx"));
             Assert.Equal("Washington Feeder", wb.Worksheet(1).Cell("A1").GetText());
         }
