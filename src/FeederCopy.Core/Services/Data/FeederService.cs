@@ -85,6 +85,39 @@ namespace FeederCopy.Core.Services.Data
             tx.Commit();
         }
 
+        public void ApplyMonthStatus(IReadOnlyList<(string ConsumerId, bool Active)> statuses, BillMonth month)
+        {
+            using SqliteConnection c = _database.Open();
+            using SqliteTransaction tx = c.BeginTransaction();
+            SqliteCommand Command(string sql)
+            {
+                SqliteCommand command = c.CreateCommand();
+                command.Transaction = tx;
+                command.CommandText = sql;
+                command.Parameters.Add("$consumer", SqliteType.Text);
+                if (sql.Contains("$month", StringComparison.Ordinal))
+                    command.Parameters.AddWithValue("$month", month.Key);
+                command.Prepare();
+                return command;
+            }
+            using SqliteCommand activate = Command("UPDATE FeederConsumers SET Active = 1 WHERE ConsumerId = $consumer");
+            using SqliteCommand clearMonth = Command("DELETE FROM ConsumerInactiveFrom WHERE ConsumerId = $consumer");
+            using SqliteCommand startMonth = Command(
+                "INSERT OR REPLACE INTO ConsumerInactiveFrom (ConsumerId, BillMonth) SELECT $consumer, $month WHERE EXISTS (SELECT 1 FROM FeederConsumers WHERE ConsumerId = $consumer AND Active = 1)");
+            using SqliteCommand keepMonth = Command("INSERT OR IGNORE INTO ConsumerInactiveFrom (ConsumerId, BillMonth) VALUES ($consumer, $month)");
+            using SqliteCommand deactivate = Command("UPDATE FeederConsumers SET Active = 0 WHERE ConsumerId = $consumer");
+            foreach ((string consumerId, bool active) in statuses)
+            {
+                SqliteCommand[] steps = active ? [activate, clearMonth] : [startMonth, keepMonth, deactivate];
+                foreach (SqliteCommand step in steps)
+                {
+                    step.Parameters["$consumer"].Value = consumerId;
+                    step.ExecuteNonQuery();
+                }
+            }
+            tx.Commit();
+        }
+
         public IReadOnlyDictionary<string, BillMonth> GetInactiveFrom()
         {
             using SqliteConnection c = _database.Open();

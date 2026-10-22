@@ -26,6 +26,7 @@ namespace FeederCopy.App.Forms.Settings
             txtMonth.Text = settings.AsBilled.BillMonth;
             cboExportStyle.SelectedIndex = (int)settings.Export;
             cboTheme.SelectedIndex = (int)settings.Theme;
+            chkNegativeAsZero.Checked = settings.NegativeKwhAsZero;
             lblSaved.Text = string.Empty;
         }
 
@@ -35,6 +36,7 @@ namespace FeederCopy.App.Forms.Settings
             AsBilled = new AsBilledColumns { AccountNumber = txtAccount.Text.Trim(), KwhUsed = txtKwh.Text.Trim(), BillMonth = txtMonth.Text.Trim() },
             Export = cboExportStyle.SelectedIndex == (int)ExportStyle.SeparateFiles ? ExportStyle.SeparateFiles : ExportStyle.OneWorkbook,
             Theme = cboTheme.SelectedIndex == (int)ThemeMode.Dark ? ThemeMode.Dark : ThemeMode.Light,
+            NegativeKwhAsZero = chkNegativeAsZero.Checked,
         };
 
         public bool Confirm(string title, string message) => Dialogs.Confirm((IWin32Window?)FindForm() ?? this, title, message);
@@ -61,6 +63,7 @@ namespace FeederCopy.App.Forms.Settings
             foreach (Label label in new[] { lblBusId, lblConsumerId, lblStatusColumn, lblAccount, lblKwh, lblMonth, lblExportStyle, lblTheme })
                 AppTheme.StyleFieldLabel(label);
             AppTheme.StyleComboBox(cboTheme);
+            AppTheme.StyleCheckBox(chkNegativeAsZero);
             foreach (TextBox box in new[] { txtBusId, txtConsumerId, txtStatusColumn, txtAccount, txtKwh, txtMonth })
                 AppTheme.StyleTextBox(box);
             AppTheme.StyleComboBox(cboExportStyle);

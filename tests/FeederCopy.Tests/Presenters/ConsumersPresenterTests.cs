@@ -209,11 +209,39 @@ namespace FeederCopy.Tests.Presenters
 
             public IReadOnlyList<int> GetYears() => inner.GetYears();
 
+            public IReadOnlyList<ReadingRecord> GetMonth(BillMonth month) => inner.GetMonth(month);
+
+            public IReadOnlyList<BillMonth> GetMonths() => inner.GetMonths();
+
             public IReadOnlyList<ReadingRecord> GetYear(int year)
             {
                 YearReads++;
                 return inner.GetYear(year);
             }
+        }
+
+        [Fact]
+        public void Drop_ReordersInsideBus_SavesAndRaisesOrderChanged()
+        {
+            int orderChanged = 0;
+            _presenter.OrderChanged += () => orderChanged++;
+            long id = _feeders.CreateFeeder("Abuyog", [new ConsumerEntry("A", "c1"), new ConsumerEntry("A", "c2"), new ConsumerEntry("A", "c3"), new ConsumerEntry("B", "c4")]);
+            _presenter.Load();
+            _presenter.OnConsumersDropped(["c3", "c2"], "c1", after: false);
+            Assert.Equal(["c2", "c3", "c1", "c4"], _feeders.GetConsumers(id).Select(e => e.ConsumerId));
+            Assert.Equal(["c2", "c3", "c1", "c4"], _view.Rows.Select(r => r.ConsumerId));
+            Assert.Equal(["c2", "c3"], _view.SelectedConsumers);
+            Assert.Equal(1, orderChanged);
+        }
+
+        [Fact]
+        public void Drop_IntoAnotherBus_ShowsErrorAndKeepsOrder()
+        {
+            long id = _feeders.CreateFeeder("Abuyog", [new ConsumerEntry("A", "c1"), new ConsumerEntry("B", "c2")]);
+            _presenter.Load();
+            _presenter.OnConsumersDropped(["c1"], "c2", after: true);
+            Assert.Equal(["c1", "c2"], _feeders.GetConsumers(id).Select(e => e.ConsumerId));
+            Assert.Equal(["Drop consumers inside their own bus (Abuyog, bus B). To move a consumer to another bus, change its Bus ID in the Feeders tab."], _view.Errors);
         }
     }
 }

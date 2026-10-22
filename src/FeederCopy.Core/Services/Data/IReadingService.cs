@@ -8,5 +8,7 @@ namespace FeederCopy.Core.Services.Data
         void SaveMonth(BillMonth month, IReadOnlyList<ReadingRecord> readings);
         IReadOnlyList<int> GetYears();
         IReadOnlyList<ReadingRecord> GetYear(int year);
+        IReadOnlyList<ReadingRecord> GetMonth(BillMonth month);
+        IReadOnlyList<BillMonth> GetMonths();
     }
 }

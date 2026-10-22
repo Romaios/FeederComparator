@@ -196,5 +196,20 @@ namespace FeederCopy.Tests.Services
             string created = c.ExecuteScalar<string>("SELECT CreatedAt FROM Feeders")!;
             Assert.True(DateTime.TryParseExact(created, "yyyy-MM-dd HH:mm:ss", null, System.Globalization.DateTimeStyles.None, out _));
         }
+
+        [Fact]
+        public void ApplyMonthStatus_NoBillGoesInactiveFromMonth_BillReactivates()
+        {
+            _service.CreateFeeder("F", [E("A", "c1"), E("A", "c2"), new ConsumerEntry("A", "c3", false)]);
+            _service.SetActive("c3", false, new BillMonth(2026, 2));
+            _service.ApplyMonthStatus([("c1", true), ("c2", false), ("c3", false)], new BillMonth(2026, 4));
+            Assert.Equal([true, false, false], _service.GetAllConsumers().Select(c => c.Entry.Active));
+            Assert.Equal(new BillMonth(2026, 4), _service.GetInactiveFrom()["c2"]);
+            Assert.Equal(new BillMonth(2026, 2), _service.GetInactiveFrom()["c3"]);
+
+            _service.ApplyMonthStatus([("c1", true), ("c2", true), ("c3", false)], new BillMonth(2026, 5));
+            Assert.True(_service.GetAllConsumers()[1].Entry.Active);
+            Assert.False(_service.GetInactiveFrom().ContainsKey("c2"));
+        }
     }
 }

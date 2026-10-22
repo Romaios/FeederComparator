@@ -9,11 +9,20 @@ namespace FeederCopy.App.Forms.Consumers
     {
         private const string AllFeeders = "All feeders";
         private static readonly HashSet<string> ProblemCells = ["Missing", "Duplicate", "Unreadable"];
+        private const string InactiveCell = "Inactive";
+        private const int DropLineHeight = 3;
+        private const int ScrollZone = 24;
 
         private ConsumersPresenter? _presenter;
         private IReadOnlyList<ConsumerYearRow> _rows = [];
         private bool _populating;
         private bool _keepPosition;
+        private int[] _selection = [];
+        private int[] _previousSelection = [];
+        private bool _selectionChangedByMouse;
+        private int[] _dragRows = [];
+        private Rectangle _dragBox = Rectangle.Empty;
+        private int _dropIndex = -1;
 
         public ConsumersView()
         {
@@ -94,23 +103,50 @@ namespace FeederCopy.App.Forms.Consumers
                 dgvConsumers.FirstDisplayedScrollingRowIndex = Math.Max(0, index - 3);
         }
 
+        public void SelectConsumers(IReadOnlyList<string> consumerIds)
+        {
+            var wanted = new HashSet<string>(consumerIds, StringComparer.Ordinal);
+            List<int> rows = Enumerable.Range(0, _rows.Count).Where(i => wanted.Contains(_rows[i].ConsumerId)).ToList();
+            if (rows.Count == 0)
+                return;
+            dgvConsumers.CurrentCell = dgvConsumers.Rows[rows[0]].Cells[colConsumer.Index];
+            dgvConsumers.ClearSelection();
+            foreach (int row in rows)
+                dgvConsumers.Rows[row].Selected = true;
+            int displayed = dgvConsumers.DisplayedRowCount(false);
+            int first = dgvConsumers.FirstDisplayedScrollingRowIndex;
+            if (displayed > 0 && (rows[0] < first || rows[^1] >= first + displayed))
+                dgvConsumers.FirstDisplayedScrollingRowIndex = Math.Max(0, rows[0] - 3);
+        }
+
         public bool Confirm(string title, string message) => Dialogs.Confirm(Owner, title, message);
 
         public void ShowError(string message) => Dialogs.ShowError(Owner, message);
 
         private IWin32Window Owner => (IWin32Window?)FindForm() ?? this;
 
-        private List<ConsumerYearRow> SelectedRows()
+        private List<ConsumerYearRow> SelectedRows() =>
+            SelectedIndexes().Where(i => i < _rows.Count).Select(i => _rows[i]).ToList();
+
+        private int[] SelectedIndexes()
         {
-            var selected = new List<ConsumerYearRow>();
+            var rows = new List<int>();
             int index = dgvConsumers.Rows.GetFirstRow(DataGridViewElementStates.Selected);
             while (index >= 0)
             {
-                if (index < _rows.Count)
-                    selected.Add(_rows[index]);
+                rows.Add(index);
                 index = dgvConsumers.Rows.GetNextRow(index, DataGridViewElementStates.Selected);
             }
-            return selected;
+            return rows.ToArray();
+        }
+
+        private int DropIndexAt(Point client)
+        {
+            DataGridView.HitTestInfo hit = dgvConsumers.HitTest(client.X, client.Y);
+            if (hit.RowIndex < 0)
+                return client.Y <= dgvConsumers.ColumnHeadersHeight ? dgvConsumers.FirstDisplayedScrollingRowIndex : dgvConsumers.RowCount;
+            Rectangle row = dgvConsumers.GetRowDisplayRectangle(hit.RowIndex, false);
+            return client.Y > row.Top + row.Height / 2 ? hit.RowIndex + 1 : hit.RowIndex;
         }
 
         private void ApplyTheme()
@@ -165,7 +201,7 @@ namespace FeederCopy.App.Forms.Consumers
                 SetInactiveMonth(from);
             lblSelected.Text = rows switch
             {
-                [] => "Click a consumer to set its status. Hold Ctrl or Shift to pick more than one.",
+                [] => "Click a consumer to set its status. Hold Ctrl or Shift to pick more than one. Drag rows to reorder them inside their bus.",
                 [var row] => $"Selected: {row.Feeder} row {row.Count:N0}  ·  bus {row.BusLabel}  ·  consumer {row.ConsumerId}  ·  {row.StatusLabel}",
                 _ => $"Selected: {rows.Count:N0} consumers  ·  Ctrl+click or Shift+click to change the selection",
             };
@@ -202,7 +238,92 @@ namespace FeederCopy.App.Forms.Consumers
                 cboInactiveMonth.SelectedIndex >= 0 ? cboInactiveMonth.SelectedIndex + 1 : null, (int)numInactiveYear.Value);
         }
 
-        private void dgvConsumers_SelectionChanged(object? sender, EventArgs e) => UpdateSelection();
+        private void dgvConsumers_SelectionChanged(object? sender, EventArgs e)
+        {
+            _previousSelection = _selection;
+            _selection = SelectedIndexes();
+            _selectionChangedByMouse = MouseButtons == MouseButtons.Left;
+            UpdateSelection();
+        }
+
+        private void dgvConsumers_MouseDown(object? sender, MouseEventArgs e)
+        {
+            _dragBox = Rectangle.Empty;
+            DataGridView.HitTestInfo hit = dgvConsumers.HitTest(e.X, e.Y);
+            if (e.Button != MouseButtons.Left || hit.RowIndex < 0 || ModifierKeys != Keys.None)
+                return;
+            bool clickedInsideGroup = _selectionChangedByMouse && _previousSelection.Length > 1 && _previousSelection.Contains(hit.RowIndex);
+            _dragRows = clickedInsideGroup ? _previousSelection : _selection.Contains(hit.RowIndex) ? _selection : [hit.RowIndex];
+            _selectionChangedByMouse = false;
+            Size size = SystemInformation.DragSize;
+            _dragBox = new Rectangle(new Point(e.X - size.Width / 2, e.Y - size.Height / 2), size);
+        }
+
+        private void dgvConsumers_MouseMove(object? sender, MouseEventArgs e)
+        {
+            if (e.Button != MouseButtons.Left || _dragBox == Rectangle.Empty || _dragBox.Contains(e.Location))
+                return;
+            _dragBox = Rectangle.Empty;
+            string[] ids = _dragRows.Where(i => i < _rows.Count).Select(i => _rows[i].ConsumerId).ToArray();
+            if (ids.Length == 0)
+                return;
+            if (ids.Length > 1)
+                SelectConsumers(ids);
+            dgvConsumers.DoDragDrop(ids, DragDropEffects.Move);
+        }
+
+        private void dgvConsumers_DragOver(object? sender, DragEventArgs e)
+        {
+            if (e.Data?.GetData(typeof(string[])) is not string[])
+            {
+                e.Effect = DragDropEffects.None;
+                return;
+            }
+            e.Effect = DragDropEffects.Move;
+            Point client = dgvConsumers.PointToClient(new Point(e.X, e.Y));
+            int first = dgvConsumers.FirstDisplayedScrollingRowIndex;
+            if (client.Y < dgvConsumers.ColumnHeadersHeight + ScrollZone && first > 0)
+                dgvConsumers.FirstDisplayedScrollingRowIndex = first - 1;
+            else if (client.Y > dgvConsumers.ClientSize.Height - ScrollZone && first >= 0 && first + dgvConsumers.DisplayedRowCount(false) < dgvConsumers.RowCount)
+                dgvConsumers.FirstDisplayedScrollingRowIndex = first + 1;
+            int drop = DropIndexAt(client);
+            if (drop != _dropIndex)
+            {
+                _dropIndex = drop;
+                dgvConsumers.Invalidate();
+            }
+        }
+
+        private void dgvConsumers_DragLeave(object? sender, EventArgs e)
+        {
+            _dropIndex = -1;
+            dgvConsumers.Invalidate();
+        }
+
+        private void dgvConsumers_DragDrop(object? sender, DragEventArgs e)
+        {
+            int drop = DropIndexAt(dgvConsumers.PointToClient(new Point(e.X, e.Y)));
+            _dropIndex = -1;
+            dgvConsumers.Invalidate();
+            if (e.Data?.GetData(typeof(string[])) is not string[] ids || _rows.Count == 0)
+                return;
+            bool after = drop >= _rows.Count;
+            ConsumerYearRow target = _rows[after ? _rows.Count - 1 : drop];
+            _presenter?.OnConsumersDropped(ids, target.ConsumerId, after);
+        }
+
+        private void dgvConsumers_Paint(object? sender, PaintEventArgs e)
+        {
+            if (_dropIndex < 0 || dgvConsumers.RowCount == 0)
+                return;
+            int y = _dropIndex < dgvConsumers.RowCount
+                ? dgvConsumers.GetRowDisplayRectangle(_dropIndex, false).Top
+                : dgvConsumers.GetRowDisplayRectangle(dgvConsumers.RowCount - 1, false).Bottom;
+            if (y <= 0)
+                return;
+            using var brush = new SolidBrush(AppTheme.Highlight);
+            e.Graphics.FillRectangle(brush, 0, Math.Max(dgvConsumers.ColumnHeadersHeight, y - DropLineHeight / 2), dgvConsumers.ClientSize.Width, DropLineHeight);
+        }
 
         private void dgvConsumers_CellValueNeeded(object? sender, DataGridViewCellValueEventArgs e)
         {
@@ -226,7 +347,7 @@ namespace FeederCopy.App.Forms.Consumers
             ConsumerYearRow row = _rows[e.RowIndex];
             bool isMonth = e.ColumnIndex >= colJan.Index && e.ColumnIndex <= colDec.Index;
             int month = e.ColumnIndex - colJan.Index;
-            if (isMonth ? month >= row.ActiveMonths : !row.Active)
+            if (isMonth ? month >= row.ActiveMonths || row.Months[month] == InactiveCell : !row.Active)
                 AppTheme.StyleMutedCell(e.CellStyle);
             if (isMonth && ProblemCells.Contains(row.Months[month]))
                 AppTheme.StyleProblemCell(e.CellStyle);

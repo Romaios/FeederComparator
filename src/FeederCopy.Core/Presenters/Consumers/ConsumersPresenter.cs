@@ -33,6 +33,8 @@ namespace FeederCopy.Core.Presenters.Consumers
 
         public event Action? StatusChanged;
 
+        public event Action? OrderChanged;
+
         public void Load()
         {
             _resetYear = true;
@@ -82,6 +84,47 @@ namespace FeederCopy.Core.Presenters.Consumers
 
         private bool ConfirmMany(IReadOnlyList<string> consumerIds, string status) =>
             consumerIds.Count == 1 || _view.Confirm("Set status", $"Set {consumerIds.Count:N0} consumers {status}?");
+
+        public void OnConsumersDropped(IReadOnlyList<string> consumerIds, string targetConsumerId, bool after)
+        {
+            if (_consumers is null || consumerIds.Count == 0 || consumerIds.Contains(targetConsumerId))
+                return;
+            var byId = _consumers.ToDictionary(c => c.Entry.ConsumerId, StringComparer.Ordinal);
+            if (!byId.TryGetValue(targetConsumerId, out var target) || consumerIds.Any(id => !byId.ContainsKey(id)))
+                return;
+            string targetBus = BusLabels.For(target.Entry.BusId);
+            bool sameGroup = consumerIds.All(id =>
+                string.Equals(byId[id].FeederName, target.FeederName, StringComparison.OrdinalIgnoreCase)
+                && string.Equals(BusLabels.For(byId[id].Entry.BusId), targetBus, StringComparison.OrdinalIgnoreCase));
+            if (!sameGroup)
+            {
+                _view.ShowError($"Drop consumers inside their own bus ({target.FeederName}, bus {targetBus}). To move a consumer to another bus, change its Bus ID in the Feeders tab.");
+                return;
+            }
+
+            bool moved = false;
+            Run("Reordering consumers", () =>
+            {
+                FeederSummary feeder = _feeders.GetFeeders().First(f => string.Equals(f.Name, target.FeederName, StringComparison.OrdinalIgnoreCase));
+                IReadOnlyList<ConsumerEntry> entries = _feeders.GetConsumers(feeder.Id);
+                var moving = new HashSet<string>(consumerIds, StringComparer.Ordinal);
+                List<ConsumerEntry> picked = entries.Where(e => moving.Contains(e.ConsumerId)).ToList();
+                List<ConsumerEntry> rest = entries.Where(e => !moving.Contains(e.ConsumerId)).ToList();
+                int at = rest.FindIndex(e => e.ConsumerId == targetConsumerId);
+                if (at < 0)
+                    return;
+                rest.InsertRange(after ? at + 1 : at, picked);
+                if (rest.Select(e => e.ConsumerId).SequenceEqual(entries.Select(e => e.ConsumerId)))
+                    return;
+                _feeders.SaveConsumers(new Dictionary<long, IReadOnlyList<ConsumerEntry>> { [feeder.Id] = rest });
+                _consumers = null;
+                Update();
+                _view.SelectConsumers(picked.Select(e => e.ConsumerId).ToList());
+                moved = true;
+            });
+            if (moved)
+                OrderChanged?.Invoke();
+        }
 
         private void MarkStale(bool feeders, bool readings)
         {

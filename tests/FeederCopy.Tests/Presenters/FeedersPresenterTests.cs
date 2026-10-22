@@ -447,6 +447,7 @@ namespace FeederCopy.Tests.Presenters
             public void SetActive(string consumerId, bool active, BillMonth? inactiveFrom = null) => throw new InvalidOperationException("boom");
             public void SetActive(IReadOnlyList<string> consumerIds, bool active, BillMonth? inactiveFrom = null) => throw new InvalidOperationException("boom");
             public IReadOnlyDictionary<string, BillMonth> GetInactiveFrom() => new Dictionary<string, BillMonth>();
+            public void ApplyMonthStatus(IReadOnlyList<(string ConsumerId, bool Active)> statuses, BillMonth month) => throw new InvalidOperationException("boom");
             public ConsumerLocation? FindConsumer(string consumerId) => null;
             public IReadOnlyList<(string ConsumerId, ConsumerLocation Where)> FindConsumers(IEnumerable<string> consumerIds) => [];
             public long CreateFeeder(string name, IReadOnlyList<ConsumerEntry> consumers) => throw new InvalidOperationException("boom");

@@ -3,7 +3,7 @@ using FeederCopy.Core.Models.Import;
 
 namespace FeederCopy.Core.Models.Copy
 {
-    public sealed record AsBilledEntry(int RowNumber, double? Kwh);
+    public sealed record AsBilledEntry(int RowNumber, double? Kwh, bool Blank = false);
 
     public sealed record KwhSnapshot(
         string FileName,

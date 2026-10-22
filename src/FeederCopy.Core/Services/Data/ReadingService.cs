@@ -45,6 +45,24 @@ namespace FeederCopy.Core.Services.Data
                 .ToList();
         }
 
+        public IReadOnlyList<ReadingRecord> GetMonth(BillMonth month)
+        {
+            using SqliteConnection c = _database.Open();
+            return c.Query<(string ConsumerId, string BillMonth, double? Kwh, string Status)>(
+                    "SELECT ConsumerId, BillMonth, Kwh, Status FROM Readings WHERE BillMonth = @month",
+                    new { month = month.Key })
+                .Select(r => new ReadingRecord(r.ConsumerId, r.BillMonth, r.Kwh, r.Status))
+                .ToList();
+        }
+
+        public IReadOnlyList<BillMonth> GetMonths()
+        {
+            using SqliteConnection c = _database.Open();
+            return c.Query<string>("SELECT DISTINCT BillMonth FROM Readings ORDER BY BillMonth")
+                .Select(BillMonth.Parse)
+                .ToList();
+        }
+
         public IReadOnlyList<ReadingRecord> GetYear(int year)
         {
             using SqliteConnection c = _database.Open();

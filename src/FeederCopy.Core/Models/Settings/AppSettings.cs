@@ -31,6 +31,7 @@ namespace FeederCopy.Core.Models.Settings
         public required ExportStyle Export { get; init; }
         public string HandPlacedBusTags { get; init; } = "sp, jnc";
         public ThemeMode Theme { get; init; } = ThemeMode.Light;
+        public bool NegativeKwhAsZero { get; init; } = true;
 
         public static AppSettings Defaults { get; } = new()
         {

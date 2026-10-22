@@ -92,8 +92,10 @@ namespace FeederCopy.Core.Models.Consumers
             var rows = new List<ConsumerYearRow>();
             foreach ((string feeder, ConsumerEntry entry) in consumers)
             {
-                int count = counts.GetValueOrDefault(feeder) + 1;
-                counts[feeder] = count;
+                int seen = counts.GetValueOrDefault(feeder);
+                int count = seen + 1;
+                if (entry.Active)
+                    counts[feeder] = count;
                 if (filter.Feeder is not null && !string.Equals(feeder, filter.Feeder, StringComparison.OrdinalIgnoreCase))
                     continue;
                 if (filter.Active is bool active && entry.Active != active)

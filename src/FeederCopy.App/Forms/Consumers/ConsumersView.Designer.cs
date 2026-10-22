@@ -181,6 +181,7 @@ namespace FeederCopy.App.Forms.Consumers
             lblEmpty.Margin = new Padding(3, 8, 3, 8);
             lblEmpty.Name = "lblEmpty";
             lblEmpty.Visible = false;
+            dgvConsumers.AllowDrop = true;
             dgvConsumers.AllowUserToAddRows = false;
             dgvConsumers.AllowUserToDeleteRows = false;
             dgvConsumers.AllowUserToResizeRows = false;
@@ -197,6 +198,12 @@ namespace FeederCopy.App.Forms.Consumers
             dgvConsumers.CellFormatting += dgvConsumers_CellFormatting;
             dgvConsumers.CellValueNeeded += dgvConsumers_CellValueNeeded;
             dgvConsumers.SelectionChanged += dgvConsumers_SelectionChanged;
+            dgvConsumers.MouseDown += dgvConsumers_MouseDown;
+            dgvConsumers.MouseMove += dgvConsumers_MouseMove;
+            dgvConsumers.DragOver += dgvConsumers_DragOver;
+            dgvConsumers.DragDrop += dgvConsumers_DragDrop;
+            dgvConsumers.DragLeave += dgvConsumers_DragLeave;
+            dgvConsumers.Paint += dgvConsumers_Paint;
             colCount.FillWeight = 6F;
             colCount.HeaderText = "Count";
             colCount.Name = "colCount";

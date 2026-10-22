@@ -104,7 +104,10 @@ namespace FeederCopy.Core.Models.Feeders
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
-        public static IReadOnlyList<ConsumerRow> ToRows(IReadOnlyList<ConsumerEntry> entries) =>
-            entries.Select((e, i) => new ConsumerRow(i + 1, BusLabels.For(e.BusId), e.ConsumerId, e.Active)).ToList();
+        public static IReadOnlyList<ConsumerRow> ToRows(IReadOnlyList<ConsumerEntry> entries)
+        {
+            int[] counts = RowCounts.For(entries.Select(e => e.Active).ToList());
+            return entries.Select((e, i) => new ConsumerRow(counts[i], BusLabels.For(e.BusId), e.ConsumerId, e.Active)).ToList();
+        }
     }
 }

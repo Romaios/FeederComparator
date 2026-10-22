@@ -40,11 +40,14 @@ namespace FeederCopy.App.Forms.Shell
             _feeders.FeedersChanged += _copy.OnFeedersChanged;
             _feeders.FeedersChanged += _consumers.OnFeedersChanged;
             _feeders.FeedersChanged += _busSort.OnFeedersChanged;
-            _feeders.StatusChanged += _copy.OnStatusChanged;
             _feeders.StatusChanged += _consumers.OnFeedersChanged;
             _copy.ReadingsSaved += _consumers.OnReadingsChanged;
             _consumers.StatusChanged += _feeders.OnStatusChanged;
-            _consumers.StatusChanged += _copy.OnStatusChanged;
+            _consumers.OrderChanged += _feeders.Load;
+            _consumers.OrderChanged += _copy.OnFeedersChanged;
+            _consumers.OrderChanged += _busSort.OnFeedersChanged;
+            _copy.StatusesUpdated += _feeders.OnStatusChanged;
+            _copy.StatusesUpdated += _consumers.OnFeedersChanged;
             _busSort.Sorted += _feeders.Load;
             _busSort.Sorted += _copy.OnFeedersChanged;
             _busSort.Sorted += _consumers.OnFeedersChanged;

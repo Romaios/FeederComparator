@@ -48,13 +48,14 @@ namespace FeederCopy.Core.Services.Import
                     }
 
                     months.Add(month);
-                    double? kwh = TryParseKwh(HeaderIndex.Cell(cells, map[1]), out double value) ? value : null;
+                    string? kwhText = HeaderIndex.Cell(cells, map[1]);
+                    double? kwh = TryParseKwh(kwhText, out double value) ? value : null;
                     if (!byAccount.TryGetValue(account, out List<AsBilledEntry>? entries))
                     {
                         entries = [];
                         byAccount[account] = entries;
                     }
-                    entries.Add(new AsBilledEntry(rowNumber, kwh));
+                    entries.Add(new AsBilledEntry(rowNumber, kwh, kwhText is null));
                     rowsRead++;
                 }
 

@@ -163,5 +163,16 @@ namespace FeederCopy.Tests.Models
             Assert.Null(FeederLayout.NormalizeBus(null));
             Assert.Equal("A", FeederLayout.NormalizeBus(" A "));
         }
+
+        [Fact]
+        public void ToRows_CountSkipsInactive_InactiveShowsNextCount()
+        {
+            IReadOnlyList<ConsumerRow> rows = FeederLayout.ToRows([E("A", "c1"), new ConsumerEntry("A", "c2", false), new ConsumerEntry("A", "c3", false), E("A", "c4"), E("A", "c5")]);
+            Assert.Equal([1, 2, 2, 2, 3], rows.Select(r => r.Count));
+        }
+
+        [Fact]
+        public void RowCounts_AllInactive_AllOne() =>
+            Assert.Equal([1, 1], RowCounts.For([false, false]));
     }
 }

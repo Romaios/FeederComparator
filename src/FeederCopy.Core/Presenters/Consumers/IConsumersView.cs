@@ -9,6 +9,7 @@ namespace FeederCopy.Core.Presenters.Consumers
         void ShowRows(IReadOnlyList<ConsumerYearRow> rows, string summary, int activeCount, int inactiveCount);
         void ShowEmpty(string message);
         void SelectConsumer(string consumerId);
+        void SelectConsumers(IReadOnlyList<string> consumerIds);
         bool Confirm(string title, string message);
         void ShowError(string message);
     }

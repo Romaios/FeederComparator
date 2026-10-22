@@ -281,6 +281,13 @@ namespace FeederCopy.App.Utils
             radio.Cursor = Cursors.Hand;
         }
 
+        public static void StyleCheckBox(CheckBox checkBox)
+        {
+            checkBox.Font = BodyFont;
+            checkBox.ForeColor = TextPrimary;
+            checkBox.Cursor = Cursors.Hand;
+        }
+
         public static void StyleFieldLabel(Label label)
         {
             label.Font = SmallFont;

@@ -10,6 +10,7 @@ namespace FeederCopy.App.Forms.Copy
     {
         private CopyPresenter? _presenter;
         private IReadOnlyList<CopyProblem> _problems = [];
+        private bool _settingMonth;
 
         public CopyView()
         {
@@ -30,9 +31,11 @@ namespace FeederCopy.App.Forms.Copy
 
         public void SetMonth(int? month, int? year)
         {
+            _settingMonth = true;
             cboMonth.SelectedIndex = month is int m ? m - 1 : -1;
             if (year is int y)
                 numYear.Value = Math.Clamp(y, (int)numYear.Minimum, (int)numYear.Maximum);
+            _settingMonth = false;
         }
 
         public void ShowResult(IReadOnlyList<FeederTotals> totals, IReadOnlyList<CopyProblem> problems, string heading)
@@ -42,8 +45,7 @@ namespace FeederCopy.App.Forms.Copy
             dgvTotals.Rows.Clear();
             foreach (FeederTotals t in totals)
                 dgvTotals.Rows.Add(t.Name, t.Consumers.ToString("N0"), t.Active.ToString("N0"), t.Inactive.ToString("N0"),
-                    t.Copied.ToString("N0"), t.MissingReading.ToString("N0"), t.InactiveButBilled.ToString("N0"),
-                    t.Duplicates.ToString("N0"), t.Unreadable.ToString("N0"), t.TotalKwh.ToString("N2"));
+                    t.Copied.ToString("N0"), t.Duplicates.ToString("N0"), t.Unreadable.ToString("N0"), t.TotalKwh.ToString("N2"));
             _problems = problems;
             dgvProblems.RowCount = 0;
             dgvProblems.RowCount = problems.Count;
@@ -116,7 +118,7 @@ namespace FeederCopy.App.Forms.Copy
             AppTheme.StyleSectionLabel(lblHeading);
             AppTheme.StyleMutedLabel(lblMessage);
             AppTheme.StyleGrid(dgvTotals);
-            foreach (DataGridViewColumn column in new[] { colConsumers, colActive, colInactive, colCopied, colMissing, colInactiveBilled, colDuplicates, colUnreadable, colTotalKwh })
+            foreach (DataGridViewColumn column in new[] { colConsumers, colActive, colInactive, colCopied, colDuplicates, colUnreadable, colTotalKwh })
                 AppTheme.AlignRight(column);
             AppTheme.StyleHeaderBar(tlpResultTabs);
             AppTheme.StyleNavTab(rdoTotalsTab);
@@ -142,7 +144,7 @@ namespace FeederCopy.App.Forms.Copy
         private async void btnCopy_Click(object? sender, EventArgs e)
         {
             if (_presenter is not null)
-                await _presenter.OnCopyClickedAsync(cboMonth.SelectedIndex >= 0 ? cboMonth.SelectedIndex + 1 : null, (int)numYear.Value);
+                await _presenter.OnCopyClickedAsync(ChosenMonth, (int)numYear.Value);
         }
 
         private void resultTab_CheckedChanged(object? sender, EventArgs e)
@@ -152,6 +154,14 @@ namespace FeederCopy.App.Forms.Copy
             dgvProblems.Visible = problems;
             lblProblemsTitle.Visible = problems;
             btnSaveProblems.Visible = problems;
+        }
+
+        private int? ChosenMonth => cboMonth.SelectedIndex >= 0 ? cboMonth.SelectedIndex + 1 : null;
+
+        private void month_Changed(object? sender, EventArgs e)
+        {
+            if (!_settingMonth)
+                _presenter?.OnMonthChanged(ChosenMonth, (int)numYear.Value);
         }
 
         private void btnSaveProblems_Click(object? sender, EventArgs e) => _presenter?.OnSaveProblemsClicked();

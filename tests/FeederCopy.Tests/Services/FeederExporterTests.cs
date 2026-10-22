@@ -13,10 +13,11 @@ namespace FeederCopy.Tests.Services
             [
                 new FilledFeeder("New York Feeder",
                 [
-                    new FilledRow(1, "CONSjunc14Se", "0101", "Active", 152, null),
-                    new FilledRow(2, "Unknown", "0102", "Missing reading", null, "Missing reading"),
+                    new FilledRow(1, "CONSjunc14Se", "0101", true, "Active", 152, null),
+                    new FilledRow(2, "Unknown", "0102", false, "Inactive", null, null),
+                    new FilledRow(2, "Unknown", "0103", true, "Duplicate in As-Billed", null, "Appears 2 times in As-Billed"),
                 ]),
-                new FilledFeeder("Washington Feeder", [new FilledRow(1, "B", "0201", "Active", 10.5, null)]),
+                new FilledFeeder("Washington Feeder", [new FilledRow(1, "B", "0201", true, "Active", 10.5, null)]),
             ],
             [], []);
 
@@ -46,14 +47,17 @@ namespace FeederCopy.Tests.Services
             Assert.Equal("CONSjunc14Se", ws.Cell("B3").GetText());
             Assert.Equal(XLDataType.Text, ws.Cell("C3").DataType);
             Assert.Equal("0101", ws.Cell("C3").GetText());
-            Assert.Equal("Active", ws.Cell("D3").GetText());
+            Assert.Equal(XLDataType.Number, ws.Cell("D3").DataType);
+            Assert.Equal(1, ws.Cell("D3").GetDouble());
             Assert.Equal(XLDataType.Number, ws.Cell("E3").DataType);
             Assert.Equal(152, ws.Cell("E3").GetDouble());
 
-            Assert.Equal("Missing reading", ws.Cell("D4").GetText());
+            Assert.Equal(0, ws.Cell("D4").GetDouble());
             Assert.True(ws.Cell("E4").IsEmpty());
-            Assert.Equal(XLColor.FromArgb(255, 242, 204), ws.Cell("D4").Style.Fill.BackgroundColor);
-            Assert.Equal(XLColor.FromArgb(255, 242, 204), ws.Cell("E4").Style.Fill.BackgroundColor);
+            Assert.NotEqual(XLColor.FromArgb(255, 242, 204), ws.Cell("D4").Style.Fill.BackgroundColor);
+            Assert.Equal(1, ws.Cell("D5").GetDouble());
+            Assert.Equal(XLColor.FromArgb(255, 242, 204), ws.Cell("D5").Style.Fill.BackgroundColor);
+            Assert.Equal(XLColor.FromArgb(255, 242, 204), ws.Cell("E5").Style.Fill.BackgroundColor);
             Assert.Equal(2, ws.SheetView.SplitRow);
         }
 

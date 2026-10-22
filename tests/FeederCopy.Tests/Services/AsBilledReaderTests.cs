@@ -142,5 +142,14 @@ namespace FeederCopy.Tests.Services
         {
             public void Report(int value) => report(value);
         }
+
+        [Fact]
+        public void Read_BlankKwh_MarkedBlank_TextIsNot()
+        {
+            KwhSnapshot s = Read(Row("c1", null), Row("c2", "abc"), Row("c3", "0"));
+            Assert.True(s.ByAccount["c1"][0].Blank);
+            Assert.False(s.ByAccount["c2"][0].Blank);
+            Assert.Equal(0, s.ByAccount["c3"][0].Kwh);
+        }
     }
 }

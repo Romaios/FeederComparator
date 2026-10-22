@@ -238,6 +238,10 @@ namespace FeederCopy.Tests.Support
 
         public void SelectConsumer(string consumerId) => SelectedConsumer = consumerId;
 
+        public IReadOnlyList<string> SelectedConsumers { get; private set; } = [];
+
+        public void SelectConsumers(IReadOnlyList<string> consumerIds) => SelectedConsumers = consumerIds;
+
         public bool ConfirmAnswer { get; set; } = true;
         public List<string> Confirms { get; } = [];
 

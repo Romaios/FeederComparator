@@ -179,7 +179,7 @@ namespace FeederCopy.App.Forms.BusSort
             lblBlocksHelp.Margin = new Padding(3, 0, 3, 8);
             lblBlocksHelp.MaximumSize = new Size(900, 0);
             lblBlocksHelp.Name = "lblBlocksHelp";
-            lblBlocksHelp.Text = "Drag buses up or down to reorder them (hold Ctrl or Shift to pick several), or use Move up and Move down. Sort by number puts every bus in number order as a start. Rows now is the saved Count; Rows after save is where each bus will be. Greyed rows don't move. Nothing changes until you click Save order.";
+            lblBlocksHelp.Text = "Drag buses up or down to reorder them (hold Ctrl or Shift to pick several), or use Move up and Move down. Sort by number puts every bus in number order as a start. Rows now is where each bus sits in the saved list (inactive consumers included); Rows after save is where it will be. Greyed rows don't move. Nothing changes until you click Save order.";
             dgvBlocks.AllowDrop = true;
             dgvBlocks.AllowUserToAddRows = false;
             dgvBlocks.AllowUserToDeleteRows = false;

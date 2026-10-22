@@ -32,8 +32,6 @@ namespace FeederCopy.App.Forms.Copy
             colActive = new DataGridViewTextBoxColumn();
             colInactive = new DataGridViewTextBoxColumn();
             colCopied = new DataGridViewTextBoxColumn();
-            colInactiveBilled = new DataGridViewTextBoxColumn();
-            colMissing = new DataGridViewTextBoxColumn();
             colDuplicates = new DataGridViewTextBoxColumn();
             colUnreadable = new DataGridViewTextBoxColumn();
             colTotalKwh = new DataGridViewTextBoxColumn();
@@ -139,6 +137,7 @@ namespace FeederCopy.App.Forms.Copy
             cboMonth.Name = "cboMonth";
             cboMonth.Size = new Size(150, 25);
             cboMonth.TabIndex = 0;
+            cboMonth.SelectedIndexChanged += month_Changed;
             lblYear.Anchor = AnchorStyles.Left;
             lblYear.AutoSize = true;
             lblYear.Name = "lblYear";
@@ -150,6 +149,7 @@ namespace FeederCopy.App.Forms.Copy
             numYear.Name = "numYear";
             numYear.Size = new Size(90, 25);
             numYear.TabIndex = 1;
+            numYear.ValueChanged += month_Changed;
             numYear.Value = new decimal(new int[] { 2026, 0, 0, 0 });
             btnCopy.AutoSize = true;
             btnCopy.Enabled = false;
@@ -168,7 +168,7 @@ namespace FeederCopy.App.Forms.Copy
             dgvTotals.AllowUserToDeleteRows = false;
             dgvTotals.AllowUserToResizeRows = false;
             dgvTotals.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
-            dgvTotals.Columns.AddRange(new DataGridViewColumn[] { colFeeder, colConsumers, colActive, colInactive, colCopied, colMissing, colInactiveBilled, colDuplicates, colUnreadable, colTotalKwh });
+            dgvTotals.Columns.AddRange(new DataGridViewColumn[] { colFeeder, colConsumers, colActive, colInactive, colCopied, colDuplicates, colUnreadable, colTotalKwh });
             dgvTotals.Dock = DockStyle.Fill;
             dgvTotals.Margin = new Padding(0);
             dgvTotals.MultiSelect = false;
@@ -190,21 +190,13 @@ namespace FeederCopy.App.Forms.Copy
             colActive.Name = "colActive";
             colActive.ReadOnly = true;
             colInactive.FillWeight = 11F;
-            colInactive.HeaderText = "Inactive";
+            colInactive.HeaderText = "Inactive (no bill)";
             colInactive.Name = "colInactive";
             colInactive.ReadOnly = true;
-            colInactiveBilled.FillWeight = 11F;
-            colInactiveBilled.HeaderText = "Inactive but billed";
-            colInactiveBilled.Name = "colInactiveBilled";
-            colInactiveBilled.ReadOnly = true;
             colCopied.FillWeight = 11F;
             colCopied.HeaderText = "Copied";
             colCopied.Name = "colCopied";
             colCopied.ReadOnly = true;
-            colMissing.FillWeight = 11F;
-            colMissing.HeaderText = "Missing reading";
-            colMissing.Name = "colMissing";
-            colMissing.ReadOnly = true;
             colDuplicates.FillWeight = 11F;
             colDuplicates.HeaderText = "Duplicates";
             colDuplicates.Name = "colDuplicates";
@@ -251,7 +243,7 @@ namespace FeederCopy.App.Forms.Copy
             lblProblemsTitle.AutoSize = true;
             lblProblemsTitle.Margin = new Padding(16, 0, 3, 0);
             lblProblemsTitle.Name = "lblProblemsTitle";
-            lblProblemsTitle.Text = "These rows are left blank and highlighted in the export.";
+            lblProblemsTitle.Text = "These rows have no kWh and are highlighted in the export. Consumers with no bill are not problems: they are inactive (status 0) for the month.";
             lblProblemsTitle.Visible = false;
             btnSaveProblems.Anchor = AnchorStyles.Right;
             btnSaveProblems.AutoSize = true;
@@ -394,8 +386,6 @@ namespace FeederCopy.App.Forms.Copy
         private DataGridViewTextBoxColumn colActive;
         private DataGridViewTextBoxColumn colInactive;
         private DataGridViewTextBoxColumn colCopied;
-        private DataGridViewTextBoxColumn colInactiveBilled;
-        private DataGridViewTextBoxColumn colMissing;
         private DataGridViewTextBoxColumn colDuplicates;
         private DataGridViewTextBoxColumn colUnreadable;
         private DataGridViewTextBoxColumn colTotalKwh;

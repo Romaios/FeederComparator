@@ -5,50 +5,22 @@ namespace FeederCopy.Core.Models.Copy
 {
     public static class KwhCopier
     {
-        public static CopyResult Fill(IReadOnlyList<FeederSource> feeders, KwhSnapshot snapshot, BillMonth month)
+        public const string SavedSource = "saved copy";
+
+        private sealed record Evaluated(bool Active, string Status, double? Kwh, string? Problem);
+
+        public static CopyResult Fill(IReadOnlyList<FeederSource> feeders, KwhSnapshot snapshot, BillMonth month, bool negativeAsZero = true) =>
+            Build(feeders, month, snapshot.FileName, entry =>
+                Evaluate(snapshot.ByAccount.TryGetValue(entry.ConsumerId.Trim(), out IReadOnlyList<AsBilledEntry>? matches) ? matches : [], negativeAsZero));
+
+        public static CopyResult FromReadings(IReadOnlyList<FeederSource> feeders, IReadOnlyList<ReadingRecord> readings, BillMonth month)
         {
-            var filled = new List<FilledFeeder>();
-            var totals = new List<FeederTotals>();
-            var problems = new List<CopyProblem>();
-
-            foreach (FeederSource feeder in feeders)
-            {
-                var rows = new List<FilledRow>();
-                int active = 0, copied = 0, missing = 0, inactiveBilled = 0, duplicates = 0, unreadable = 0;
-                double total = 0;
-
-                for (int i = 0; i < feeder.Consumers.Count; i++)
-                {
-                    ConsumerEntry entry = feeder.Consumers[i];
-                    string id = entry.ConsumerId.Trim();
-                    string bus = BusLabels.For(entry.BusId);
-                    if (entry.Active)
-                        active++;
-
-                    (string status, double? kwh, string? problem) = Evaluate(entry.Active, snapshot.ByAccount.TryGetValue(id, out IReadOnlyList<AsBilledEntry>? matches) ? matches : []);
-                    switch (status)
-                    {
-                        case StatusLabels.MissingReading: missing++; break;
-                        case StatusLabels.InactiveButBilled: inactiveBilled++; break;
-                        case StatusLabels.DuplicateInAsBilled: duplicates++; break;
-                        case StatusLabels.Unreadable: unreadable++; break;
-                    }
-                    if (kwh is double value)
-                    {
-                        copied++;
-                        total += value;
-                    }
-
-                    rows.Add(new FilledRow(i + 1, bus, id, status, kwh, problem));
-                    if (problem is not null)
-                        problems.Add(new CopyProblem(feeder.Name, i + 1, bus, id, problem));
-                }
-
-                filled.Add(new FilledFeeder(feeder.Name, rows));
-                totals.Add(new FeederTotals(feeder.Name, rows.Count, active, rows.Count - active, copied, missing, inactiveBilled, duplicates, unreadable, total));
-            }
-
-            return new CopyResult(month, snapshot.FileName, filled, totals, problems);
+            Dictionary<string, ReadingRecord> byConsumer = readings
+                .Where(r => r.BillMonth == month.Key)
+                .GroupBy(r => r.ConsumerId, StringComparer.Ordinal)
+                .ToDictionary(g => g.Key, g => g.First(), StringComparer.Ordinal);
+            return Build(feeders, month, SavedSource, entry =>
+                byConsumer.TryGetValue(entry.ConsumerId.Trim(), out ReadingRecord? reading) ? FromReading(reading) : NoBill());
         }
 
         public static IReadOnlyList<ReadingRecord> Readings(CopyResult result) =>
@@ -57,17 +29,76 @@ namespace FeederCopy.Core.Models.Copy
                 .Select(r => new ReadingRecord(r.ConsumerId, result.Month.Key, r.Kwh, r.Status))
                 .ToList();
 
-        private static (string Status, double? Kwh, string? Problem) Evaluate(bool active, IReadOnlyList<AsBilledEntry> matches)
+        public static IReadOnlyList<(string ConsumerId, bool Active)> Statuses(CopyResult result) =>
+            result.Feeders.SelectMany(f => f.Rows).Select(r => (r.ConsumerId, r.Active)).ToList();
+
+        public static bool IsActiveStatus(string status) =>
+            status is not (StatusLabels.Inactive or StatusLabels.MissingReading);
+
+        private static CopyResult Build(IReadOnlyList<FeederSource> feeders, BillMonth month, string source, Func<ConsumerEntry, Evaluated> evaluate)
+        {
+            var filled = new List<FilledFeeder>();
+            var totals = new List<FeederTotals>();
+            var problems = new List<CopyProblem>();
+
+            foreach (FeederSource feeder in feeders)
+            {
+                List<Evaluated> evaluated = feeder.Consumers.Select(evaluate).ToList();
+                int[] counts = RowCounts.For(evaluated.Select(e => e.Active).ToList());
+                var rows = new List<FilledRow>(evaluated.Count);
+                int copied = 0, duplicates = 0, unreadable = 0;
+                double total = 0;
+
+                for (int i = 0; i < evaluated.Count; i++)
+                {
+                    ConsumerEntry entry = feeder.Consumers[i];
+                    Evaluated e = evaluated[i];
+                    string id = entry.ConsumerId.Trim();
+                    string bus = BusLabels.For(entry.BusId);
+                    if (e.Status == StatusLabels.DuplicateInAsBilled)
+                        duplicates++;
+                    if (e.Status == StatusLabels.Unreadable)
+                        unreadable++;
+                    if (e.Kwh is double value)
+                    {
+                        copied++;
+                        total += value;
+                    }
+                    rows.Add(new FilledRow(counts[i], bus, id, e.Active, e.Status, e.Kwh, e.Problem));
+                    if (e.Problem is not null)
+                        problems.Add(new CopyProblem(feeder.Name, counts[i], bus, id, e.Problem));
+                }
+
+                int active = rows.Count(r => r.Active);
+                filled.Add(new FilledFeeder(feeder.Name, rows));
+                totals.Add(new FeederTotals(feeder.Name, rows.Count, active, rows.Count - active, copied, duplicates, unreadable, total));
+            }
+
+            return new CopyResult(month, source, filled, totals, problems);
+        }
+
+        private static Evaluated NoBill() => new(false, StatusLabels.Inactive, null, null);
+
+        private static Evaluated Evaluate(IReadOnlyList<AsBilledEntry> matches, bool negativeAsZero)
         {
             if (matches.Count == 0)
-                return active ? (StatusLabels.MissingReading, null, StatusLabels.MissingReading) : (StatusLabels.Inactive, null, null);
+                return NoBill();
             if (matches.Count > 1)
-                return (StatusLabels.DuplicateInAsBilled, null, $"Appears {matches.Count} times in As-Billed");
-            if (matches[0].Kwh is not double value)
-                return (StatusLabels.Unreadable, null, $"kWh could not be read in As-Billed (row {matches[0].RowNumber})");
-            return active
-                ? (StatusLabels.Active, value, null)
-                : (StatusLabels.InactiveButBilled, value, StatusLabels.InactiveButBilled);
+                return new(true, StatusLabels.DuplicateInAsBilled, null, $"Appears {matches.Count} times in As-Billed");
+            AsBilledEntry match = matches[0];
+            if (match.Blank)
+                return NoBill();
+            if (match.Kwh is not double value)
+                return new(true, StatusLabels.Unreadable, null, $"kWh could not be read in As-Billed (row {match.RowNumber})");
+            return new(true, StatusLabels.Active, negativeAsZero && value < 0 ? 0 : value, null);
         }
+
+        private static Evaluated FromReading(ReadingRecord reading) => reading.Status switch
+        {
+            StatusLabels.DuplicateInAsBilled => new(true, reading.Status, null, "Appears more than once in As-Billed"),
+            StatusLabels.Unreadable => new(true, reading.Status, null, "kWh could not be read in As-Billed"),
+            _ when !IsActiveStatus(reading.Status) => new(false, StatusLabels.Inactive, null, null),
+            _ => new(true, StatusLabels.Active, reading.Kwh, null),
+        };
     }
 }

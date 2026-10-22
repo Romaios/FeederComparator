@@ -52,7 +52,7 @@ namespace FeederCopy.Core.Services.Export
                 sheet.Cell(r, 1).Value = row.Count;
                 sheet.Cell(r, 2).Value = row.BusLabel;
                 sheet.Cell(r, 3).SetValue(row.ConsumerId);
-                sheet.Cell(r, 4).Value = row.Status;
+                sheet.Cell(r, 4).Value = row.Active ? 1 : 0;
                 if (row.Kwh is double kwh)
                     sheet.Cell(r, 5).Value = kwh;
                 if (row.Problem is not null)

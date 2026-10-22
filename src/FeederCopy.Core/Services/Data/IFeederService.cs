@@ -11,6 +11,7 @@ namespace FeederCopy.Core.Services.Data
         void SetActive(string consumerId, bool active, BillMonth? inactiveFrom = null);
         void SetActive(IReadOnlyList<string> consumerIds, bool active, BillMonth? inactiveFrom = null);
         IReadOnlyDictionary<string, BillMonth> GetInactiveFrom();
+        void ApplyMonthStatus(IReadOnlyList<(string ConsumerId, bool Active)> statuses, BillMonth month);
         ConsumerLocation? FindConsumer(string consumerId);
         IReadOnlyList<(string ConsumerId, ConsumerLocation Where)> FindConsumers(IEnumerable<string> consumerIds);
         long CreateFeeder(string name, IReadOnlyList<ConsumerEntry> consumers);

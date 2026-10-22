@@ -1,6 +1,5 @@
 using FeederCopy.Core.Models;
 using FeederCopy.Core.Models.Billing;
-using FeederCopy.Core.Models.Consumers;
 using FeederCopy.Core.Models.Copy;
 using FeederCopy.Core.Models.Settings;
 using FeederCopy.Core.Services.Data;
@@ -50,11 +49,36 @@ namespace FeederCopy.Core.Presenters.Copy
 
         public event Action? ReadingsSaved;
 
+        public event Action? StatusesUpdated;
+
         public void Load()
         {
             _view.SetExportStyle(_settings().Export);
             _view.SetExportEnabled(false);
-            RefreshIdleState();
+            Run("Loading saved months", () =>
+            {
+                IReadOnlyList<BillMonth> months = _readings.GetMonths();
+                if (months.Count > 0 && HasFeeders())
+                {
+                    BillMonth latest = months[^1];
+                    _view.SetMonth(latest.Month, latest.Year);
+                    ShowSaved(latest);
+                }
+                else
+                {
+                    RefreshIdleState();
+                }
+            });
+        }
+
+        public void OnMonthChanged(int? month, int? year)
+        {
+            if (month is not (>= 1 and <= 12) || year is not (>= 1900 and <= 2100))
+                return;
+            var chosen = new BillMonth(year.Value, month.Value);
+            if (_result?.Month == chosen && _result.SourceFile != KwhCopier.SavedSource)
+                return;
+            Run("Loading saved month", () => ShowSaved(chosen));
         }
 
         public async Task OnChooseFileClickedAsync()
@@ -85,6 +109,8 @@ namespace FeederCopy.Core.Presenters.Copy
                 _view.ShowFileRead(snapshot.FileName, snapshot.Month, snapshot.RowsRead, snapshot.Errors.Count);
                 _view.SetMonth(snapshot.Month?.Month, snapshot.Month?.Year);
                 RefreshIdleState();
+                if (snapshot.Month is { } fileMonth && _readings.GetMonths().Contains(fileMonth))
+                    _view.ClearResult($"{fileMonth} was copied before. Click Copy kWh to copy it again from this file.");
             }
             catch (Exception ex)
             {
@@ -112,12 +138,18 @@ namespace FeederCopy.Core.Presenters.Copy
             _view.SetBusy(true, "Copying kWh…");
             try
             {
-                CopyResult result = await Task.Run(() =>
+                bool negativeAsZero = _settings().NegativeKwhAsZero;
+                (CopyResult result, bool statusUpdated, BillMonth newest) = await Task.Run(() =>
                 {
-                    CopyResult filled = KwhCopier.Fill(LoadFeeders(chosen), snapshot, chosen);
-                    if (filled.Feeders.Count > 0)
-                        _readings.SaveMonth(chosen, KwhCopier.Readings(filled));
-                    return filled;
+                    CopyResult filled = KwhCopier.Fill(LoadFeeders(), snapshot, chosen, negativeAsZero);
+                    if (filled.Feeders.Count == 0)
+                        return (filled, false, chosen);
+                    _readings.SaveMonth(chosen, KwhCopier.Readings(filled));
+                    BillMonth latest = _readings.GetMonths().Max();
+                    bool update = chosen >= latest;
+                    if (update)
+                        _feeders.ApplyMonthStatus(KwhCopier.Statuses(filled), chosen);
+                    return (filled, update, latest);
                 });
                 _view.SetBusy(false, null);
                 if (result.Feeders.Count == 0)
@@ -126,11 +158,13 @@ namespace FeederCopy.Core.Presenters.Copy
                     return;
                 }
 
-                _result = result;
                 ReadingsSaved?.Invoke();
-                string heading = $"{chosen} · {Text.Count(result.Feeders.Count, "feeder", "feeders")} · {Text.Count(result.Problems.Count, "problem", "problems")}";
-                _view.ShowResult(result.Totals, result.Problems, heading);
-                _view.SetExportEnabled(true);
+                if (statusUpdated)
+                    StatusesUpdated?.Invoke();
+                string status = statusUpdated
+                    ? "current status set from this month's bills"
+                    : $"current status kept from {newest} (newer month)";
+                Show(result, $"{chosen} · copied · {status}");
             }
             catch (Exception ex)
             {
@@ -142,21 +176,16 @@ namespace FeederCopy.Core.Presenters.Copy
 
         public void OnFeedersChanged()
         {
-            if (_result is null)
+            if (_result is not { } result)
             {
                 RefreshIdleState();
                 return;
             }
-            _result = null;
-            _view.SetExportEnabled(false);
-            _view.ClearResult("Feeders changed. Click Copy kWh again.");
-            _view.SetCopyEnabled(HasFeeders());
-        }
-
-        public void OnStatusChanged()
-        {
-            if (_result is not null)
-                OnFeedersChanged();
+            Run("Refreshing saved month", () =>
+            {
+                _view.SetCopyEnabled(HasFeeders() && _snapshot is not null);
+                ShowSaved(result.Month);
+            });
         }
 
         public void OnSaveProblemsClicked()
@@ -199,16 +228,47 @@ namespace FeederCopy.Core.Presenters.Copy
                 _view.ShowInfo($"Exported {Text.Count(result.Feeders.Count, "feeder", "feeders")}.");
         }
 
-        private IReadOnlyList<FeederSource> LoadFeeders(BillMonth month)
-        {
-            IReadOnlyDictionary<string, BillMonth> inactiveFrom = _feeders.GetInactiveFrom();
-            return _feeders.GetFeeders()
-                .Select(f => new FeederSource(f.Name, _feeders.GetConsumers(f.Id)
-                    .Select(e => !e.Active && inactiveFrom.TryGetValue(e.ConsumerId, out BillMonth from) && InactiveMonths.IsActiveIn(false, from, month)
-                        ? e with { Active = true }
-                        : e)
-                    .ToList()))
+        private IReadOnlyList<FeederSource> LoadFeeders() =>
+            _feeders.GetFeeders()
+                .Select(f => new FeederSource(f.Name, _feeders.GetConsumers(f.Id)))
                 .ToList();
+
+        private void ShowSaved(BillMonth month)
+        {
+            IReadOnlyList<ReadingRecord> saved = _readings.GetMonth(month);
+            bool hasFeeders = HasFeeders();
+            if (saved.Count == 0 || !hasFeeders)
+            {
+                _result = null;
+                _view.SetExportEnabled(false);
+                _view.ClearResult(!hasFeeders ? NoFeeders
+                    : _snapshot is null ? $"Nothing saved for {month} yet. Choose its As-Billed file, then click Copy kWh."
+                    : "Check the month, then click Copy kWh.");
+                return;
+            }
+            Show(KwhCopier.FromReadings(LoadFeeders(), saved, month), $"{month} · saved copy");
+        }
+
+        private void Show(CopyResult result, string label)
+        {
+            _result = result;
+            int inactive = result.Totals.Sum(t => t.Inactive);
+            string heading = $"{label} · {Text.Count(result.Feeders.Count, "feeder", "feeders")} · {inactive:N0} inactive (no bill) · {Text.Count(result.Problems.Count, "problem", "problems")}";
+            _view.ShowResult(result.Totals, result.Problems, heading);
+            _view.SetExportEnabled(true);
+        }
+
+        private void Run(string context, Action action)
+        {
+            try
+            {
+                action();
+            }
+            catch (Exception ex)
+            {
+                _log.Error(context, ex);
+                _view.ShowError($"Could not load the saved kWh. {ex.Message}");
+            }
         }
 
         private bool HasFeeders()

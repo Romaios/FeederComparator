@@ -33,6 +33,7 @@ namespace FeederCopy.App.Forms.Settings
             txtKwh = new TextBox();
             lblMonth = new Label();
             txtMonth = new TextBox();
+            chkNegativeAsZero = new CheckBox();
             tlpExportCard = new TableLayoutPanel();
             lblExportTitle = new Label();
             lblExportStyle = new Label();
@@ -159,10 +160,12 @@ namespace FeederCopy.App.Forms.Settings
             tlpAsBilledCard.Controls.Add(txtKwh, 1, 2);
             tlpAsBilledCard.Controls.Add(lblMonth, 0, 3);
             tlpAsBilledCard.Controls.Add(txtMonth, 1, 3);
+            tlpAsBilledCard.Controls.Add(chkNegativeAsZero, 0, 4);
             tlpAsBilledCard.Margin = new Padding(3, 0, 3, 12);
             tlpAsBilledCard.Name = "tlpAsBilledCard";
             tlpAsBilledCard.Padding = new Padding(14, 12, 14, 12);
-            tlpAsBilledCard.RowCount = 4;
+            tlpAsBilledCard.RowCount = 5;
+            tlpAsBilledCard.RowStyles.Add(new RowStyle());
             tlpAsBilledCard.RowStyles.Add(new RowStyle());
             tlpAsBilledCard.RowStyles.Add(new RowStyle());
             tlpAsBilledCard.RowStyles.Add(new RowStyle());
@@ -197,6 +200,12 @@ namespace FeederCopy.App.Forms.Settings
             txtMonth.Margin = new Padding(3, 4, 3, 4);
             txtMonth.Name = "txtMonth";
             txtMonth.TabIndex = 2;
+            chkNegativeAsZero.AutoSize = true;
+            tlpAsBilledCard.SetColumnSpan(chkNegativeAsZero, 2);
+            chkNegativeAsZero.Margin = new Padding(3, 8, 3, 0);
+            chkNegativeAsZero.Name = "chkNegativeAsZero";
+            chkNegativeAsZero.TabIndex = 3;
+            chkNegativeAsZero.Text = "Count negative kWh as 0 (the consumer still counts as active)";
             tlpExportCard.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             tlpExportCard.AutoSize = true;
             tlpExportCard.AutoSizeMode = AutoSizeMode.GrowAndShrink;
@@ -317,6 +326,7 @@ namespace FeederCopy.App.Forms.Settings
         private TextBox txtKwh;
         private Label lblMonth;
         private TextBox txtMonth;
+        private CheckBox chkNegativeAsZero;
         private TableLayoutPanel tlpExportCard;
         private Label lblExportTitle;
         private Label lblExportStyle;

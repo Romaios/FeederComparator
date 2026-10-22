@@ -5,7 +5,7 @@ namespace FeederCopy.Core.Models.Copy
 {
     public sealed record FeederSource(string Name, IReadOnlyList<ConsumerEntry> Consumers);
 
-    public sealed record FilledRow(int Count, string BusLabel, string ConsumerId, string Status, double? Kwh, string? Problem);
+    public sealed record FilledRow(int Count, string BusLabel, string ConsumerId, bool Active, string Status, double? Kwh, string? Problem);
 
     public sealed record FilledFeeder(string Name, IReadOnlyList<FilledRow> Rows);
 
@@ -15,8 +15,6 @@ namespace FeederCopy.Core.Models.Copy
         int Active,
         int Inactive,
         int Copied,
-        int MissingReading,
-        int InactiveButBilled,
         int Duplicates,
         int Unreadable,
         double TotalKwh);
