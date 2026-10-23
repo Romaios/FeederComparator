@@ -16,6 +16,8 @@ namespace FeederCopy.App.Forms.Settings
 
         public void Attach(SettingsPresenter presenter) => _presenter = presenter;
 
+        public FeederCopy.App.Forms.Database.DatabaseView DatabaseCard => databaseView;
+
         public void ShowSettings(AppSettings settings)
         {
             txtBusId.Text = settings.Feeder.BusId;

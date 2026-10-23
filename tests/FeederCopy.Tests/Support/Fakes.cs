@@ -3,6 +3,8 @@ using FeederCopy.Core.Models.Consumers;
 using FeederCopy.Core.Models.Copy;
 using FeederCopy.Core.Presenters.BusSort;
 using FeederCopy.Core.Presenters.Consumers;
+using FeederCopy.Core.Presenters.Database;
+using FeederCopy.Core.Services.Data;
 using FeederCopy.Core.Models.Feeders;
 using FeederCopy.Core.Models.Settings;
 using FeederCopy.Core.Presenters.Copy;
@@ -337,5 +339,34 @@ namespace FeederCopy.Tests.Support
         public void ShowInfo(string message) => Infos.Add(message);
 
         public void ShowError(string message) => Errors.Add(message);
+    }
+
+    internal sealed class FakeDatabaseView : IDatabaseView
+    {
+        public (string Host, int Port, string Database, string User, bool HasPassword)? Shown { get; private set; }
+        public (string Message, DatabaseTone Tone)? Status { get; private set; }
+        public int ScriptsOpened { get; private set; }
+
+        public void ShowConnection(string host, int port, string database, string user, bool hasPassword) => Shown = (host, port, database, user, hasPassword);
+
+        public void ShowStatus(string message, DatabaseTone tone) => Status = (message, tone);
+
+        public void SetBusy(bool busy) { }
+
+        public void OpenScriptsFolder() => ScriptsOpened++;
+    }
+
+    internal sealed class FakeDatabaseSettingsStore : IDatabaseSettingsStore
+    {
+        public DatabaseConnection Stored { get; set; } = DatabaseConnection.Empty;
+        public int Saves { get; private set; }
+
+        public DatabaseConnection Load() => Stored;
+
+        public void Save(DatabaseConnection connection)
+        {
+            Stored = connection;
+            Saves++;
+        }
     }
 }

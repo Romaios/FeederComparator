@@ -1,76 +1,83 @@
 using Dapper;
-using Microsoft.Data.Sqlite;
+using MySqlConnector;
 
 namespace FeederCopy.Core.Services.Data
 {
+    public sealed record DatabaseConnection(string Host, int Port, string Database, string User, string Password)
+    {
+        public const int DefaultPort = 3306;
+        public const string DefaultHost = "localhost";
+
+        public static DatabaseConnection Empty { get; } = new(DefaultHost, DefaultPort, string.Empty, string.Empty, string.Empty);
+
+        public bool IsComplete =>
+            !string.IsNullOrWhiteSpace(Host) && Port is > 0 and <= 65535
+            && !string.IsNullOrWhiteSpace(Database) && !string.IsNullOrWhiteSpace(User);
+    }
+
+    public sealed record DatabaseCheck(string Version, IReadOnlyList<string> MissingScripts)
+    {
+        public bool Ready => MissingScripts.Count == 0;
+    }
+
     public sealed class Database
     {
         private const string SchemaPrefix = "FeederCopy.Schema.";
-        private readonly string _connectionString;
+        private const string SchemaSuffix = ".sql";
+        private const int ConnectSeconds = 5;
+        private const int CommandSeconds = 300;
 
-        public string FilePath { get; }
+        public Database(DatabaseConnection connection) => Connection = connection;
 
-        public Database(string filePath)
+        public DatabaseConnection Connection { get; private set; }
+
+        public static IReadOnlyList<string> ScriptNames { get; } = typeof(Database).Assembly.GetManifestResourceNames()
+            .Where(name => name.StartsWith(SchemaPrefix, StringComparison.Ordinal) && name.EndsWith(SchemaSuffix, StringComparison.Ordinal))
+            .Select(name => name[SchemaPrefix.Length..^SchemaSuffix.Length])
+            .Order(StringComparer.Ordinal)
+            .ToList();
+
+        public void Use(DatabaseConnection connection) => Connection = connection;
+
+        public MySqlConnection Open()
         {
-            FilePath = filePath;
-            _connectionString = new SqliteConnectionStringBuilder
-            {
-                DataSource = filePath,
-                Mode = SqliteOpenMode.ReadWriteCreate,
-            }.ToString();
-        }
-
-        public SqliteConnection Open()
-        {
-            var connection = new SqliteConnection(_connectionString);
+            if (!Connection.IsComplete)
+                throw new InvalidOperationException("The database connection is not set. Enter it in Settings → Database.");
+            var connection = new MySqlConnection(ConnectionString(Connection));
             connection.Open();
-            connection.Execute("PRAGMA synchronous = NORMAL; PRAGMA foreign_keys = ON;");
             return connection;
         }
 
-        public void EnsureSchema()
+        public DatabaseCheck Check()
         {
-            bool isNew = !File.Exists(FilePath);
-            IReadOnlyList<string> scripts = LoadSchemaScripts();
-            try
-            {
-                using SqliteConnection c = Open();
-                long version = c.ExecuteScalar<long>("PRAGMA user_version");
-                if (version > scripts.Count)
-                    throw new InvalidOperationException($"feeders.db was created by a newer version of the program (schema {version}; this program knows {scripts.Count}). Install the newer program.");
-                if (version == scripts.Count)
-                    return;
-
-                using SqliteTransaction tx = c.BeginTransaction();
-                foreach (string script in scripts.Skip((int)version))
-                    c.Execute(script, transaction: tx);
-                c.Execute($"PRAGMA user_version = {scripts.Count}", transaction: tx);
-                tx.Commit();
-            }
-            catch (Exception) when (isNew)
-            {
-                SqliteConnection.ClearAllPools();
-                File.Delete(FilePath);
-                throw;
-            }
+            using MySqlConnection c = Open();
+            string version = c.ExecuteScalar<string>("SELECT VERSION()") ?? string.Empty;
+            bool tracked = c.ExecuteScalar<long>(
+                "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'SchemaScripts'") > 0;
+            HashSet<string> applied = tracked
+                ? c.Query<string>("SELECT Name FROM SchemaScripts").ToHashSet(StringComparer.OrdinalIgnoreCase)
+                : [];
+            return new DatabaseCheck(version, ScriptNames.Where(name => !applied.Contains(name)).ToList());
         }
 
-        private static IReadOnlyList<string> LoadSchemaScripts()
+        public static string ScriptText(string name)
         {
-            var assembly = typeof(Database).Assembly;
-            List<string> names = assembly.GetManifestResourceNames()
-                .Where(name => name.StartsWith(SchemaPrefix, StringComparison.Ordinal))
-                .Order(StringComparer.Ordinal)
-                .ToList();
-            if (names.Count == 0)
-                throw new InvalidOperationException("The database schema scripts are missing from the program.");
-
-            return names.Select(name =>
-            {
-                using Stream stream = assembly.GetManifestResourceStream(name)!;
-                using var reader = new StreamReader(stream);
-                return reader.ReadToEnd();
-            }).ToList();
+            using Stream stream = typeof(Database).Assembly.GetManifestResourceStream(SchemaPrefix + name + SchemaSuffix)
+                ?? throw new InvalidOperationException($"The database script {name} is missing from the program.");
+            using var reader = new StreamReader(stream);
+            return reader.ReadToEnd();
         }
+
+        public static string ConnectionString(DatabaseConnection connection) => new MySqlConnectionStringBuilder
+        {
+            Server = connection.Host.Trim(),
+            Port = (uint)connection.Port,
+            Database = connection.Database.Trim(),
+            UserID = connection.User.Trim(),
+            Password = connection.Password,
+            ConnectionTimeout = ConnectSeconds,
+            DefaultCommandTimeout = CommandSeconds,
+            CharacterSet = "utf8mb4",
+        }.ConnectionString;
     }
 }

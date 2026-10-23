@@ -2,6 +2,7 @@ using FeederCopy.App.Utils;
 using FeederCopy.Core.Models.Billing;
 using FeederCopy.Core.Presenters.BusSort;
 using FeederCopy.Core.Presenters.Consumers;
+using FeederCopy.Core.Presenters.Database;
 using FeederCopy.Core.Presenters.Copy;
 using FeederCopy.Core.Presenters.Feeders;
 using FeederCopy.Core.Presenters.Settings;
@@ -12,6 +13,7 @@ namespace FeederCopy.App.Forms.Shell
     public sealed partial class MainForm : Form
     {
         private const string ReadyText = "Ready";
+        private const string DatabaseNotReady = "The program can't use its MySQL database yet. Open Settings → Database to set it up.";
         private const string CollapseGlyph = "";
         private const string ExpandGlyph = "";
 
@@ -21,7 +23,9 @@ namespace FeederCopy.App.Forms.Shell
         private readonly ConsumersPresenter _consumers;
         private readonly BusSortPresenter _busSort;
         private readonly UpdatesPresenter _updates;
+        private readonly DatabasePresenter _database;
         private bool _headerCollapsed;
+        private bool _dataLoaded;
 
         public MainForm(AppServices services)
         {
@@ -31,6 +35,7 @@ namespace FeederCopy.App.Forms.Shell
             Text = $"{Dialogs.AppName} {typeof(MainForm).Assembly.GetName().Version?.ToString(3)}";
 
             _settings = new SettingsPresenter(settingsView, services.Settings);
+            _database = new DatabasePresenter(settingsView.DatabaseCard, services.DatabaseSettings, services.Database, services.Log);
             _feeders = new FeedersPresenter(feedersView, services.Feeders, () => _settings.Current, services.Log);
             _copy = new CopyPresenter(copyView, services.Feeders, services.Readings, services.AsBilled, services.Exporter,
                 () => _settings.Current, _settings.RememberExportStyle, services.Log);
@@ -52,8 +57,10 @@ namespace FeederCopy.App.Forms.Shell
             _busSort.Sorted += _copy.OnFeedersChanged;
             _busSort.Sorted += _consumers.OnFeedersChanged;
             _updates.UpdateAvailable += ShowUpdateOffer;
+            _database.Connected += LoadData;
 
             settingsView.Attach(_settings);
+            settingsView.DatabaseCard.Attach(_database);
             feedersView.Attach(_feeders);
             copyView.Attach(_copy);
             consumersView.Attach(_consumers);
@@ -79,6 +86,17 @@ namespace FeederCopy.App.Forms.Shell
         }
 
         private void SetStatus(string? message) => lblStatus.Text = message ?? ReadyText;
+
+        private void LoadData()
+        {
+            if (lblWarning.Text == DatabaseNotReady)
+                tlpWarning.Visible = false;
+            _dataLoaded = true;
+            _feeders.Load();
+            _copy.Load();
+            _consumers.Load();
+            _busSort.OnFeedersChanged();
+        }
 
         private void ApplyHeaderSize()
         {
@@ -116,9 +134,15 @@ namespace FeederCopy.App.Forms.Shell
             string? problem = _settings.Load();
             if (problem is not null)
                 ShowWarning(problem, updateOffer: false);
-            _feeders.Load();
-            _copy.Load();
-            _consumers.Load();
+            if (_database.Load() is null)
+            {
+                LoadData();
+            }
+            else
+            {
+                ShowWarning(DatabaseNotReady, updateOffer: false);
+                rdoSettings.Checked = true;
+            }
             _updates.Load();
             await _updates.CheckQuietlyAsync();
         }
@@ -140,6 +164,8 @@ namespace FeederCopy.App.Forms.Shell
             Cursor.Current = Cursors.WaitCursor;
             settingsView.Visible = tab == rdoSettings;
             updatesView.Visible = tab == rdoUpdates;
+            if (!_dataLoaded)
+                return;
             if (tab == rdoConsumers)
                 _consumers.OnShown();
             else

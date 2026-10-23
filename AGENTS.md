@@ -37,7 +37,7 @@ Background: `C:\Users\USER-01\Documents\BongBillingV2\docs\LESSONS-LEARNED-SBPR-
 ## Data And Config
 
 - The As-Billed files and feeder list files are read-only inputs. Never modify them.
-- The schema lives in numbered, dated scripts in `docs/sql/` (`YYYY-MM-DD-NN-name.sql`). On start the program applies, in order, any script the database has not run yet (tracked by `PRAGMA user_version`). Never edit a script that has shipped; add a new one.
+- The data lives in a MySQL database. The schema lives in numbered, dated MySQL scripts in `docs/sql/` (`YYYY-MM-DD-NN-name.sql`). The user runs them on the server; each script ends by recording its name in `SchemaScripts`, and the program checks on start and names any script not run yet. The program never changes tables itself. Never edit a script that has shipped; add a new one.
 - Parameterized queries only.
 - Config lives in `settings.json` via `SettingsStore`. No hardcoded business data (column names, feeder names, bus IDs). Never edit the user's runtime `settings.json` directly; tell the user what to change in the Settings tab.
 - If config is invalid, surface the problem in the UI. Never silently fall back.

@@ -306,6 +306,12 @@ namespace FeederCopy.App.Utils
             label.ForeColor = Danger;
         }
 
+        public static void StyleWarningLabel(Label label)
+        {
+            label.Font = SmallFontBold;
+            label.ForeColor = Warning;
+        }
+
         public static void StyleSuccessLabel(Label label)
         {
             label.Font = SmallFontBold;

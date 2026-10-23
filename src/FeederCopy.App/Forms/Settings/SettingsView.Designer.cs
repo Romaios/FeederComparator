@@ -24,6 +24,7 @@ namespace FeederCopy.App.Forms.Settings
             txtConsumerId = new TextBox();
             lblStatusColumn = new Label();
             tlpLeft = new TableLayoutPanel();
+            databaseView = new FeederCopy.App.Forms.Database.DatabaseView();
             txtStatusColumn = new TextBox();
             tlpAsBilledCard = new TableLayoutPanel();
             lblAsBilledTitle = new Label();
@@ -88,6 +89,10 @@ namespace FeederCopy.App.Forms.Settings
             tlpLeft.Controls.Add(tlpFeederCard, 0, 0);
             tlpLeft.Controls.Add(tlpAsBilledCard, 1, 0);
             tlpLeft.Controls.Add(tlpExportCard, 0, 1);
+            tlpLeft.Controls.Add(databaseView, 1, 1);
+            databaseView.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            databaseView.Name = "databaseView";
+            databaseView.TabIndex = 3;
             tlpLeft.Dock = DockStyle.Fill;
             tlpLeft.Margin = new Padding(0);
             tlpLeft.Name = "tlpLeft";
@@ -318,6 +323,7 @@ namespace FeederCopy.App.Forms.Settings
         private Label lblStatusColumn;
         private TextBox txtStatusColumn;
         private TableLayoutPanel tlpLeft;
+        private FeederCopy.App.Forms.Database.DatabaseView databaseView;
         private TableLayoutPanel tlpAsBilledCard;
         private Label lblAsBilledTitle;
         private Label lblAccount;

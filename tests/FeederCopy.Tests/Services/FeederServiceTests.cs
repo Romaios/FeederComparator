@@ -2,7 +2,7 @@ using Dapper;
 using FeederCopy.Core.Models.Billing;
 using FeederCopy.Core.Models.Feeders;
 using FeederCopy.Core.Services.Data;
-using Microsoft.Data.Sqlite;
+using MySqlConnector;
 
 namespace FeederCopy.Tests.Services
 {
@@ -73,7 +73,7 @@ namespace FeederCopy.Tests.Services
         {
             long f1 = _service.CreateFeeder("F1", [E("A", "c1")]);
             long f2 = _service.CreateFeeder("F2", [E("B", "c2")]);
-            Assert.Throws<SqliteException>(() => _service.SaveConsumers(new Dictionary<long, IReadOnlyList<ConsumerEntry>>
+            Assert.ThrowsAny<MySqlException>(() => _service.SaveConsumers(new Dictionary<long, IReadOnlyList<ConsumerEntry>>
             {
                 [f1] = [E("A", "c9")],
                 [999] = [E("B", "c8")],
@@ -107,7 +107,8 @@ namespace FeederCopy.Tests.Services
         {
             long other = _service.CreateFeeder("Other", [E("Z", "c9")]);
             long abuyog = _service.CreateFeeder("Abuyog", [E("A", "c1")]);
-            Assert.Throws<SqliteException>(() => _service.ImportFeeders([("Abuyog", [E("A", "c2")]), ("Bacon", [E("B", "c9")])]));
+            var ex = Assert.Throws<InvalidOperationException>(() => _service.ImportFeeders([("Abuyog", [E("A", "c2")]), ("Bacon", [E("B", "c9")])]));
+            Assert.Equal("Consumer c9 is already in feeder Other.", ex.Message);
             Assert.Equal([E("A", "c1")], _service.GetConsumers(abuyog));
             Assert.Equal([E("Z", "c9")], _service.GetConsumers(other));
             Assert.Equal(["Abuyog", "Other"], _service.GetFeeders().Select(f => f.Name));
@@ -192,9 +193,9 @@ namespace FeederCopy.Tests.Services
         public void CreatedAt_Format()
         {
             _service.CreateFeeder("F", []);
-            using SqliteConnection c = _temp.Db.Open();
-            string created = c.ExecuteScalar<string>("SELECT CreatedAt FROM Feeders")!;
-            Assert.True(DateTime.TryParseExact(created, "yyyy-MM-dd HH:mm:ss", null, System.Globalization.DateTimeStyles.None, out _));
+            using MySqlConnection c = _temp.Db.Open();
+            DateTime created = c.ExecuteScalar<DateTime>("SELECT CreatedAt FROM Feeders");
+            Assert.True(Math.Abs((DateTime.Now - created).TotalMinutes) < 5);
         }
 
         [Fact]
@@ -210,6 +211,24 @@ namespace FeederCopy.Tests.Services
             _service.ApplyMonthStatus([("c1", true), ("c2", true), ("c3", false)], new BillMonth(2026, 5));
             Assert.True(_service.GetAllConsumers()[1].Entry.Active);
             Assert.False(_service.GetInactiveFrom().ContainsKey("c2"));
+        }
+
+        [Fact]
+        public void Coordinates_KeptWhenConsumersAreReorderedMovedAndReimported()
+        {
+            long f1 = _service.CreateFeeder("F1", [E("A", "c1"), E("A", "c2")]);
+            long f2 = _service.CreateFeeder("F2", [E("B", "c3")]);
+            using (MySqlConnection c = _temp.Db.Open())
+                c.Execute("UPDATE FeederConsumers SET X = 123.5, Y = 13.25 WHERE ConsumerId IN ('c1', 'c3')");
+
+            _service.SaveConsumers(new Dictionary<long, IReadOnlyList<ConsumerEntry>> { [f1] = [E("A", "c2"), E("A", "c1")] });
+            _service.ImportFeeders([("F1", [E("A", "c1"), E("A", "c2")])]);
+            _service.SaveConsumers(new Dictionary<long, IReadOnlyList<ConsumerEntry>> { [f1] = [E("A", "c1"), E("A", "c2"), E("B", "c3")], [f2] = [] });
+
+            using MySqlConnection check = _temp.Db.Open();
+            var coords = check.Query<(string ConsumerId, double? X, double? Y)>("SELECT ConsumerId, X, Y FROM FeederConsumers ORDER BY ConsumerId").ToList();
+            Assert.Equal([("c1", (double?)123.5, (double?)13.25), ("c2", null, null), ("c3", 123.5, 13.25)], coords);
+            Assert.Equal([E("A", "c1"), E("A", "c2"), E("B", "c3")], _service.GetConsumers(f1));
         }
     }
 }

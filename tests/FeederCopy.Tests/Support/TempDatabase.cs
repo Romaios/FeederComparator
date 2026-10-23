@@ -1,29 +1,47 @@
+using Dapper;
 using FeederCopy.Core.Services.Data;
-using Microsoft.Data.Sqlite;
+using MySqlConnector;
 
 namespace FeederCopy.Tests.Support
 {
     internal sealed class TempDatabase : IDisposable
     {
-        public string FilePath { get; } = TestFiles.TempPath(".db");
-        public Database Db { get; }
-
-        public TempDatabase()
+        public TempDatabase(bool runScripts = true)
         {
-            Db = new Database(FilePath);
-            Db.EnsureSchema();
+            Name = "fctest_" + Guid.NewGuid().ToString("N")[..16];
+            using (MySqlConnection server = OpenServer())
+                server.Execute($"CREATE DATABASE {Name}");
+            Db = new Database(Server with { Database = Name });
+            if (!runScripts)
+                return;
+            using MySqlConnection c = Db.Open();
+            foreach (string script in Database.ScriptNames)
+                c.Execute(Database.ScriptText(script));
         }
+
+        public static DatabaseConnection Server { get; } = new(
+            Environment.GetEnvironmentVariable("FEEDERCOPY_TEST_MYSQL_HOST") ?? "127.0.0.1",
+            int.TryParse(Environment.GetEnvironmentVariable("FEEDERCOPY_TEST_MYSQL_PORT"), out int port) ? port : 3310,
+            "mysql",
+            Environment.GetEnvironmentVariable("FEEDERCOPY_TEST_MYSQL_USER") ?? "root",
+            Environment.GetEnvironmentVariable("FEEDERCOPY_TEST_MYSQL_PASSWORD") ?? string.Empty);
+
+        public string Name { get; }
+
+        public Database Db { get; }
 
         public void Dispose()
         {
-            ClearPool(FilePath);
-            File.Delete(FilePath);
+            MySqlConnection.ClearAllPools();
+            using MySqlConnection server = OpenServer();
+            server.Execute($"DROP DATABASE IF EXISTS {Name}");
         }
 
-        public static void ClearPool(string path)
+        private static MySqlConnection OpenServer()
         {
-            using var connection = new SqliteConnection(new SqliteConnectionStringBuilder { DataSource = path, Mode = SqliteOpenMode.ReadWriteCreate }.ToString());
-            SqliteConnection.ClearPool(connection);
+            var connection = new MySqlConnection(Database.ConnectionString(Server));
+            connection.Open();
+            return connection;
         }
     }
 }

@@ -8,6 +8,8 @@ using FeederCopy.Core.Services.Updates;
 namespace FeederCopy.App
 {
     public sealed record AppServices(
+        Database Database,
+        IDatabaseSettingsStore DatabaseSettings,
         IFeederService Feeders,
         IReadingService Readings,
         IAsBilledReader AsBilled,

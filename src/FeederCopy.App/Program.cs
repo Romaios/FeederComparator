@@ -1,4 +1,5 @@
 using FeederCopy.App.Forms.Shell;
+using FeederCopy.App.Services.Database;
 using FeederCopy.App.Services.Updates;
 using FeederCopy.App.Utils;
 using Velopack;
@@ -36,9 +37,10 @@ namespace FeederCopy.App
             AppServices services;
             try
             {
-                var database = new Database(Path.Combine(folder, "feeders.db"));
-                database.EnsureSchema();
+                var database = new Database(DatabaseConnection.Empty);
                 services = new AppServices(
+                    database,
+                    new DatabaseSettingsStore(Path.Combine(folder, "database.json")),
                     new FeederService(database),
                     new ReadingService(database),
                     new AsBilledReader(),

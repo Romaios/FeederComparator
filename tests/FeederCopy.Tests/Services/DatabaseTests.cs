@@ -1,85 +1,64 @@
 using Dapper;
 using FeederCopy.Core.Services.Data;
-using Microsoft.Data.Sqlite;
+using MySqlConnector;
 
 namespace FeederCopy.Tests.Services
 {
     public sealed class DatabaseTests
     {
         [Fact]
-        public void EnsureSchema_NewFile_CreatesTablesAndSetsUserVersion2()
+        public void ScriptNames_FromEmbeddedScripts_InOrder()
         {
-            using var temp = new TempDatabase();
-            using SqliteConnection c = temp.Db.Open();
-            List<string> tables = c.Query<string>("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name").ToList();
-            Assert.Contains("Feeders", tables);
-            Assert.Contains("FeederConsumers", tables);
-            Assert.Contains("Readings", tables);
-            Assert.Equal(3L, c.ExecuteScalar<long>("PRAGMA user_version"));
+            Assert.NotEmpty(Database.ScriptNames);
+            Assert.Equal(Database.ScriptNames.Order(StringComparer.Ordinal), Database.ScriptNames);
+            Assert.Contains("2026-10-23-01-create-tables", Database.ScriptNames);
         }
 
         [Fact]
-        public void EnsureSchema_RunTwice_IsNoOp()
+        public void Check_AllScriptsRun_Ready()
         {
             using var temp = new TempDatabase();
-            temp.Db.EnsureSchema();
-            using SqliteConnection c = temp.Db.Open();
-            Assert.Equal(3L, c.ExecuteScalar<long>("PRAGMA user_version"));
+            DatabaseCheck check = temp.Db.Check();
+            Assert.True(check.Ready);
+            Assert.StartsWith("8.", check.Version);
         }
 
         [Fact]
-        public void EnsureSchema_UpgradeFromVersion1_KeepsConsumersAsActive()
+        public void Check_EmptyDatabase_ListsEveryScript()
         {
-            string path = TestFiles.TempPath(".db");
-            try
-            {
-                using (var c = new SqliteConnection($"Data Source={path}"))
-                {
-                    c.Open();
-                    c.Execute(File.ReadAllText(Path.Combine(RepoRoot(), "docs", "sql", "2026-10-20-01-create-feeder-tables.sql")));
-                    c.Execute("INSERT INTO Feeders (Id, Name, CreatedAt) VALUES (1, 'Abuyog', '2026-10-20 08:00:00')");
-                    c.Execute("INSERT INTO FeederConsumers (FeederId, BusId, ConsumerId, Position) VALUES (1, 'A', '0900001', 1)");
-                    c.Execute("PRAGMA user_version = 1");
-                }
-                TempDatabase.ClearPool(path);
-
-                var db = new Database(path);
-                db.EnsureSchema();
-                using SqliteConnection upgraded = db.Open();
-                Assert.Equal(3L, upgraded.ExecuteScalar<long>("PRAGMA user_version"));
-                Assert.Equal(1L, upgraded.ExecuteScalar<long>("SELECT Active FROM FeederConsumers WHERE ConsumerId = '0900001'"));
-            }
-            finally
-            {
-                SqliteConnection.ClearAllPools();
-                File.Delete(path);
-            }
-        }
-
-        private static string RepoRoot()
-        {
-            var dir = new DirectoryInfo(AppContext.BaseDirectory);
-            while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "FeederCopy.sln")))
-                dir = dir.Parent;
-            return dir?.FullName ?? throw new InvalidOperationException("Repository root not found.");
+            using var temp = new TempDatabase(runScripts: false);
+            DatabaseCheck check = temp.Db.Check();
+            Assert.False(check.Ready);
+            Assert.Equal(Database.ScriptNames, check.MissingScripts);
         }
 
         [Fact]
-        public void EnsureSchema_NewerVersion_Throws()
+        public void Scripts_CreateTablesWithCoordinateColumns()
         {
             using var temp = new TempDatabase();
-            using (SqliteConnection c = temp.Db.Open())
-                c.Execute("PRAGMA user_version = 5");
-            var ex = Assert.Throws<InvalidOperationException>(() => new Database(temp.FilePath).EnsureSchema());
-            Assert.Contains("newer version", ex.Message);
+            using MySqlConnection c = temp.Db.Open();
+            List<string> tables = c.Query<string>("SELECT table_name FROM information_schema.tables WHERE table_schema = DATABASE()").ToList();
+            Assert.Superset(new HashSet<string>(["feeders", "feederconsumers", "readings", "consumerinactivefrom", "networklines", "schemascripts"]),
+                tables.Select(t => t.ToLowerInvariant()).ToHashSet());
+            List<string> columns = c.Query<string>(
+                "SELECT column_name FROM information_schema.columns WHERE table_schema = DATABASE() AND LOWER(table_name) = 'feederconsumers'").ToList();
+            Assert.Contains("X", columns);
+            Assert.Contains("Y", columns);
         }
 
         [Fact]
-        public void Open_EnablesForeignKeys()
+        public void Open_IncompleteConnection_SaysWhereToSetIt()
         {
-            using var temp = new TempDatabase();
-            using SqliteConnection c = temp.Db.Open();
-            Assert.Equal(1L, c.ExecuteScalar<long>("PRAGMA foreign_keys"));
+            var db = new Database(DatabaseConnection.Empty);
+            var ex = Assert.Throws<InvalidOperationException>(() => db.Open());
+            Assert.Equal("The database connection is not set. Enter it in Settings → Database.", ex.Message);
+        }
+
+        [Fact]
+        public void Open_WrongPassword_Throws()
+        {
+            var db = new Database(TempDatabase.Server with { Password = "definitely-wrong-" + Guid.NewGuid() });
+            Assert.ThrowsAny<MySqlException>(() => db.Open());
         }
     }
 }

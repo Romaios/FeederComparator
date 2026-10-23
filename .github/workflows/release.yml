@@ -6,7 +6,38 @@ on:
       - 'v*'
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: feedercopy-ci
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -pfeedercopy-ci"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Test
+        env:
+          FEEDERCOPY_TEST_MYSQL_HOST: 127.0.0.1
+          FEEDERCOPY_TEST_MYSQL_PORT: 3306
+          FEEDERCOPY_TEST_MYSQL_USER: root
+          FEEDERCOPY_TEST_MYSQL_PASSWORD: feedercopy-ci
+        run: dotnet test tests/FeederCopy.Tests -c Release
+
   release:
+    needs: test
     runs-on: windows-latest
     permissions:
       contents: write
@@ -22,9 +53,6 @@ jobs:
         id: version
         shell: bash
         run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
-
-      - name: Test
-        run: dotnet test tests/FeederCopy.Tests -c Release
 
       - name: Publish app
         run: dotnet publish src/FeederCopy.App -c Release -r win-x64 --self-contained -p:Version=${{ steps.version.outputs.VERSION }} -o ./publish

@@ -11,13 +11,14 @@
   <ItemGroup>
     <EmbeddedResource Include="Resources\AppIcon\app.ico" LogicalName="FeederCopy.Assets.app.ico" />
     <EmbeddedResource Include="Resources\AppIcon\soreco-logo.png" LogicalName="FeederCopy.Assets.soreco-logo.png" />
+    <None Include="..\..\docs\sql\*.sql" Link="sql\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>
     <Compile Update="Forms\Shell\MainForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Update="Forms\Feeders\FeedersView.cs;Forms\Copy\CopyView.cs;Forms\Consumers\ConsumersView.cs;Forms\Settings\SettingsView.cs;Forms\Updates\UpdatesView.cs;Forms\BusSort\BusSortView.cs">
+    <Compile Update="Forms\Feeders\FeedersView.cs;Forms\Copy\CopyView.cs;Forms\Consumers\ConsumersView.cs;Forms\Settings\SettingsView.cs;Forms\Updates\UpdatesView.cs;Forms\BusSort\BusSortView.cs;Forms\Database\DatabaseView.cs">
       <SubType>UserControl</SubType>
     </Compile>
   </ItemGroup>
@@ -29,7 +30,7 @@
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>FeederCopy</AssemblyName>
-    <Version>1.2.2</Version>
+    <Version>2.0.0</Version>
     <ApplicationIcon>Resources\AppIcon\app.ico</ApplicationIcon>
     <Product>Feeder kWh Copy</Product>
   </PropertyGroup>
