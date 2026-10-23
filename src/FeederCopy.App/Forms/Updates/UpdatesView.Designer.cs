@@ -135,6 +135,7 @@ namespace FeederCopy.App.Forms.Updates
             prgDownload.Dock = DockStyle.Fill;
             prgDownload.Margin = new Padding(0, 0, 0, 4);
             prgDownload.MarqueeAnimationSpeed = 30;
+            prgDownload.Maximum = 101;
             prgDownload.Name = "prgDownload";
             prgDownload.Size = new Size(700, 18);
             prgDownload.Visible = false;

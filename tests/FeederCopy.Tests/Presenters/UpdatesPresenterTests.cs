@@ -218,7 +218,7 @@ namespace FeederCopy.Tests.Presenters
             await _presenter.OnUpdateNowClickedAsync();
 
             Assert.Equal("The connection is slow. No data received for 25 seconds, still trying…", _view.Message);
-            Assert.Contains((10, $"{5.0:0.0} MB of {50.0:0.0} MB (10%)"), _view.Progress);
+            Assert.Contains((10, $"{5.0:0.0} MB of {50.0:0.0} MB (10%) · {1.0:0.0} MB/s"), _view.Progress);
         }
 
         [Fact]

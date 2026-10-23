@@ -50,7 +50,9 @@ namespace FeederCopy.App.Forms.Updates
 
         public void ShowProgress(int percent, string detail)
         {
-            prgDownload.Value = percent;
+            int value = Math.Clamp(percent, 0, prgDownload.Maximum - 1);
+            prgDownload.Value = value + 1;
+            prgDownload.Value = value;
             lblProgress.Text = detail;
         }
 

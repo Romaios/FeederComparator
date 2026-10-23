@@ -17,6 +17,7 @@ namespace FeederCopy.Core.Presenters.Updates
         private UpdateStage _stage = UpdateStage.Idle;
         private DateTime _stageStartedAt;
         private DateTime _lastProgressAt;
+        private DateTime _downloadStartedAt;
         private int _lastPercent;
 
         public UpdatesPresenter(IUpdatesView view, IUpdateService service, IUpdateSettingsStore store, IErrorLog log, Func<DateTime>? clock = null)
@@ -131,7 +132,8 @@ namespace FeederCopy.Core.Presenters.Updates
             ShowStage(UpdateStage.Downloading);
             _lastPercent = 0;
             _lastProgressAt = _clock();
-            _view.ShowProgress(0, ProgressText(0, offer.SizeBytes));
+            _downloadStartedAt = _lastProgressAt;
+            _view.ShowProgress(0, ProgressText(0, offer.SizeBytes, 0));
             var progress = new Progress<int>(percent => OnDownloadProgress(percent, offer.SizeBytes));
 
             using var cancel = new CancellationTokenSource();
@@ -179,7 +181,7 @@ namespace FeederCopy.Core.Presenters.Updates
                 _lastProgressAt = _clock();
                 _view.ShowMessage(DownloadingMessage);
             }
-            _view.ShowProgress(clamped, ProgressText(clamped, totalBytes));
+            _view.ShowProgress(clamped, ProgressText(clamped, totalBytes, (_clock() - _downloadStartedAt).TotalSeconds));
         }
 
         public void OnTimerTick()
@@ -246,14 +248,19 @@ namespace FeederCopy.Core.Presenters.Updates
                 UpdateStage.Downloading => new(stage, $"Downloading version {version}",
                     DownloadingMessage, false, false, true, true),
                 UpdateStage.Cancelling => new(stage, "Cancelling download", "Stopping the download…", false, false, false, true),
-                UpdateStage.Applying => new(stage, "Installing update", "The program will close now and reopen on the new version in a few seconds.", false, false, false, true),
+                UpdateStage.Applying => new(stage, "Installing update",
+                    $"The program will close now and reopen on version {version} by itself. This can take a minute or two; don't start it again in the meantime.", false, false, false, true),
                 _ => new(stage, "Program updates", "Click Check for updates to look for a newer version.", true, false, false, false),
             };
             _view.ShowScreen(screen);
         }
 
-        private static string ProgressText(int percent, long totalBytes) =>
-            $"{Megabytes(totalBytes * percent / 100)} of {Megabytes(totalBytes)} ({percent}%)";
+        private static string ProgressText(int percent, long totalBytes, double seconds)
+        {
+            long received = totalBytes * percent / 100;
+            string text = $"{Megabytes(received)} of {Megabytes(totalBytes)} ({percent}%)";
+            return percent > 0 && seconds >= 1 ? $"{text} · {received / 1048576d / seconds:0.0} MB/s" : text;
+        }
 
         private static string Megabytes(long bytes) => $"{bytes / 1048576d:0.0} MB";
     }
