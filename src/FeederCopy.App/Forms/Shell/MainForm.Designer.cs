@@ -26,7 +26,6 @@ namespace FeederCopy.App.Forms.Shell
             rdoGroupSystem = new RadioButton();
             flpSubTabs = new FlowLayoutPanel();
             btnBack = new Button();
-            lblGroup = new Label();
             btnCollapse = new Button();
             tipNav = new ToolTip(components);
             rdoFeeders = new RadioButton();
@@ -89,7 +88,7 @@ namespace FeederCopy.App.Forms.Shell
             tlpHeader.Dock = DockStyle.Fill;
             tlpHeader.Margin = new Padding(0);
             tlpHeader.Name = "tlpHeader";
-            tlpHeader.Padding = new Padding(12, 0, 12, 1);
+            tlpHeader.Padding = new Padding(12, 0, 12, 3);
             tlpHeader.RowCount = 1;
             tlpHeader.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
             tlpHeader.TabIndex = 0;
@@ -102,7 +101,7 @@ namespace FeederCopy.App.Forms.Shell
             lblAppTitle.AutoSize = true;
             lblAppTitle.Margin = new Padding(4, 0, 24, 0);
             lblAppTitle.Name = "lblAppTitle";
-            lblAppTitle.Text = "Feeder kWh Copy";
+            lblAppTitle.Text = "Feeder Comparator";
             pnlNav.Controls.Add(flpSubTabs);
             pnlNav.Controls.Add(flpTabs);
             pnlNav.Dock = DockStyle.Fill;
@@ -116,7 +115,7 @@ namespace FeederCopy.App.Forms.Shell
             flpTabs.Dock = DockStyle.Fill;
             flpTabs.Margin = new Padding(0);
             flpTabs.Name = "flpTabs";
-            flpTabs.Padding = new Padding(0, 6, 0, 0);
+            flpTabs.Padding = new Padding(0, 4, 0, 0);
             flpTabs.TabIndex = 0;
             flpTabs.WrapContents = false;
             rdoGroupFeeders.Checked = true;
@@ -158,7 +157,6 @@ namespace FeederCopy.App.Forms.Shell
             rdoGroupSystem.KeyDown += navGroup_KeyDown;
             tipNav.SetToolTip(rdoGroupSystem, "System");
             flpSubTabs.Controls.Add(btnBack);
-            flpSubTabs.Controls.Add(lblGroup);
             flpSubTabs.Controls.Add(rdoFeeders);
             flpSubTabs.Controls.Add(rdoConsumers);
             flpSubTabs.Controls.Add(rdoBusSort);
@@ -170,23 +168,18 @@ namespace FeederCopy.App.Forms.Shell
             flpSubTabs.Dock = DockStyle.Fill;
             flpSubTabs.Margin = new Padding(0);
             flpSubTabs.Name = "flpSubTabs";
-            flpSubTabs.Padding = new Padding(0, 6, 0, 0);
+            flpSubTabs.Padding = new Padding(0, 4, 0, 0);
             flpSubTabs.TabIndex = 1;
             flpSubTabs.Visible = false;
             flpSubTabs.WrapContents = false;
             btnBack.Anchor = AnchorStyles.Left;
-            btnBack.Margin = new Padding(0, 0, 4, 0);
+            btnBack.Margin = new Padding(0, 0, 8, 0);
             btnBack.Name = "btnBack";
             btnBack.Size = new Size(40, 36);
             btnBack.TabIndex = 0;
             btnBack.Text = "\uE72B";
             btnBack.Click += btnBack_Click;
             tipNav.SetToolTip(btnBack, "Back to the main menu");
-            lblGroup.Anchor = AnchorStyles.Left;
-            lblGroup.AutoSize = true;
-            lblGroup.Margin = new Padding(4, 0, 16, 0);
-            lblGroup.Name = "lblGroup";
-            lblGroup.Text = "Feeders";
             rdoFeeders.Checked = true;
             rdoFeeders.TabStop = true;
             rdoFeeders.Margin = new Padding(2, 2, 2, 2);
@@ -351,7 +344,7 @@ namespace FeederCopy.App.Forms.Shell
             MinimumSize = new Size(1000, 640);
             Name = "MainForm";
             StartPosition = FormStartPosition.CenterScreen;
-            Text = "Feeder kWh Copy";
+            Text = "Feeder Comparator";
             WindowState = FormWindowState.Maximized;
             Shown += MainForm_Shown;
             FormClosing += MainForm_FormClosing;
@@ -385,7 +378,6 @@ namespace FeederCopy.App.Forms.Shell
         private RadioButton rdoGroupSystem;
         private FlowLayoutPanel flpSubTabs;
         private Button btnBack;
-        private Label lblGroup;
         private Button btnCollapse;
         private ToolTip tipNav;
         private RadioButton rdoFeeders;

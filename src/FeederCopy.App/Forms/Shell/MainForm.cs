@@ -30,6 +30,7 @@ namespace FeederCopy.App.Forms.Shell
         private readonly DatabasePresenter _database;
         private readonly Dictionary<RadioButton, RadioButton[]> _groupTabs;
         private readonly Dictionary<RadioButton, RadioButton> _lastTab = [];
+        private readonly string _appTitle = $"{Dialogs.AppName} {typeof(MainForm).Assembly.GetName().Version?.ToString(3)}";
         private bool _headerCollapsed;
         private bool _dataLoaded;
 
@@ -45,7 +46,8 @@ namespace FeederCopy.App.Forms.Shell
             };
             Icon = AppAssets.Icon;
             ApplyTheme();
-            Text = $"{Dialogs.AppName} {typeof(MainForm).Assembly.GetName().Version?.ToString(3)}";
+            Text = _appTitle;
+            lblAppTitle.Text = _appTitle;
 
             _settings = new SettingsPresenter(settingsView, services.Settings);
             _database = new DatabasePresenter(settingsView.DatabaseCard, services.DatabaseSettings, services.Database, services.Log);
@@ -113,7 +115,7 @@ namespace FeederCopy.App.Forms.Shell
         }
 
         private void StyleHeader(RadioButton? group) =>
-            AppTheme.StyleNavGroup(tlpHeader, group?.ForeColor, picLogo, lblAppTitle, pnlNav, flpTabs, flpSubTabs, btnBack, lblGroup, btnCollapse);
+            AppTheme.StyleNavGroup(tlpHeader, group?.ForeColor, picLogo, lblAppTitle, pnlNav, flpTabs, flpSubTabs, btnBack, btnCollapse);
 
         private void OpenGroup(RadioButton group, RadioButton? tab = null)
         {
@@ -124,8 +126,8 @@ namespace FeederCopy.App.Forms.Shell
                 foreach (RadioButton t in tabs)
                     t.Visible = g == group;
             }
-            lblGroup.Text = group.Text;
-            AppTheme.StyleNavGroupLabel(lblGroup, group.ForeColor);
+            lblAppTitle.Text = group.Text;
+            AppTheme.StyleNavGroupLabel(lblAppTitle, group.ForeColor);
             StyleHeader(group);
             flpSubTabs.Visible = true;
             btnBack.Focus();
@@ -140,6 +142,8 @@ namespace FeederCopy.App.Forms.Shell
             flpTabs.Visible = true;
             _groupTabs.Keys.First(g => g.Checked).Focus();
             flpSubTabs.Visible = false;
+            lblAppTitle.Text = _appTitle;
+            AppTheme.StyleBrand(lblAppTitle, picLogo);
             StyleHeader(null);
             ResumeLayout(true);
         }

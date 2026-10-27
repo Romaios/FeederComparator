@@ -32,7 +32,7 @@
     <AssemblyName>FeederCopy</AssemblyName>
     <Version>2.0.0</Version>
     <ApplicationIcon>Resources\AppIcon\app.ico</ApplicationIcon>
-    <Product>Feeder kWh Copy</Product>
+    <Product>Feeder Comparator</Product>
   </PropertyGroup>
 
 </Project>

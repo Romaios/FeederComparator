@@ -447,7 +447,7 @@ namespace FeederCopy.App.Utils
 
         public static void StyleNavGroupLabel(Label label, Color accent)
         {
-            label.Font = HeadingFont;
+            label.Font = BrandFont;
             label.ForeColor = accent;
         }
 
@@ -591,9 +591,9 @@ namespace FeederCopy.App.Utils
             bool hover = tab.ClientRectangle.Contains(tab.PointToClient(Cursor.Position));
             Color surface = tab.Parent?.BackColor ?? CardBackground;
             Graphics g = e.Graphics;
-            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
             using (var clear = new SolidBrush(surface))
                 g.FillRectangle(clear, tab.ClientRectangle);
+            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
 
             int inset = tab.LogicalToDeviceUnits(2);
             var pill = Rectangle.Inflate(tab.ClientRectangle, -inset, -inset);

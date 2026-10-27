@@ -2,7 +2,7 @@ namespace FeederCopy.App.Utils
 {
     public static class Dialogs
     {
-        public const string AppName = "Feeder kWh Copy";
+        public const string AppName = "Feeder Comparator";
 
         public static void ShowError(IWin32Window owner, string message) =>
             MessageBox.Show(owner, message, AppName, MessageBoxButtons.OK, MessageBoxIcon.Error);
