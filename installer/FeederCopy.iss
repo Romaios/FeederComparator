@@ -10,19 +10,20 @@
 
 [Setup]
 AppId={{3245578D-6549-4798-9580-A52D3E9615DB}
-AppName=Feeder kWh Copy
+AppName=Feeder Comparator
 AppVersion={#AppVersion}
-AppVerName=Feeder kWh Copy {#AppVersion}
+AppVerName=Feeder Comparator {#AppVersion}
 AppPublisher=SORECO II
 SetupIconFile=..\src\FeederCopy.App\Resources\AppIcon\app.ico
-DefaultDirName={userdocs}\Feeder kWh Copy
+DefaultDirName={userdocs}\Feeder Comparator
 DisableDirPage=no
 DisableProgramGroupPage=yes
-DefaultGroupName=Feeder kWh Copy
+DefaultGroupName=Feeder Comparator
 PrivilegesRequired=lowest
 UsePreviousAppDir=yes
-UninstallDisplayIcon={app}\Feeder kWh Copy.exe
-UninstallDisplayName=Feeder kWh Copy
+UsePreviousGroup=no
+UninstallDisplayIcon={app}\Feeder Comparator.exe
+UninstallDisplayName=Feeder Comparator
 OutputDir={#OutputDir}
 OutputBaseFilename=FeederCopy-Setup
 Compression=lzma2
@@ -38,9 +39,14 @@ Name: "desktopicon"; Description: "Create a desktop shortcut"; GroupDescription:
 [Files]
 Source: "{#SourceDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
+[InstallDelete]
+Type: files; Name: "{userprograms}\Feeder kWh Copy\Feeder kWh Copy.lnk"
+Type: dirifempty; Name: "{userprograms}\Feeder kWh Copy"
+Type: files; Name: "{userdesktop}\Feeder kWh Copy.lnk"
+
 [Icons]
-Name: "{group}\Feeder kWh Copy"; Filename: "{app}\Feeder kWh Copy.exe"
-Name: "{userdesktop}\Feeder kWh Copy"; Filename: "{app}\Feeder kWh Copy.exe"; Tasks: desktopicon
+Name: "{group}\Feeder Comparator"; Filename: "{app}\Feeder Comparator.exe"
+Name: "{userdesktop}\Feeder Comparator"; Filename: "{app}\Feeder Comparator.exe"; Tasks: desktopicon
 
 [Run]
-Filename: "{app}\Feeder kWh Copy.exe"; Description: "Open Feeder kWh Copy now"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\Feeder Comparator.exe"; Description: "Open Feeder Comparator now"; Flags: nowait postinstall skipifsilent
