@@ -58,7 +58,7 @@ namespace FeederCopy.Tests.Presenters
             Assert.Equal([("c1", true), ("c2", false)], _service.GetAllConsumers().Select(c => (c.Entry.ConsumerId, c.Entry.Active)));
             Assert.Equal(new BillMonth(2026, 7), _service.GetInactiveFrom()["c2"]);
             Assert.Equal(1, updates);
-            Assert.StartsWith("Jul 2026 · copied · current status set from this month's bills", _view.Heading);
+            Assert.StartsWith("Jul 2026 · transferred · current status set from this month's bills", _view.Heading);
         }
 
         [Fact]
@@ -77,7 +77,7 @@ namespace FeederCopy.Tests.Presenters
             Assert.True(_service.GetAllConsumers().Single().Entry.Active);
             Assert.Equal(1, updates);
             Assert.Equal("Inactive", _readings.GetMonth(new BillMonth(2026, 6)).Single().Status);
-            Assert.StartsWith("Jun 2026 · copied · current status kept from Jul 2026 (newer month)", _view.Heading);
+            Assert.StartsWith("Jun 2026 · transferred · current status kept from Jul 2026 (newer month)", _view.Heading);
         }
 
         [Fact]
@@ -89,7 +89,7 @@ namespace FeederCopy.Tests.Presenters
             var presenter = new CopyPresenter(view, _service, _readings, new AsBilledReader(), new FeederExporter(), () => AppSettings.Defaults, _remembered.Add, _log);
             presenter.Load();
             Assert.Equal((7, 2026), view.Month);
-            Assert.Equal("Jul 2026 · saved copy · 2 feeders · 1 inactive (no bill) · 1 problem", view.Heading);
+            Assert.Equal("Jul 2026 · saved transfer · 2 feeders · 1 inactive (no bill) · 1 problem", view.Heading);
             Assert.True(view.ExportEnabled);
             Assert.False(view.CopyEnabled);
 
@@ -108,10 +108,10 @@ namespace FeederCopy.Tests.Presenters
             await _presenter.OnCopyClickedAsync(7, 2026);
             _presenter.OnMonthChanged(5, 2026);
             Assert.False(_view.ExportEnabled);
-            Assert.Equal("Check the month, then click Copy kWh.", _view.ClearedMessage);
+            Assert.Equal("Check the month, then click Transfer.", _view.ClearedMessage);
             _presenter.OnMonthChanged(7, 2026);
             Assert.True(_view.ExportEnabled);
-            Assert.StartsWith("Jul 2026 · saved copy", _view.Heading);
+            Assert.StartsWith("Jul 2026 · saved transfer", _view.Heading);
         }
 
         [Fact]
@@ -130,14 +130,14 @@ namespace FeederCopy.Tests.Presenters
             await _presenter.OnChooseFileClickedAsync();
             Assert.False(_view.MonthEnabled);
             Assert.StartsWith("3 files  ·  May 2026 – Jul 2026", _view.FileText);
-            Assert.Equal("Click Copy kWh to copy 3 months: May 2026, Jun 2026, Jul 2026.", _view.ClearedMessage);
+            Assert.Equal("Click Transfer to transfer 3 months: May 2026, Jun 2026, Jul 2026.", _view.ClearedMessage);
             Assert.True(_view.CopyEnabled);
 
             await _presenter.OnCopyClickedAsync(null, null);
             Assert.Equal([new BillMonth(2026, 5), new BillMonth(2026, 6), new BillMonth(2026, 7)], _readings.GetMonths());
             Assert.Equal([("c1", true), ("c2", false)], _service.GetAllConsumers().Select(c => (c.Entry.ConsumerId, c.Entry.Active)));
             Assert.Equal(1, updates);
-            Assert.StartsWith("3 months copied (May 2026 – Jul 2026) · showing Jul 2026 · current status set from this month's bills", _view.Heading);
+            Assert.StartsWith("3 months transferred (May 2026 – Jul 2026) · showing Jul 2026 · current status set from this month's bills", _view.Heading);
             Assert.Equal((7, 2026), _view.Month);
             Assert.True(_view.MonthEnabled);
             Assert.True(_view.ExportEnabled);
@@ -236,7 +236,7 @@ namespace FeederCopy.Tests.Presenters
             await ReadyAsync();
             await _presenter.OnCopyClickedAsync(7, 2026);
             Assert.Empty(_view.Confirms);
-            Assert.Equal("Jul 2026 · copied · current status set from this month's bills · 2 feeders · 1 inactive (no bill) · 1 problem", _view.Heading);
+            Assert.Equal("Jul 2026 · transferred · current status set from this month's bills · 2 feeders · 1 inactive (no bill) · 1 problem", _view.Heading);
             Assert.Equal(["New York Feeder", "Washington Feeder"], _view.Totals!.Select(t => t.Name));
             Assert.Equal(10, _view.Totals![0].TotalKwh);
             Assert.Equal(["c3"], _view.Problems!.Select(p => p.ConsumerId));
@@ -250,7 +250,7 @@ namespace FeederCopy.Tests.Presenters
             await _presenter.OnCopyClickedAsync(7, 2026);
             _service.CreateFeeder("Boston Feeder", [E("Z", "c8")]);
             _presenter.OnFeedersChanged();
-            Assert.Equal("Jul 2026 · saved copy · 3 feeders · 2 inactive (no bill) · 1 problem", _view.Heading);
+            Assert.Equal("Jul 2026 · saved transfer · 3 feeders · 2 inactive (no bill) · 1 problem", _view.Heading);
             Assert.True(_view.ExportEnabled);
             Assert.True(_view.CopyEnabled);
         }
@@ -262,8 +262,8 @@ namespace FeederCopy.Tests.Presenters
             await _presenter.OnCopyClickedAsync(7, 2026);
             _view.NextSaveFile = TestFiles.TempPath(".txt");
             _presenter.OnSaveProblemsClicked();
-            Assert.Equal(("Text file|*.txt", "kWh copy problems - Jul 2026.txt"), _view.SavePrompts.Single());
-            Assert.StartsWith("kWh copy for Jul 2026 from ", File.ReadAllText(_view.NextSaveFile));
+            Assert.Equal(("Text file|*.txt", "kWh transfer problems - Jul 2026.txt"), _view.SavePrompts.Single());
+            Assert.StartsWith("kWh transfer for Jul 2026 from ", File.ReadAllText(_view.NextSaveFile));
         }
 
         [Fact]

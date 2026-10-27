@@ -2,6 +2,7 @@ using FeederCopy.Core.Models.Billing;
 using FeederCopy.Core.Models.Consumers;
 using FeederCopy.Core.Models.Copy;
 using FeederCopy.Core.Models.Feeders;
+using FeederCopy.Core.Models.Monitoring;
 using FeederCopy.Core.Presenters.Consumers;
 using FeederCopy.Core.Services.Data;
 
@@ -212,6 +213,8 @@ namespace FeederCopy.Tests.Presenters
             public IReadOnlyList<ReadingRecord> GetMonth(BillMonth month) => inner.GetMonth(month);
 
             public IReadOnlyList<BillMonth> GetMonths() => inner.GetMonths();
+
+            public IReadOnlyList<FeederMonthTotals> GetFeederTotals(int year) => inner.GetFeederTotals(year);
 
             public IReadOnlyList<ReadingRecord> GetYear(int year)
             {

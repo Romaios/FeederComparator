@@ -45,6 +45,7 @@ namespace FeederCopy.App
                     new ReadingService(database),
                     new AsBilledReader(),
                     new FeederExporter(),
+                    new MonitoringExporter(),
                     new SettingsStore(Path.Combine(folder, "settings.json")),
                     new VelopackUpdateService(),
                     new UpdateSettingsStore(Path.Combine(folder, "updater-settings.json")),

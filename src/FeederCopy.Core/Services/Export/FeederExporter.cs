@@ -53,27 +53,10 @@ namespace FeederCopy.Core.Services.Export
             return names;
         }
 
-        private static void WriteTitle(IXLWorksheet sheet, string title, int columns)
-        {
-            sheet.Cell(1, 1).Value = title;
-            sheet.Range(1, 1, 1, columns).Merge();
-            sheet.Cell(1, 1).Style.Font.Bold = true;
-            sheet.Cell(1, 1).Style.Font.FontSize = 14;
-            sheet.Cell(1, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-        }
-
-        private static void WriteHeaders(IXLWorksheet sheet, string[] headers)
-        {
-            for (int c = 0; c < headers.Length; c++)
-                sheet.Cell(2, c + 1).Value = headers[c];
-            sheet.Range(2, 1, 2, headers.Length).Style.Font.Bold = true;
-            sheet.SheetView.FreezeRows(2);
-        }
-
         private static void WriteSheet(IXLWorksheet sheet, FilledFeeder feeder, CopyResult result)
         {
-            WriteTitle(sheet, feeder.Name, 5);
-            WriteHeaders(sheet, ["Count", "Bus ID", "Consumer ID", "Status", $"kWh ({result.Month})"]);
+            SheetWriter.Title(sheet, feeder.Name, 5);
+            SheetWriter.Headers(sheet, ["Count", "Bus ID", "Consumer ID", "Status", $"kWh ({result.Month})"]);
 
             int r = 3;
             foreach (FilledRow row in feeder.Rows.Where(row => row.Active))
@@ -95,8 +78,8 @@ namespace FeederCopy.Core.Services.Export
 
         private static void WriteInactiveSheet(IXLWorksheet sheet, CopyResult result)
         {
-            WriteTitle(sheet, $"Inactive consumers ({result.Month})", 4);
-            WriteHeaders(sheet, ["Feeder", "Bus ID", "Consumer ID", "Status"]);
+            SheetWriter.Title(sheet, $"Inactive consumers ({result.Month})", 4);
+            SheetWriter.Headers(sheet, ["Feeder", "Bus ID", "Consumer ID", "Status"]);
 
             int r = 3;
             foreach (FilledFeeder feeder in result.Feeders)

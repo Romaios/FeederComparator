@@ -435,6 +435,22 @@ namespace FeederCopy.App.Utils
             tab.CheckedChanged += RedrawControl;
         }
 
+        public static void StyleNavGroup(Control bar, Color? accent, params Control[] parts)
+        {
+            Color back = accent is Color a ? Blend(a, CardBackground, IsDark ? 0.2 : 0.1) : CardBackground;
+            bar.BackColor = back;
+            bar.Tag = accent;
+            foreach (Control part in parts)
+                part.BackColor = back;
+            bar.Invalidate(true);
+        }
+
+        public static void StyleNavGroupLabel(Label label, Color accent)
+        {
+            label.Font = HeadingFont;
+            label.ForeColor = accent;
+        }
+
         public static void StyleHeaderIconButton(Button button)
         {
             button.FlatStyle = FlatStyle.Flat;
@@ -475,6 +491,13 @@ namespace FeederCopy.App.Utils
 
         public static void AlignRight(DataGridViewColumn column) =>
             column.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
+
+        public static void StyleTotalRow(DataGridViewRow row)
+        {
+            row.DefaultCellStyle.Font = BodyStrongFont;
+            row.DefaultCellStyle.BackColor = SurfaceAlt;
+            row.DefaultCellStyle.SelectionBackColor = PrimaryLight;
+        }
 
         public static void StyleMutedCell(DataGridViewCellStyle style)
         {
@@ -566,16 +589,17 @@ namespace FeederCopy.App.Utils
             Color accent = tab.ForeColor;
             bool active = tab.Checked;
             bool hover = tab.ClientRectangle.Contains(tab.PointToClient(Cursor.Position));
+            Color surface = tab.Parent?.BackColor ?? CardBackground;
             Graphics g = e.Graphics;
             g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-            using (var clear = new SolidBrush(CardBackground))
+            using (var clear = new SolidBrush(surface))
                 g.FillRectangle(clear, tab.ClientRectangle);
 
             int inset = tab.LogicalToDeviceUnits(2);
             var pill = Rectangle.Inflate(tab.ClientRectangle, -inset, -inset);
             if (active || hover)
             {
-                Color fill = active ? Blend(accent, CardBackground, IsDark ? 0.22 : 0.12) : SurfaceAlt;
+                Color fill = active ? Blend(accent, surface, IsDark ? 0.22 : 0.12) : surface == CardBackground ? SurfaceAlt : Blend(TextPrimary, surface, 0.06);
                 using var path = RoundedRectangle(pill, tab.LogicalToDeviceUnits(TopTabCorner));
                 using var brush = new SolidBrush(fill);
                 g.FillPath(brush, path);
@@ -591,7 +615,7 @@ namespace FeederCopy.App.Utils
             bool collapsed = tab.Width <= tab.LogicalToDeviceUnits(TopTabCollapsedWidth);
             int iconWidth = tab.LogicalToDeviceUnits(TopTabIconWidth);
             var icon = collapsed ? tab.ClientRectangle : new Rectangle(tab.LogicalToDeviceUnits(6), 0, iconWidth, tab.Height);
-            Color iconColor = active || hover ? accent : Blend(accent, CardBackground, 0.75);
+            Color iconColor = active || hover ? accent : Blend(accent, surface, 0.75);
             if (tab.Tag is string glyph)
                 TextRenderer.DrawText(g, glyph, IconFont, icon, iconColor,
                     TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix);
@@ -642,6 +666,13 @@ namespace FeederCopy.App.Utils
         {
             if (sender is not Control bar)
                 return;
+            if (bar.Tag is Color accent)
+            {
+                int thickness = bar.LogicalToDeviceUnits(3);
+                using var brush = new SolidBrush(accent);
+                e.Graphics.FillRectangle(brush, 0, bar.Height - thickness, bar.Width, thickness);
+                return;
+            }
             using var pen = new Pen(Border);
             e.Graphics.DrawLine(pen, 0, bar.Height - 1, bar.Width, bar.Height - 1);
         }

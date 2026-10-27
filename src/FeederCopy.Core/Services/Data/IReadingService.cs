@@ -1,5 +1,6 @@
 using FeederCopy.Core.Models.Billing;
 using FeederCopy.Core.Models.Copy;
+using FeederCopy.Core.Models.Monitoring;
 
 namespace FeederCopy.Core.Services.Data
 {
@@ -10,5 +11,6 @@ namespace FeederCopy.Core.Services.Data
         IReadOnlyList<ReadingRecord> GetYear(int year);
         IReadOnlyList<ReadingRecord> GetMonth(BillMonth month);
         IReadOnlyList<BillMonth> GetMonths();
+        IReadOnlyList<FeederMonthTotals> GetFeederTotals(int year);
     }
 }

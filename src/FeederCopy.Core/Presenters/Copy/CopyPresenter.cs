@@ -150,7 +150,7 @@ namespace FeederCopy.Core.Presenters.Copy
                 jobs = _snapshots.Select(snapshot => (snapshot, snapshot.Month!.Value)).ToList();
             }
 
-            _view.SetBusy(true, "Copying kWh…");
+            _view.SetBusy(true, "Transferring kWh…");
             try
             {
                 bool negativeAsZero = _settings().NegativeKwhAsZero;
@@ -162,7 +162,7 @@ namespace FeederCopy.Core.Presenters.Copy
                 {
                     (KwhSnapshot snapshot, BillMonth target) = jobs[i];
                     if (jobs.Count > 1)
-                        _view.SetBusy(true, $"Copying {target} ({i + 1} of {jobs.Count})…");
+                        _view.SetBusy(true, $"Transferring {target} ({i + 1} of {jobs.Count})…");
                     (CopyResult result, bool updated, BillMonth latest) = await Task.Run(() => CopyMonth(snapshot, target, negativeAsZero));
                     if (result.Feeders.Count == 0)
                     {
@@ -185,17 +185,17 @@ namespace FeederCopy.Core.Presenters.Copy
                     : $"current status kept from {newest} (newer month)";
                 BillMonth shown = last!.Month;
                 string label = jobs.Count == 1
-                    ? $"{shown} · copied · {status}"
-                    : $"{jobs.Count} months copied ({jobs[0].Month} – {shown}) · showing {shown} · {status}";
+                    ? $"{shown} · transferred · {status}"
+                    : $"{jobs.Count} months transferred ({jobs[0].Month} – {shown}) · showing {shown} · {status}";
                 _view.SetMonth(shown.Month, shown.Year);
                 _view.SetMonthEnabled(true);
                 Show(last, label);
             }
             catch (Exception ex)
             {
-                _log.Error("Copying kWh", ex);
+                _log.Error("Transferring kWh", ex);
                 _view.SetBusy(false, null);
-                _view.ShowError($"Could not copy the kWh. {ex.Message}");
+                _view.ShowError($"Could not transfer the kWh. {ex.Message}");
             }
         }
 
@@ -217,7 +217,7 @@ namespace FeederCopy.Core.Presenters.Copy
         {
             if (_result is not { } result)
                 return;
-            string? path = _view.PickSaveFile("Text file|*.txt", $"kWh copy problems - {result.Month}.txt");
+            string? path = _view.PickSaveFile("Text file|*.txt", $"kWh transfer problems - {result.Month}.txt");
             if (path is null)
                 return;
             Save("Saving problem list", () => File.WriteAllText(path, CopyReport.ToText(result)));
@@ -285,7 +285,7 @@ namespace FeederCopy.Core.Presenters.Copy
                 _view.ShowFileText($"{only.FileName}  ·  {only.Month?.ToString() ?? "month not found"}  ·  {rows:N0} rows  ·  {skippedRows:N0} skipped");
                 _view.SetMonth(only.Month?.Month, only.Month?.Year);
                 if (only.Month is { } fileMonth && saved.Contains(fileMonth))
-                    _view.ClearResult($"{fileMonth} was copied before. Click Copy kWh to copy it again from this file.");
+                    _view.ClearResult($"{fileMonth} was transferred before. Click Transfer to transfer it again from this file.");
                 return;
             }
 
@@ -293,8 +293,8 @@ namespace FeederCopy.Core.Presenters.Copy
             _view.ShowFileText($"{_snapshots.Count} files  ·  {months[0]} – {months[^1]}  ·  {rows:N0} rows  ·  {skippedRows:N0} skipped");
             _view.SetMonth(months[^1].Month, months[^1].Year);
             int again = months.Count(saved.Contains);
-            string replaced = again == 0 ? string.Empty : $" {Text.Count(again, "month was", "months were")} copied before and will be replaced.";
-            _view.ClearResult($"Click Copy kWh to copy {Text.Count(months.Count, "month", "months")}: {string.Join(", ", months)}.{replaced}");
+            string replaced = again == 0 ? string.Empty : $" {Text.Count(again, "month was", "months were")} transferred before and will be replaced.";
+            _view.ClearResult($"Click Transfer to transfer {Text.Count(months.Count, "month", "months")}: {string.Join(", ", months)}.{replaced}");
         }
 
         private IReadOnlyList<FeederSource> LoadFeeders() =>
@@ -311,11 +311,11 @@ namespace FeederCopy.Core.Presenters.Copy
                 _result = null;
                 _view.SetExportEnabled(false);
                 _view.ClearResult(!hasFeeders ? NoFeeders
-                    : _snapshots.Count == 0 ? $"Nothing saved for {month} yet. Choose its As-Billed file, then click Copy kWh."
-                    : "Check the month, then click Copy kWh.");
+                    : _snapshots.Count == 0 ? $"Nothing saved for {month} yet. Choose its As-Billed file, then click Transfer."
+                    : "Check the month, then click Transfer.");
                 return;
             }
-            Show(KwhCopier.FromReadings(LoadFeeders(), saved, month), $"{month} · saved copy");
+            Show(KwhCopier.FromReadings(LoadFeeders(), saved, month), $"{month} · saved transfer");
         }
 
         private void Show(CopyResult result, string label)
@@ -363,7 +363,7 @@ namespace FeederCopy.Core.Presenters.Copy
             else if (_snapshots.Count == 0)
                 _view.ClearResult(ChooseFile);
             else
-                _view.ClearResult("Check the month, then click Copy kWh.");
+                _view.ClearResult("Check the month, then click Transfer.");
         }
 
         private bool Save(string context, Action write)

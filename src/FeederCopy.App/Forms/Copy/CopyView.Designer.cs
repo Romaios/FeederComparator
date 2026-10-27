@@ -103,7 +103,7 @@ namespace FeederCopy.App.Forms.Copy
             tlpFile.SetColumnSpan(lblFileTitle, 2);
             lblFileTitle.Margin = new Padding(3, 0, 3, 8);
             lblFileTitle.Name = "lblFileTitle";
-            lblFileTitle.Text = "1. Choose the As-Billed file (hold Ctrl or Shift to pick several months), 2. check the month, 3. click Copy kWh";
+            lblFileTitle.Text = "1. Choose the As-Billed file (hold Ctrl or Shift to pick several months), 2. check the month, 3. click Transfer";
             btnChooseFile.AutoSize = true;
             btnChooseFile.MinimumSize = new Size(190, 34);
             btnChooseFile.Name = "btnChooseFile";
@@ -156,7 +156,7 @@ namespace FeederCopy.App.Forms.Copy
             btnCopy.MinimumSize = new Size(120, 34);
             btnCopy.Name = "btnCopy";
             btnCopy.TabIndex = 2;
-            btnCopy.Text = "Copy kWh";
+            btnCopy.Text = "Transfer";
             btnCopy.Click += btnCopy_Click;
             lblHeading.AutoSize = true;
             lblHeading.Margin = new Padding(3, 4, 3, 6);
@@ -194,7 +194,7 @@ namespace FeederCopy.App.Forms.Copy
             colInactive.Name = "colInactive";
             colInactive.ReadOnly = true;
             colCopied.FillWeight = 11F;
-            colCopied.HeaderText = "Copied";
+            colCopied.HeaderText = "Transferred";
             colCopied.Name = "colCopied";
             colCopied.ReadOnly = true;
             colDuplicates.FillWeight = 11F;

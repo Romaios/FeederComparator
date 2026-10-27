@@ -8,7 +8,7 @@ namespace FeederCopy.Core.Models.Copy
         public static string ToText(CopyResult result)
         {
             var sb = new StringBuilder();
-            sb.AppendLine($"kWh copy for {result.Month} from {result.SourceFile}");
+            sb.AppendLine($"kWh transfer for {result.Month} from {result.SourceFile}");
             sb.AppendLine();
             foreach (FeederTotals t in result.Totals)
                 sb.AppendLine(TotalsLine(t));
@@ -27,7 +27,7 @@ namespace FeederCopy.Core.Models.Copy
         }
 
         public static string TotalsLine(FeederTotals t) =>
-            $"{t.Name}: {(t.Consumers == 1 ? "1 consumer" : $"{t.Consumers} consumers")} ({t.Active} active, {t.Inactive} inactive with no bill), {t.Copied} copied, "
+            $"{t.Name}: {(t.Consumers == 1 ? "1 consumer" : $"{t.Consumers} consumers")} ({t.Active} active, {t.Inactive} inactive with no bill), {t.Copied} transferred, "
             + $"{t.Duplicates} {(t.Duplicates == 1 ? "duplicate" : "duplicates")}, {t.Unreadable} unreadable, "
             + $"{t.TotalKwh.ToString("N2", CultureInfo.InvariantCulture)} kWh";
     }

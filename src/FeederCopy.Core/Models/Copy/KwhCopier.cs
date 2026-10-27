@@ -5,7 +5,7 @@ namespace FeederCopy.Core.Models.Copy
 {
     public static class KwhCopier
     {
-        public const string SavedSource = "saved copy";
+        public const string SavedSource = "saved transfer";
 
         private sealed record Evaluated(bool Active, string Status, double? Kwh, string? Problem);
 

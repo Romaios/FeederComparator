@@ -18,7 +18,7 @@
     <Compile Update="Forms\Shell\MainForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Update="Forms\Feeders\FeedersView.cs;Forms\Copy\CopyView.cs;Forms\Consumers\ConsumersView.cs;Forms\Settings\SettingsView.cs;Forms\Updates\UpdatesView.cs;Forms\BusSort\BusSortView.cs;Forms\Database\DatabaseView.cs">
+    <Compile Update="Forms\Feeders\FeedersView.cs;Forms\Copy\CopyView.cs;Forms\Consumers\ConsumersView.cs;Forms\Settings\SettingsView.cs;Forms\Updates\UpdatesView.cs;Forms\BusSort\BusSortView.cs;Forms\Database\DatabaseView.cs;Forms\Monitoring\MonitoringView.cs;Forms\Reports\ReportsView.cs">
       <SubType>UserControl</SubType>
     </Compile>
   </ItemGroup>

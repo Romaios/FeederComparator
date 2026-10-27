@@ -14,6 +14,7 @@ namespace FeederCopy.App
         IReadingService Readings,
         IAsBilledReader AsBilled,
         IFeederExporter Exporter,
+        IMonitoringExporter MonitoringExporter,
         ISettingsStore Settings,
         IUpdateService Updater,
         IUpdateSettingsStore UpdateSettings,
