@@ -244,6 +244,10 @@ namespace FeederCopy.Tests.Support
             EmptyMessage = message;
         }
 
+        public string? LoadingMessage { get; private set; }
+
+        public void ShowLoading(string message) => LoadingMessage = message;
+
         public void SelectConsumer(string consumerId) => SelectedConsumer = consumerId;
 
         public IReadOnlyList<string> SelectedConsumers { get; private set; } = [];

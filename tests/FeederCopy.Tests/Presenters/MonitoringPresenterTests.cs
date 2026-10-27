@@ -14,6 +14,7 @@ namespace FeederCopy.Tests.Presenters
         private readonly TempDatabase _temp = new();
         private readonly FeederService _feeders;
         private readonly ReadingService _readings;
+        private readonly FeederTotalsCache _cache;
         private readonly FakeMonitoringView _view = new();
         private readonly FakeErrorLog _log = new();
         private readonly MonitoringPresenter _presenter;
@@ -24,7 +25,8 @@ namespace FeederCopy.Tests.Presenters
             Directory.CreateDirectory(_folder);
             _feeders = new FeederService(_temp.Db);
             _readings = new ReadingService(_temp.Db);
-            _presenter = new MonitoringPresenter(_view, _feeders, _readings, new MonitoringExporter(), _log);
+            _cache = new FeederTotalsCache(_readings);
+            _presenter = new MonitoringPresenter(_view, _feeders, _readings, _cache, new MonitoringExporter(), _log);
         }
 
         public void Dispose()
@@ -100,6 +102,7 @@ namespace FeederCopy.Tests.Presenters
             await _presenter.OnShownAsync();
             _presenter.OnHidden();
             Seed();
+            _cache.Clear();
             _presenter.OnDataChanged();
             Assert.Equal(MonitoringPresenter.NoMonths, _view.EmptyMessage);
             await _presenter.OnShownAsync();
@@ -111,7 +114,7 @@ namespace FeederCopy.Tests.Presenters
         public async Task Shown_DatabaseFails_ShowsErrorAndRetriesNextTime()
         {
             var broken = new Database(DatabaseConnection.Empty);
-            var presenter = new MonitoringPresenter(_view, new FeederService(broken), new ReadingService(broken), new MonitoringExporter(), _log);
+            var presenter = new MonitoringPresenter(_view, new FeederService(broken), new ReadingService(broken), new FeederTotalsCache(new ReadingService(broken)), new MonitoringExporter(), _log);
             await presenter.OnShownAsync();
             Assert.Equal("The monitoring could not be loaded.", _view.EmptyMessage);
             Assert.StartsWith("Could not load the monitoring.", _view.Errors.Single());

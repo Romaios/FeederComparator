@@ -94,6 +94,8 @@ namespace FeederCopy.App.Forms.Consumers
             UpdateSelection();
         }
 
+        public void ShowLoading(string message) => ShowEmpty(message);
+
         public void SelectConsumer(string consumerId)
         {
             int index = _rows.ToList().FindIndex(r => r.ConsumerId == consumerId);
@@ -186,12 +188,12 @@ namespace FeederCopy.App.Forms.Consumers
             numInactiveYear.Value = Math.Clamp(month.Year, (int)numInactiveYear.Minimum, (int)numInactiveYear.Maximum);
         }
 
-        private void NotifyFilter()
+        private async void NotifyFilter()
         {
             if (_populating || _presenter is null || cboYear.SelectedItem is not int year)
                 return;
             string? feeder = cboFeeder.SelectedIndex > 0 ? cboFeeder.SelectedItem as string : null;
-            _presenter.OnFilterChanged(feeder, rdoActiveTab.Checked, year, txtFind.Text, (ConsumerProblem)Math.Max(0, cboShow.SelectedIndex));
+            await _presenter.OnFilterChangedAsync(feeder, rdoActiveTab.Checked, year, txtFind.Text, (ConsumerProblem)Math.Max(0, cboShow.SelectedIndex));
         }
 
         private void UpdateSelection()

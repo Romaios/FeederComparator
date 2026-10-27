@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Runtime.InteropServices;
 using FeederCopy.Core.Models.Billing;
 using FeederCopy.Core.Models.Copy;
 using FeederCopy.Core.Models.Feeders;
@@ -62,23 +63,23 @@ namespace FeederCopy.Core.Models.Consumers
         public static ConsumerYearReadings Index(IReadOnlyList<ReadingRecord> readings, int year)
         {
             string yearKey = year.ToString("D4", CultureInfo.InvariantCulture);
-            var byConsumer = new Dictionary<string, (IReadOnlyList<string>, double)>(StringComparer.Ordinal);
-            foreach (IGrouping<string, ReadingRecord> group in readings
-                .Where(r => r.BillMonth.StartsWith(yearKey, StringComparison.Ordinal))
-                .GroupBy(r => r.ConsumerId, StringComparer.Ordinal))
+            var byConsumer = new Dictionary<string, (string[] Months, double Total)>(StringComparer.Ordinal);
+            foreach (ReadingRecord reading in readings)
             {
-                var months = new string[12];
-                Array.Fill(months, string.Empty);
-                double total = 0;
-                foreach (ReadingRecord reading in group)
+                if (!reading.BillMonth.StartsWith(yearKey, StringComparison.Ordinal))
+                    continue;
+                ref (string[] Months, double Total) entry = ref CollectionsMarshal.GetValueRefOrAddDefault(byConsumer, reading.ConsumerId, out bool exists);
+                if (!exists)
                 {
-                    int month = int.Parse(reading.BillMonth[4..], CultureInfo.InvariantCulture);
-                    months[month - 1] = Cell(reading);
-                    total += reading.Kwh ?? 0;
+                    entry.Months = new string[12];
+                    Array.Fill(entry.Months, string.Empty);
                 }
-                byConsumer[group.Key] = (months, total);
+                int month = int.Parse(reading.BillMonth.AsSpan(4), CultureInfo.InvariantCulture);
+                entry.Months[month - 1] = Cell(reading);
+                entry.Total += reading.Kwh ?? 0;
             }
-            return new ConsumerYearReadings(year, byConsumer);
+            return new ConsumerYearReadings(year, byConsumer.ToDictionary(
+                pair => pair.Key, pair => ((IReadOnlyList<string>)pair.Value.Months, pair.Value.Total), StringComparer.Ordinal));
         }
 
         public static IReadOnlyList<ConsumerYearRow> Build(

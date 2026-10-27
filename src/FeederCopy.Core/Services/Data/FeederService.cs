@@ -20,11 +20,19 @@ namespace FeederCopy.Core.Services.Data
             return c.Query<(long Id, string Name, long Consumers, long Buses)>(
                     """
                     SELECT f.Id, f.Name,
-                           COUNT(fc.Id),
-                           COUNT(DISTINCT LOWER(fc.BusId))
+                           COALESCE(c.Consumers, 0),
+                           COALESCE(b.Buses, 0)
                     FROM Feeders f
-                    LEFT JOIN FeederConsumers fc ON fc.FeederId = f.Id
-                    GROUP BY f.Id, f.Name
+                    LEFT JOIN (
+                        SELECT FeederId, COUNT(*) AS Consumers
+                        FROM FeederConsumers
+                        GROUP BY FeederId
+                    ) c ON c.FeederId = f.Id
+                    LEFT JOIN (
+                        SELECT FeederId, COUNT(*) AS Buses
+                        FROM (SELECT DISTINCT FeederId, LOWER(BusId) AS Bus FROM FeederConsumers WHERE BusId IS NOT NULL) d
+                        GROUP BY FeederId
+                    ) b ON b.FeederId = f.Id
                     ORDER BY f.Name
                     """)
                 .Select(r => new FeederSummary(r.Id, r.Name, (int)r.Consumers, (int)r.Buses))

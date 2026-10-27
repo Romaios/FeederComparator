@@ -8,6 +8,8 @@ namespace FeederCopy.Core.Presenters.Consumers
 {
     public sealed class ConsumersPresenter
     {
+        public const string Loading = "Loading consumers…";
+
         private readonly IConsumersView _view;
         private readonly IFeederService _feeders;
         private readonly IReadingService _readings;
@@ -18,8 +20,13 @@ namespace FeederCopy.Core.Presenters.Consumers
         private bool _shown;
         private bool _filtersStale = true;
         private bool _resetYear = true;
+        private bool _filtersPending;
+        private int _request;
+        private Task _refresh = Task.CompletedTask;
         private List<(string FeederName, ConsumerEntry Entry)>? _consumers;
         private Dictionary<string, BillMonth> _inactiveFrom = [];
+        private IReadOnlyList<int> _years = [];
+        private IReadOnlyList<string> _feederNames = [];
         private ConsumerYearReadings? _yearReadings;
 
         public ConsumersPresenter(IConsumersView view, IFeederService feeders, IReadingService readings, Func<BillMonth> currentMonth, IErrorLog log)
@@ -35,16 +42,28 @@ namespace FeederCopy.Core.Presenters.Consumers
 
         public event Action? OrderChanged;
 
+        private bool Stale => _consumers is null || _filtersStale || _yearReadings is null;
+
         public void Load()
         {
             _resetYear = true;
             MarkStale(feeders: true, readings: true);
+            if (!_shown)
+                _refresh = RefreshAsync();
         }
 
-        public void OnShown()
+        public Task OnShownAsync()
         {
             _shown = true;
-            Run("Loading consumers", Update);
+            if (!_refresh.IsCompleted)
+            {
+                _view.ShowLoading(Loading);
+                return _refresh;
+            }
+            if (Stale)
+                return _refresh = RefreshAsync();
+            Run("Loading consumers", Show);
+            return Task.CompletedTask;
         }
 
         public void OnHidden() => _shown = false;
@@ -53,11 +72,14 @@ namespace FeederCopy.Core.Presenters.Consumers
 
         public void OnReadingsChanged() => MarkStale(feeders: false, readings: true);
 
-        public void OnFilterChanged(string? feeder, bool active, int year, string? search, ConsumerProblem problem = ConsumerProblem.All)
+        public Task OnFilterChangedAsync(string? feeder, bool active, int year, string? search, ConsumerProblem problem = ConsumerProblem.All)
         {
             _filter = new ConsumerFilter(feeder, active, search, problem);
             _year = year;
-            Run("Filtering consumers", Update);
+            if (Stale || _yearReadings?.Year != year || !_refresh.IsCompleted)
+                return _refresh = RefreshAsync();
+            Run("Filtering consumers", Show);
+            return Task.CompletedTask;
         }
 
         public void OnSetActiveClicked(IReadOnlyList<string> consumerIds)
@@ -118,7 +140,7 @@ namespace FeederCopy.Core.Presenters.Consumers
                     return;
                 _feeders.SaveConsumers(new Dictionary<long, IReadOnlyList<ConsumerEntry>> { [feeder.Id] = rest });
                 _consumers = null;
-                Update();
+                Reload();
                 _view.SelectConsumers(picked.Select(e => e.ConsumerId).ToList());
                 moved = true;
             });
@@ -133,8 +155,8 @@ namespace FeederCopy.Core.Presenters.Consumers
             if (readings)
                 _yearReadings = null;
             _filtersStale = true;
-            if (_shown)
-                Run("Refreshing consumers", Update);
+            _request++;
+            _refresh = _shown ? RefreshAsync() : Task.CompletedTask;
         }
 
         private void ChangeStatus(IReadOnlyList<string> consumerIds, bool active, BillMonth? inactiveFrom)
@@ -159,7 +181,7 @@ namespace FeederCopy.Core.Presenters.Consumers
                     else
                         _inactiveFrom.Remove(id);
                 }
-                Update();
+                Reload();
                 if (consumerIds.Count == 1)
                     _view.SelectConsumer(consumerIds[0]);
                 changed = true;
@@ -168,25 +190,101 @@ namespace FeederCopy.Core.Presenters.Consumers
                 StatusChanged?.Invoke();
         }
 
-        private void Update()
+        private async Task RefreshAsync()
         {
-            if (_consumers is null)
+            int request = ++_request;
+            Wanted wanted = Want();
+            if (_shown)
+                _view.ShowLoading(Loading);
+            try
             {
-                _consumers = _feeders.GetAllConsumers().ToList();
-                _inactiveFrom = new Dictionary<string, BillMonth>(_feeders.GetInactiveFrom(), StringComparer.Ordinal);
+                Loaded loaded = await Task.Run(() => Fetch(wanted));
+                if (request != _request)
+                    return;
+                Apply(loaded);
+                if (_shown)
+                    Show();
+            }
+            catch (Exception ex)
+            {
+                if (request != _request)
+                    return;
+                _log.Error("Loading consumers", ex);
+                if (!_shown)
+                    return;
+                _view.ShowEmpty("The consumers could not be loaded.");
+                _view.ShowError($"Could not load the consumers. {ex.Message}");
+            }
+        }
+
+        private void Reload()
+        {
+            _request++;
+            _refresh = Task.CompletedTask;
+            Apply(Fetch(Want()));
+            Show();
+        }
+
+        private Wanted Want() => new(_consumers is null, _filtersStale, _year, _resetYear, _yearReadings);
+
+        private Loaded Fetch(Wanted wanted)
+        {
+            int currentYear = _currentMonth().Year;
+            int year = wanted.Year ?? currentYear;
+            IReadOnlyList<int>? years = null;
+            if (wanted.Filters)
+            {
+                IReadOnlyList<int> saved = _readings.GetYears();
+                years = ConsumerYearCalculator.Years(saved, currentYear);
+                if (wanted.ResetYear || wanted.Year is null || !years.Contains(wanted.Year.Value))
+                    year = ConsumerYearCalculator.DefaultYear(saved, currentYear);
             }
 
-            if (_filtersStale)
+            var started = new List<Task>();
+            Task<T>? Start<T>(bool needed, Func<T> read)
             {
-                int currentYear = _currentMonth().Year;
-                IReadOnlyList<int> saved = _readings.GetYears();
-                IReadOnlyList<int> years = ConsumerYearCalculator.Years(saved, currentYear);
-                if (_resetYear || _year is null || !years.Contains(_year.Value))
-                    _year = ConsumerYearCalculator.DefaultYear(saved, currentYear);
-                _resetYear = false;
-                IReadOnlyList<string> feederNames = _feeders.GetFeeders().Select(f => f.Name).ToList();
-                _view.ShowFilters(feederNames, years, _year.Value, _currentMonth());
+                if (!needed)
+                    return null;
+                Task<T> task = Task.Run(read);
+                started.Add(task);
+                return task;
+            }
+            var consumers = Start(wanted.Consumers, () => _feeders.GetAllConsumers().ToList());
+            var inactiveFrom = Start(wanted.Consumers, () => new Dictionary<string, BillMonth>(_feeders.GetInactiveFrom(), StringComparer.Ordinal));
+            var feederNames = Start(wanted.Filters, () => (IReadOnlyList<string>)_feeders.GetFeeders().Select(f => f.Name).ToList());
+            var yearReadings = Start(wanted.YearReadings?.Year != year, () => ConsumerYearCalculator.Index(_readings.GetYear(year), year));
+            Task.WhenAll(started).GetAwaiter().GetResult();
+            return new Loaded(consumers?.Result, inactiveFrom?.Result, years, feederNames?.Result, year, yearReadings?.Result);
+        }
+
+        private void Apply(Loaded loaded)
+        {
+            if (loaded.Consumers is not null && loaded.InactiveFrom is not null)
+            {
+                _consumers = loaded.Consumers;
+                _inactiveFrom = loaded.InactiveFrom;
+            }
+            if (loaded.Years is not null && loaded.FeederNames is not null)
+            {
+                _years = loaded.Years;
+                _feederNames = loaded.FeederNames;
                 _filtersStale = false;
+                _resetYear = false;
+                _filtersPending = true;
+            }
+            _year = loaded.Year;
+            if (loaded.YearReadings is not null)
+                _yearReadings = loaded.YearReadings;
+        }
+
+        private void Show()
+        {
+            if (_consumers is null || _yearReadings is null)
+                return;
+            if (_filtersPending)
+            {
+                _view.ShowFilters(_feederNames, _years, _yearReadings.Year, _currentMonth());
+                _filtersPending = false;
             }
 
             if (_consumers.Count == 0)
@@ -195,9 +293,6 @@ namespace FeederCopy.Core.Presenters.Consumers
                 return;
             }
 
-            int year = _year ?? _currentMonth().Year;
-            if (_yearReadings is null || _yearReadings.Year != year)
-                _yearReadings = ConsumerYearCalculator.Index(_readings.GetYear(year), year);
             IReadOnlyList<ConsumerYearRow> all = ConsumerYearCalculator.Build(_consumers, _yearReadings, _filter with { Active = null }, _inactiveFrom);
             int active = all.Count(r => r.Active);
             bool showActive = _filter.Active ?? true;
@@ -218,5 +313,15 @@ namespace FeederCopy.Core.Presenters.Consumers
                 _view.ShowError($"Could not load the consumers. {ex.Message}");
             }
         }
+
+        private sealed record Wanted(bool Consumers, bool Filters, int? Year, bool ResetYear, ConsumerYearReadings? YearReadings);
+
+        private sealed record Loaded(
+            List<(string FeederName, ConsumerEntry Entry)>? Consumers,
+            Dictionary<string, BillMonth>? InactiveFrom,
+            IReadOnlyList<int>? Years,
+            IReadOnlyList<string>? FeederNames,
+            int Year,
+            ConsumerYearReadings? YearReadings);
     }
 }

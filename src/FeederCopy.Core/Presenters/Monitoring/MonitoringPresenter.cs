@@ -14,21 +14,24 @@ namespace FeederCopy.Core.Presenters.Monitoring
         private readonly IMonitoringView _view;
         private readonly IFeederService _feeders;
         private readonly IReadingService _readings;
+        private readonly FeederTotalsCache _totalsCache;
         private readonly IMonitoringExporter _exporter;
         private readonly IErrorLog _log;
         private int? _year;
         private bool _shown;
         private bool _stale = true;
         private int _request;
+        private Task _refresh = Task.CompletedTask;
         private IReadOnlyList<MonitoringMeasure> _measures = MonitoringTable.MonitoringMeasures;
         private IReadOnlyList<string> _feederNames = [];
         private IReadOnlyList<FeederMonthTotals> _totals = [];
 
-        public MonitoringPresenter(IMonitoringView view, IFeederService feeders, IReadingService readings, IMonitoringExporter exporter, IErrorLog log)
+        public MonitoringPresenter(IMonitoringView view, IFeederService feeders, IReadingService readings, FeederTotalsCache totalsCache, IMonitoringExporter exporter, IErrorLog log)
         {
             _view = view;
             _feeders = feeders;
             _readings = readings;
+            _totalsCache = totalsCache;
             _exporter = exporter;
             _log = log;
         }
@@ -36,13 +39,16 @@ namespace FeederCopy.Core.Presenters.Monitoring
         public void Load()
         {
             _year = null;
-            MarkStale();
+            _stale = true;
+            _refresh = RefreshAsync();
         }
 
         public Task OnShownAsync()
         {
             _shown = true;
-            return _stale ? RefreshAsync() : Task.CompletedTask;
+            if (_stale)
+                _refresh = RefreshAsync();
+            return _refresh;
         }
 
         public void OnHidden() => _shown = false;
@@ -54,7 +60,7 @@ namespace FeederCopy.Core.Presenters.Monitoring
             if (year == _year)
                 return Task.CompletedTask;
             _year = year;
-            return RefreshAsync();
+            return _refresh = RefreshAsync();
         }
 
         public void OnMeasuresChanged(IReadOnlyList<int> measureIndexes)
@@ -97,7 +103,7 @@ namespace FeederCopy.Core.Presenters.Monitoring
         {
             _stale = true;
             if (_shown)
-                _ = RefreshAsync();
+                _refresh = RefreshAsync();
         }
 
         private async Task RefreshAsync()
@@ -131,7 +137,8 @@ namespace FeederCopy.Core.Presenters.Monitoring
                 _totals = [];
                 _log.Error("Loading the monitoring", ex);
                 _view.ShowEmpty("The monitoring could not be loaded.");
-                _view.ShowError($"Could not load the monitoring. {ex.Message}");
+                if (_shown)
+                    _view.ShowError($"Could not load the monitoring. {ex.Message}");
             }
         }
 
@@ -142,7 +149,7 @@ namespace FeederCopy.Core.Presenters.Monitoring
                 return ([], 0, [], []);
             int year = wanted is int chosen && years.Contains(chosen) ? chosen : years[0];
             IReadOnlyList<string> feederNames = _feeders.GetFeeders().Select(f => f.Name).ToList();
-            return (years, year, feederNames, _readings.GetFeederTotals(year));
+            return (years, year, feederNames, _totalsCache.Get(year));
         }
 
         private void ShowTables(int year)

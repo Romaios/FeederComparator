@@ -30,8 +30,10 @@ namespace FeederCopy.Core.Services.Data
         public IReadOnlyList<int> GetYears()
         {
             using MySqlConnection c = _database.Open();
-            return c.Query<string>("SELECT DISTINCT SUBSTRING(BillMonth, 1, 4) FROM Readings ORDER BY 1 DESC")
-                .Select(int.Parse)
+            return c.Query<string>("SELECT DISTINCT BillMonth FROM Readings")
+                .Select(month => BillMonth.Parse(month).Year)
+                .Distinct()
+                .OrderDescending()
                 .ToList();
         }
 

@@ -36,6 +36,13 @@ namespace FeederCopy.Tests.Services
         }
 
         [Fact]
+        public void GetFeeders_BusIdsDifferingOnlyInCase_CountOnce()
+        {
+            _service.CreateFeeder("Washington", [E("Bus-1", "c1"), E("BUS-1", "c2"), E("bus-1", "c3"), E("Bus-2", "c4")]);
+            Assert.Equal((4, 2), (_service.GetFeeders().Single().Consumers, _service.GetFeeders().Single().Buses));
+        }
+
+        [Fact]
         public void FindConsumer_ReturnsFeederAndBus()
         {
             long id = _service.CreateFeeder("F", [E("A", "c1"), E(null, "c2")]);

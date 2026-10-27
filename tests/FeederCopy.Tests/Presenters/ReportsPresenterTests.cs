@@ -15,6 +15,7 @@ namespace FeederCopy.Tests.Presenters
         private readonly TempDatabase _temp = new();
         private readonly FeederService _feeders;
         private readonly ReadingService _readings;
+        private readonly FeederTotalsCache _cache;
         private readonly FakeReportsView _view = new();
         private readonly FakeErrorLog _log = new();
         private readonly ReportsPresenter _presenter;
@@ -25,7 +26,8 @@ namespace FeederCopy.Tests.Presenters
             Directory.CreateDirectory(_folder);
             _feeders = new FeederService(_temp.Db);
             _readings = new ReadingService(_temp.Db);
-            _presenter = new ReportsPresenter(_view, _feeders, _readings, new MonitoringExporter(), _log);
+            _cache = new FeederTotalsCache(_readings);
+            _presenter = new ReportsPresenter(_view, _feeders, _readings, _cache, new MonitoringExporter(), _log);
         }
 
         public void Dispose()

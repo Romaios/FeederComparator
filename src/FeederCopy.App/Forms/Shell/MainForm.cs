@@ -9,6 +9,7 @@ using FeederCopy.Core.Presenters.Monitoring;
 using FeederCopy.Core.Presenters.Reports;
 using FeederCopy.Core.Presenters.Settings;
 using FeederCopy.Core.Presenters.Updates;
+using FeederCopy.Core.Services.Data;
 
 namespace FeederCopy.App.Forms.Shell
 {
@@ -26,6 +27,7 @@ namespace FeederCopy.App.Forms.Shell
         private readonly BusSortPresenter _busSort;
         private readonly MonitoringPresenter _monitoring;
         private readonly ReportsPresenter _reports;
+        private readonly FeederTotalsCache _totals;
         private readonly UpdatesPresenter _updates;
         private readonly DatabasePresenter _database;
         private readonly Dictionary<RadioButton, RadioButton[]> _groupTabs;
@@ -49,6 +51,7 @@ namespace FeederCopy.App.Forms.Shell
             Text = _appTitle;
             lblAppTitle.Text = _appTitle;
 
+            _totals = new FeederTotalsCache(services.Readings);
             _settings = new SettingsPresenter(settingsView, services.Settings);
             _database = new DatabasePresenter(settingsView.DatabaseCard, services.DatabaseSettings, services.Database, services.Log);
             _feeders = new FeedersPresenter(feedersView, services.Feeders, () => _settings.Current, services.Log);
@@ -56,9 +59,11 @@ namespace FeederCopy.App.Forms.Shell
                 () => _settings.Current, _settings.RememberExportStyle, services.Log);
             _consumers = new ConsumersPresenter(consumersView, services.Feeders, services.Readings, () => new BillMonth(DateTime.Today.Year, DateTime.Today.Month), services.Log);
             _busSort = new BusSortPresenter(busSortView, services.Feeders, () => _settings.Current, _settings.RememberHandPlacedTags, services.Log);
-            _monitoring = new MonitoringPresenter(monitoringView, services.Feeders, services.Readings, services.MonitoringExporter, services.Log);
-            _reports = new ReportsPresenter(reportsView, services.Feeders, services.Readings, services.MonitoringExporter, services.Log);
+            _monitoring = new MonitoringPresenter(monitoringView, services.Feeders, services.Readings, _totals, services.MonitoringExporter, services.Log);
+            _reports = new ReportsPresenter(reportsView, services.Feeders, services.Readings, _totals, services.MonitoringExporter, services.Log);
             _updates = new UpdatesPresenter(updatesView, services.Updater, services.UpdateSettings, services.Log);
+            _feeders.FeedersChanged += _totals.Clear;
+            _copy.ReadingsSaved += _totals.Clear;
             _feeders.FeedersChanged += _copy.OnFeedersChanged;
             _feeders.FeedersChanged += _consumers.OnFeedersChanged;
             _feeders.FeedersChanged += _busSort.OnFeedersChanged;
@@ -157,8 +162,9 @@ namespace FeederCopy.App.Forms.Shell
             if (lblWarning.Text == DatabaseNotReady)
                 tlpWarning.Visible = false;
             _dataLoaded = true;
+            _totals.Clear();
             _feeders.Load();
-            _copy.Load();
+            _ = _copy.LoadAsync();
             _consumers.Load();
             _busSort.OnFeedersChanged();
             _monitoring.Load();
@@ -254,9 +260,7 @@ namespace FeederCopy.App.Forms.Shell
             updatesView.Visible = tab == rdoUpdates;
             if (!_dataLoaded)
                 return;
-            if (tab == rdoConsumers)
-                _consumers.OnShown();
-            else
+            if (tab != rdoConsumers)
                 _consumers.OnHidden();
             if (tab == rdoBusSort)
                 _busSort.OnShown();
@@ -266,7 +270,9 @@ namespace FeederCopy.App.Forms.Shell
                 _monitoring.OnHidden();
             if (tab != rdoReports)
                 _reports.OnHidden();
-            if (tab == rdoMonitoring)
+            if (tab == rdoConsumers)
+                await _consumers.OnShownAsync();
+            else if (tab == rdoMonitoring)
                 await _monitoring.OnShownAsync();
             else if (tab == rdoReports)
                 await _reports.OnShownAsync();

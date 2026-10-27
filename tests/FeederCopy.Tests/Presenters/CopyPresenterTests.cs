@@ -1,5 +1,6 @@
 using ClosedXML.Excel;
 using FeederCopy.Core.Models.Billing;
+using FeederCopy.Core.Models.Copy;
 using FeederCopy.Core.Models.Feeders;
 using FeederCopy.Core.Models.Settings;
 using FeederCopy.Core.Presenters.Copy;
@@ -51,7 +52,7 @@ namespace FeederCopy.Tests.Presenters
             _presenter.StatusesUpdated += () => updates++;
             _service.CreateFeeder("F", [E("A", "c1"), E("A", "c2")]);
             _service.SetActive("c1", false);
-            _presenter.Load();
+            await _presenter.LoadAsync();
             _view.NextOpenFile = AsBilled(["c1", "10", "202607"], ["c9", "4", "202607"]);
             await _presenter.OnChooseFileClickedAsync();
             await _presenter.OnCopyClickedAsync(7, 2026);
@@ -67,7 +68,7 @@ namespace FeederCopy.Tests.Presenters
             int updates = 0;
             _presenter.StatusesUpdated += () => updates++;
             _service.CreateFeeder("F", [E("A", "c1")]);
-            _presenter.Load();
+            await _presenter.LoadAsync();
             _view.NextOpenFile = AsBilled(["c1", "10", "202607"]);
             await _presenter.OnChooseFileClickedAsync();
             await _presenter.OnCopyClickedAsync(7, 2026);
@@ -87,7 +88,7 @@ namespace FeederCopy.Tests.Presenters
             await _presenter.OnCopyClickedAsync(7, 2026);
             var view = new FakeCopyView();
             var presenter = new CopyPresenter(view, _service, _readings, new AsBilledReader(), new FeederExporter(), () => AppSettings.Defaults, _remembered.Add, _log);
-            presenter.Load();
+            await presenter.LoadAsync();
             Assert.Equal((7, 2026), view.Month);
             Assert.Equal("Jul 2026 · saved transfer · 2 feeders · 1 inactive (no bill) · 1 problem", view.Heading);
             Assert.True(view.ExportEnabled);
@@ -120,7 +121,7 @@ namespace FeederCopy.Tests.Presenters
             int updates = 0;
             _presenter.StatusesUpdated += () => updates++;
             _service.CreateFeeder("F", [E("A", "c1"), E("A", "c2")]);
-            _presenter.Load();
+            await _presenter.LoadAsync();
             _view.NextOpenFiles =
             [
                 AsBilled(["c1", "30", "202607"]),
@@ -147,7 +148,7 @@ namespace FeederCopy.Tests.Presenters
         public async Task ChooseSeveralFiles_SameMonthTwice_SkipsTheSecond()
         {
             _service.CreateFeeder("F", [E("A", "c1")]);
-            _presenter.Load();
+            await _presenter.LoadAsync();
             string first = AsBilled(["c1", "10", "202606"]);
             string second = AsBilled(["c1", "11", "202606"]);
             _view.NextOpenFiles = [first, second];
@@ -167,15 +168,29 @@ namespace FeederCopy.Tests.Presenters
         {
             _service.CreateFeeder("New York Feeder", [E("A", "c1"), E("A", "c2")]);
             _service.CreateFeeder("Washington Feeder", [E("B", "c3")]);
-            _presenter.Load();
+            await _presenter.LoadAsync();
             _view.NextOpenFile = AsBilled(["c1", "10", "202607"], ["c3", "5.5", "202607"], ["c3", "1", "202607"], [null, "1", "202607"]);
             await _presenter.OnChooseFileClickedAsync();
         }
 
         [Fact]
-        public void Load_NoFeeders_Message()
+        public async Task ChooseFile_WhileLoading_KeepsTheChosenFile()
         {
-            _presenter.Load();
+            _service.CreateFeeder("F", [E("A", "c1")]);
+            _readings.SaveMonth(new BillMonth(2026, 6), [new ReadingRecord("c1", "202606", 3, "Active")]);
+            Task loading = _presenter.LoadAsync();
+            _view.NextOpenFile = AsBilled(["c1", "10", "202607"]);
+            await _presenter.OnChooseFileClickedAsync();
+            await loading;
+            Assert.Equal((7, 2026), _view.Month);
+            Assert.False(_view.ExportEnabled);
+            Assert.True(_view.CopyEnabled);
+        }
+
+        [Fact]
+        public async Task Load_NoFeeders_Message()
+        {
+            await _presenter.LoadAsync();
             Assert.Equal("Import a feeder list in the Feeders tab first.", _view.ClearedMessage);
             Assert.False(_view.CopyEnabled);
             Assert.False(_view.ExportEnabled);
@@ -183,17 +198,17 @@ namespace FeederCopy.Tests.Presenters
         }
 
         [Fact]
-        public void Load_WithFeeders_Message()
+        public async Task Load_WithFeeders_Message()
         {
             _service.CreateFeeder("F", [E("A", "c1")]);
-            _presenter.Load();
+            await _presenter.LoadAsync();
             Assert.Equal("Choose an As-Billed file to start.", _view.ClearedMessage);
         }
 
         [Fact]
         public async Task ChooseFile_Fatal_ShowsError()
         {
-            _presenter.Load();
+            await _presenter.LoadAsync();
             _view.NextOpenFile = TestFiles.WriteSpreadsheetMl([["X"], ["1"]]);
             await _presenter.OnChooseFileClickedAsync();
             Assert.Contains("Missing column(s)", _view.Errors.Single());
