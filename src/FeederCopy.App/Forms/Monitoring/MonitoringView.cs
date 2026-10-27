@@ -28,25 +28,35 @@ namespace FeederCopy.App.Forms.Monitoring
             _updating = false;
         }
 
-        public void ShowRows(IReadOnlyList<MonthSummaryRow> rows, string summary)
+        public void ShowSections(IReadOnlyList<MonitoringSection> sections, IReadOnlyList<int> months, string summary)
         {
             lblSummary.Text = summary;
             lblMessage.Visible = false;
-            dgvSummary.Visible = true;
-            dgvSummary.Rows.Clear();
-            foreach (MonthSummaryRow row in rows)
+            dgvMonths.Visible = true;
+            DataGridViewColumn[] monthColumns = MonthColumns;
+            for (int m = 0; m < monthColumns.Length; m++)
+                monthColumns[m].Visible = months.Contains(m + 1);
+            dgvMonths.Rows.Clear();
+            foreach (MonitoringSection section in sections)
             {
-                int index = dgvSummary.Rows.Add(row.Month.ToString(), row.Feeder, row.TotalKwh.ToString("N2"), row.Active.ToString("N0"), row.Inactive.ToString("N0"));
-                if (row.IsTotal)
-                    AppTheme.StyleTotalRow(dgvSummary.Rows[index]);
+                int header = dgvMonths.Rows.Add(section.Title);
+                AppTheme.StyleSectionRow(dgvMonths.Rows[header]);
+                string format = section.Kwh ? "N2" : "N0";
+                foreach (FeederMonthsRow row in section.Rows)
+                {
+                    object[] cells = [row.Feeder, .. row.Months.Select(v => v is double value ? value.ToString(format) : string.Empty)];
+                    int index = dgvMonths.Rows.Add(cells);
+                    if (row.IsTotal)
+                        AppTheme.StyleTotalRow(dgvMonths.Rows[index]);
+                }
             }
         }
 
         public void ShowEmpty(string message)
         {
             lblSummary.Text = string.Empty;
-            dgvSummary.Rows.Clear();
-            dgvSummary.Visible = false;
+            dgvMonths.Rows.Clear();
+            dgvMonths.Visible = false;
             lblMessage.Text = message;
             lblMessage.Visible = true;
         }
@@ -54,7 +64,7 @@ namespace FeederCopy.App.Forms.Monitoring
         public void ShowLoading(string message)
         {
             lblSummary.Text = string.Empty;
-            dgvSummary.Visible = false;
+            dgvMonths.Visible = false;
             lblMessage.Text = message;
             lblMessage.Visible = true;
         }
@@ -69,6 +79,10 @@ namespace FeederCopy.App.Forms.Monitoring
 
         private IWin32Window Owner => (IWin32Window?)FindForm() ?? this;
 
+        private DataGridViewColumn[] MonthColumns => [colJan, colFeb, colMar, colApr, colMay, colJun, colJul, colAug, colSep, colOct, colNov, colDec];
+
+        private CheckBox[] ShowBoxes => [chkKwh, chkActive, chkInactive];
+
         private void ApplyTheme()
         {
             AppTheme.StyleView(this);
@@ -77,9 +91,12 @@ namespace FeederCopy.App.Forms.Monitoring
             AppTheme.StyleComboBox(cboYear);
             AppTheme.StyleMutedLabel(lblSummary);
             AppTheme.StylePrimaryButton(btnExport);
+            AppTheme.StyleFieldLabel(lblShow);
+            foreach (CheckBox box in ShowBoxes)
+                AppTheme.StyleCheckBox(box);
             AppTheme.StyleEmptyState(lblMessage);
-            AppTheme.StyleGrid(dgvSummary);
-            foreach (DataGridViewColumn column in new[] { colTotalKwh, colActive, colInactive })
+            AppTheme.StyleGrid(dgvMonths);
+            foreach (DataGridViewColumn column in MonthColumns)
                 AppTheme.AlignRight(column);
         }
 
@@ -88,6 +105,9 @@ namespace FeederCopy.App.Forms.Monitoring
             if (!_updating && cboYear.SelectedItem is int year && _presenter is not null)
                 await _presenter.OnYearChangedAsync(year);
         }
+
+        private void show_CheckedChanged(object? sender, EventArgs e) =>
+            _presenter?.OnMeasuresChanged(ShowBoxes.Select((box, i) => (box, i)).Where(x => x.box.Checked).Select(x => x.i).ToList());
 
         private void btnExport_Click(object? sender, EventArgs e) => _presenter?.OnExportClicked();
     }

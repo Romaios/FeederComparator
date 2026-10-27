@@ -9,6 +9,7 @@ namespace FeederCopy.Core.Presenters.Monitoring
     public sealed class MonitoringPresenter
     {
         public const string NoMonths = "No months transferred yet. Transfer an As-Billed month in the Comparator tab.";
+        public const string NothingTicked = "Tick Total kWh, Consumers active or Consumers inactive to see the monitoring.";
 
         private readonly IMonitoringView _view;
         private readonly IFeederService _feeders;
@@ -19,7 +20,9 @@ namespace FeederCopy.Core.Presenters.Monitoring
         private bool _shown;
         private bool _stale = true;
         private int _request;
-        private IReadOnlyList<MonthSummaryRow> _rows = [];
+        private IReadOnlyList<MonitoringMeasure> _measures = MonitoringTable.MonitoringMeasures;
+        private IReadOnlyList<string> _feederNames = [];
+        private IReadOnlyList<FeederMonthTotals> _totals = [];
 
         public MonitoringPresenter(IMonitoringView view, IFeederService feeders, IReadingService readings, IMonitoringExporter exporter, IErrorLog log)
         {
@@ -54,16 +57,33 @@ namespace FeederCopy.Core.Presenters.Monitoring
             return RefreshAsync();
         }
 
+        public void OnMeasuresChanged(IReadOnlyList<int> measureIndexes)
+        {
+            _measures = measureIndexes
+                .Where(i => i >= 0 && i < MonitoringTable.MonitoringMeasures.Count)
+                .Distinct()
+                .Order()
+                .Select(i => MonitoringTable.MonitoringMeasures[i])
+                .ToList();
+            if (_year is int year && !_stale)
+                ShowTables(year);
+        }
+
         public void OnExportClicked()
         {
-            if (_year is not int year || _rows.Count == 0)
+            if (_year is not int year || _totals.Count == 0)
                 return;
+            if (_measures.Count == 0)
+            {
+                _view.ShowError("Tick at least one item to export.");
+                return;
+            }
             string? path = _view.PickSaveFile("Excel workbook|*.xlsx", MonitoringTable.SummaryFileName(year));
             if (path is null)
                 return;
             try
             {
-                _exporter.WriteSummary(path, year, _rows);
+                _exporter.WriteMonitoring(path, year, MonitoringTable.MonthsWithData(_totals), MonitoringTable.Sections(_feederNames, _totals, _measures));
                 _view.ShowInfo($"Exported the monitoring for {year}.");
             }
             catch (Exception ex)
@@ -89,10 +109,11 @@ namespace FeederCopy.Core.Presenters.Monitoring
             _view.ShowLoading("Loading the monitoring…");
             try
             {
-                (IReadOnlyList<int> years, int year, IReadOnlyList<MonthSummaryRow> rows) = await Task.Run(() => Read(wanted));
+                (IReadOnlyList<int> years, int year, IReadOnlyList<string> feederNames, IReadOnlyList<FeederMonthTotals> totals) = await Task.Run(() => Read(wanted));
                 if (request != _request)
                     return;
-                _rows = rows;
+                _feederNames = feederNames;
+                _totals = totals;
                 _year = years.Count > 0 ? year : null;
                 _view.ShowYears(years, year);
                 if (years.Count == 0)
@@ -100,34 +121,48 @@ namespace FeederCopy.Core.Presenters.Monitoring
                     _view.ShowEmpty(NoMonths);
                     return;
                 }
-                if (rows.Count == 0)
-                {
-                    _view.ShowEmpty($"None of the readings saved for {year} belong to a feeder.");
-                    return;
-                }
-                _view.ShowRows(rows, $"{year} · {Text.Count(rows.Count(r => r.IsTotal), "month", "months")} transferred");
-                _view.SetExportEnabled(true);
+                ShowTables(year);
             }
             catch (Exception ex)
             {
                 if (request != _request)
                     return;
                 _stale = true;
-                _rows = [];
+                _totals = [];
                 _log.Error("Loading the monitoring", ex);
                 _view.ShowEmpty("The monitoring could not be loaded.");
                 _view.ShowError($"Could not load the monitoring. {ex.Message}");
             }
         }
 
-        private (IReadOnlyList<int> Years, int Year, IReadOnlyList<MonthSummaryRow> Rows) Read(int? wanted)
+        private (IReadOnlyList<int> Years, int Year, IReadOnlyList<string> FeederNames, IReadOnlyList<FeederMonthTotals> Totals) Read(int? wanted)
         {
             IReadOnlyList<int> years = _readings.GetYears();
             if (years.Count == 0)
-                return ([], 0, []);
+                return ([], 0, [], []);
             int year = wanted is int chosen && years.Contains(chosen) ? chosen : years[0];
             IReadOnlyList<string> feederNames = _feeders.GetFeeders().Select(f => f.Name).ToList();
-            return (years, year, MonitoringTable.Summary(feederNames, _readings.GetFeederTotals(year)));
+            return (years, year, feederNames, _readings.GetFeederTotals(year));
+        }
+
+        private void ShowTables(int year)
+        {
+            if (_totals.Count == 0)
+            {
+                _view.ShowEmpty($"None of the readings saved for {year} belong to a feeder.");
+                _view.SetExportEnabled(false);
+                return;
+            }
+            if (_measures.Count == 0)
+            {
+                _view.ShowEmpty(NothingTicked);
+                _view.SetExportEnabled(false);
+                return;
+            }
+            IReadOnlyList<int> months = MonitoringTable.MonthsWithData(_totals);
+            _view.ShowSections(MonitoringTable.Sections(_feederNames, _totals, _measures), months,
+                $"{year} · {Text.Count(months.Count, "month", "months")} transferred");
+            _view.SetExportEnabled(true);
         }
     }
 }

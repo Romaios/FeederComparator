@@ -52,22 +52,35 @@ namespace FeederCopy.Tests.Presenters
         }
 
         [Fact]
-        public async Task Shown_ShowsLatestYearMonthByMonth()
+        public async Task Shown_ShowsLatestYearFeederByMonthForAllThree()
         {
             Seed();
             await _presenter.OnShownAsync();
             Assert.Equal([2026, 2025], _view.Years);
             Assert.Equal(2026, _view.SelectedYear);
             Assert.Equal("2026 · 2 months transferred", _view.Summary);
-            Assert.Equal(
-            [
-                new MonthSummaryRow(new BillMonth(2026, 6), "Abuyog", 5, 1, 0, false),
-                new MonthSummaryRow(new BillMonth(2026, 6), "Bacon", 10, 1, 1, false),
-                new MonthSummaryRow(new BillMonth(2026, 6), MonitoringTable.AllFeeders, 15, 2, 1, true),
-                new MonthSummaryRow(new BillMonth(2026, 7), "Bacon", 15, 2, 0, false),
-                new MonthSummaryRow(new BillMonth(2026, 7), MonitoringTable.AllFeeders, 15, 2, 0, true),
-            ], _view.Rows);
+            Assert.Equal([6, 7], _view.Months);
+            Assert.Equal(["TOTAL KWH", "CONSUMERS ACTIVE", "CONSUMERS INACTIVE"], _view.Sections.Select(s => s.Title));
+            MonitoringSection kwh = _view.Sections[0];
+            Assert.Equal(["Abuyog", "Bacon", MonitoringTable.AllFeeders], kwh.Rows.Select(r => r.Feeder));
+            Assert.Equal(10, kwh.Rows[1].Months[5]);
+            Assert.Equal(15, kwh.Rows[1].Months[6]);
+            Assert.Equal(15, kwh.Rows[2].Months[5]);
+            Assert.Equal(1, _view.Sections[2].Rows[1].Months[5]);
+            Assert.Equal(0, _view.Sections[2].Rows[1].Months[6]);
             Assert.True(_view.ExportEnabled);
+        }
+
+        [Fact]
+        public async Task MeasuresChanged_ShowsOnlyTicked()
+        {
+            Seed();
+            await _presenter.OnShownAsync();
+            _presenter.OnMeasuresChanged([2, 0]);
+            Assert.Equal(["TOTAL KWH", "CONSUMERS INACTIVE"], _view.Sections.Select(s => s.Title));
+            _presenter.OnMeasuresChanged([]);
+            Assert.Equal(MonitoringPresenter.NothingTicked, _view.EmptyMessage);
+            Assert.False(_view.ExportEnabled);
         }
 
         [Fact]
@@ -77,7 +90,8 @@ namespace FeederCopy.Tests.Presenters
             await _presenter.OnShownAsync();
             await _presenter.OnYearChangedAsync(2025);
             Assert.Equal(2025, _view.SelectedYear);
-            Assert.Equal(["Bacon", MonitoringTable.AllFeeders], _view.Rows.Select(r => r.Feeder));
+            Assert.Equal([12], _view.Months);
+            Assert.Equal(8, _view.Sections[0].Rows.Single(r => r.Feeder == "Bacon").Months[11]);
         }
 
         [Fact]
@@ -90,7 +104,7 @@ namespace FeederCopy.Tests.Presenters
             Assert.Equal(MonitoringPresenter.NoMonths, _view.EmptyMessage);
             await _presenter.OnShownAsync();
             Assert.Null(_view.EmptyMessage);
-            Assert.Equal(5, _view.Rows.Count);
+            Assert.Equal(3, _view.Sections.Count);
         }
 
         [Fact]
@@ -116,23 +130,45 @@ namespace FeederCopy.Tests.Presenters
         }
 
         [Fact]
-        public async Task Export_WritesTheSummarySheet()
+        public async Task Export_StacksTickedTablesInOneSheet()
         {
             Seed();
             await _presenter.OnShownAsync();
+            _presenter.OnMeasuresChanged([0, 2]);
             _view.NextSaveFile = Path.Combine(_folder, "m.xlsx");
             _presenter.OnExportClicked();
             Assert.Equal(("Excel workbook|*.xlsx", "Monitoring 2026.xlsx"), _view.SavePrompts.Single());
             Assert.Equal(["Exported the monitoring for 2026."], _view.Infos);
             using var workbook = new XLWorkbook(_view.NextSaveFile);
-            IXLWorksheet sheet = workbook.Worksheet("Monitoring");
+            IXLWorksheet sheet = Assert.Single(workbook.Worksheets);
             Assert.Equal("Monitoring 2026", sheet.Cell(1, 1).GetString());
-            Assert.Equal("Inactive", sheet.Cell(2, 5).GetString());
-            Assert.Equal("Jun 2026", sheet.Cell(3, 1).GetString());
-            Assert.Equal("Abuyog", sheet.Cell(3, 2).GetString());
-            Assert.Equal(MonitoringTable.AllFeeders, sheet.Cell(5, 2).GetString());
-            Assert.Equal(15, sheet.Cell(5, 3).GetDouble());
-            Assert.True(sheet.Cell(5, 2).Style.Font.Bold);
+            Assert.Equal("TOTAL KWH", sheet.Cell(3, 1).GetString());
+            Assert.Equal("Feeder", sheet.Cell(4, 1).GetString());
+            Assert.Equal("JUN", sheet.Cell(4, 2).GetString());
+            Assert.Equal("JUL", sheet.Cell(4, 3).GetString());
+            Assert.True(sheet.Cell(4, 4).IsEmpty());
+            Assert.Equal("Abuyog", sheet.Cell(5, 1).GetString());
+            Assert.Equal(5, sheet.Cell(5, 2).GetDouble());
+            Assert.True(sheet.Cell(5, 3).IsEmpty());
+            Assert.Equal("Bacon", sheet.Cell(6, 1).GetString());
+            Assert.Equal(15, sheet.Cell(6, 3).GetDouble());
+            Assert.Equal(MonitoringTable.AllFeeders, sheet.Cell(7, 1).GetString());
+            Assert.True(sheet.Cell(7, 1).Style.Font.Bold);
+            Assert.Equal("CONSUMERS INACTIVE", sheet.Cell(9, 1).GetString());
+            Assert.Equal("Feeder", sheet.Cell(10, 1).GetString());
+            Assert.Equal(1, sheet.Cell(12, 2).GetDouble());
+            Assert.Equal(0, sheet.Cell(12, 3).GetDouble());
+        }
+
+        [Fact]
+        public async Task Export_NothingTicked_ShowsError()
+        {
+            Seed();
+            await _presenter.OnShownAsync();
+            _presenter.OnMeasuresChanged([]);
+            _presenter.OnExportClicked();
+            Assert.Equal(["Tick at least one item to export."], _view.Errors);
+            Assert.Empty(_view.SavePrompts);
         }
 
         [Fact]

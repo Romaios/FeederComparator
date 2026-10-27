@@ -8,29 +8,50 @@ namespace FeederCopy.Core.Services.Export
         private const string KwhFormat = "#,##0.00";
         private const string CountFormat = "#,##0";
 
-        public void WriteSummary(string path, int year, IReadOnlyList<MonthSummaryRow> rows)
+        private static readonly XLColor HeaderFill = XLColor.FromArgb(235, 242, 244);
+
+        public void WriteMonitoring(string path, int year, IReadOnlyList<int> months, IReadOnlyList<MonitoringSection> sections)
         {
             using var workbook = new XLWorkbook();
             IXLWorksheet sheet = workbook.AddWorksheet("Monitoring");
-            SheetWriter.Title(sheet, $"Monitoring {year}", 5);
-            SheetWriter.Headers(sheet, ["Month", "Feeder", "Total kWh", "Active", "Inactive"]);
+            int columns = months.Count + 1;
+            SheetWriter.Title(sheet, $"Monitoring {year}", Math.Max(columns, 2));
 
             int r = 3;
-            foreach (MonthSummaryRow row in rows)
+            foreach (MonitoringSection section in sections)
             {
-                sheet.Cell(r, 1).Value = row.Month.ToString();
-                sheet.Cell(r, 2).Value = row.Feeder;
-                sheet.Cell(r, 3).Value = row.TotalKwh;
-                sheet.Cell(r, 4).Value = row.Active;
-                sheet.Cell(r, 5).Value = row.Inactive;
-                if (row.IsTotal)
-                    sheet.Range(r, 1, r, 5).Style.Font.Bold = true;
+                sheet.Cell(r, 1).Value = section.Title;
+                sheet.Cell(r, 1).Style.Font.Bold = true;
+                sheet.Cell(r, 1).Style.Font.FontSize = 12;
+                r++;
+
+                sheet.Cell(r, 1).Value = "Feeder";
+                for (int i = 0; i < months.Count; i++)
+                    sheet.Cell(r, i + 2).Value = MonitoringTable.MonthHeaders[months[i] - 1];
+                IXLRange header = sheet.Range(r, 1, r, columns);
+                header.Style.Font.Bold = true;
+                header.Style.Fill.BackgroundColor = HeaderFill;
+                r++;
+
+                int first = r;
+                foreach (FeederMonthsRow row in section.Rows)
+                {
+                    sheet.Cell(r, 1).Value = row.Feeder;
+                    for (int i = 0; i < months.Count; i++)
+                    {
+                        if (row.Months[months[i] - 1] is double value)
+                            sheet.Cell(r, i + 2).Value = value;
+                    }
+                    if (row.IsTotal)
+                        sheet.Range(r, 1, r, columns).Style.Font.Bold = true;
+                    r++;
+                }
+                if (months.Count > 0 && r > first)
+                    sheet.Range(first, 2, r - 1, columns).Style.NumberFormat.Format = section.Kwh ? KwhFormat : CountFormat;
                 r++;
             }
 
-            sheet.Column(3).Style.NumberFormat.Format = KwhFormat;
-            sheet.Columns(4, 5).Style.NumberFormat.Format = CountFormat;
-            sheet.Columns(1, 5).AdjustToContents();
+            sheet.Columns(1, columns).AdjustToContents();
             workbook.SaveAs(path);
         }
 

@@ -492,6 +492,16 @@ namespace FeederCopy.App.Utils
         public static void AlignRight(DataGridViewColumn column) =>
             column.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
 
+        public static void StyleSectionRow(DataGridViewRow row)
+        {
+            row.DefaultCellStyle.Font = HeadingFont;
+            row.DefaultCellStyle.ForeColor = IsDark ? Highlight : Primary;
+            row.DefaultCellStyle.BackColor = CardBackground;
+            row.DefaultCellStyle.SelectionBackColor = CardBackground;
+            row.DefaultCellStyle.SelectionForeColor = IsDark ? Highlight : Primary;
+            row.Height = row.DataGridView?.LogicalToDeviceUnits(40) ?? row.Height;
+        }
+
         public static void StyleTotalRow(DataGridViewRow row)
         {
             row.DefaultCellStyle.Font = BodyStrongFont;

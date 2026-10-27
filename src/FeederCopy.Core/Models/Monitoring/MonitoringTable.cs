@@ -14,9 +14,10 @@ namespace FeederCopy.Core.Models.Monitoring
 
     public sealed record FeederMonthTotals(string Feeder, BillMonth Month, int Consumers, int Active, int Inactive, int Duplicates, int Unreadable, double TotalKwh);
 
-    public sealed record MonthSummaryRow(BillMonth Month, string Feeder, double TotalKwh, int Active, int Inactive, bool IsTotal);
 
     public sealed record FeederMonthsRow(string Feeder, IReadOnlyList<double?> Months, double? Total, bool IsTotal);
+
+    public sealed record MonitoringSection(MonitoringMeasure Measure, string Title, bool Kwh, IReadOnlyList<FeederMonthsRow> Rows);
 
     public static class MonitoringTable
     {
@@ -26,6 +27,8 @@ namespace FeederCopy.Core.Models.Monitoring
 
         public static IReadOnlyList<MonitoringMeasure> Measures { get; } = Enum.GetValues<MonitoringMeasure>();
 
+        public static IReadOnlyList<MonitoringMeasure> MonitoringMeasures { get; } = [MonitoringMeasure.TotalKwh, MonitoringMeasure.Active, MonitoringMeasure.Inactive];
+
         public static string Label(MonitoringMeasure measure) => measure switch
         {
             MonitoringMeasure.TotalKwh => "Total kWh",
@@ -34,6 +37,14 @@ namespace FeederCopy.Core.Models.Monitoring
             MonitoringMeasure.Consumers => "All consumers",
             MonitoringMeasure.Duplicates => "Duplicates in As-Billed",
             _ => "kWh unreadable",
+        };
+
+        public static string SectionTitle(MonitoringMeasure measure) => measure switch
+        {
+            MonitoringMeasure.TotalKwh => "TOTAL KWH",
+            MonitoringMeasure.Active => "CONSUMERS ACTIVE",
+            MonitoringMeasure.Inactive => "CONSUMERS INACTIVE",
+            _ => Label(measure).ToUpperInvariant(),
         };
 
         public static bool IsKwh(MonitoringMeasure measure) => measure == MonitoringMeasure.TotalKwh;
@@ -54,22 +65,11 @@ namespace FeederCopy.Core.Models.Monitoring
             _ => totals.Unreadable,
         };
 
-        public static IReadOnlyList<MonthSummaryRow> Summary(IReadOnlyList<string> feeders, IReadOnlyList<FeederMonthTotals> totals)
-        {
-            IReadOnlyList<string> order = FeederOrder(feeders, totals);
-            var rows = new List<MonthSummaryRow>();
-            foreach (IGrouping<BillMonth, FeederMonthTotals> month in totals.GroupBy(t => t.Month).OrderBy(g => g.Key))
-            {
-                var byFeeder = month.ToDictionary(t => t.Feeder, StringComparer.OrdinalIgnoreCase);
-                foreach (string feeder in order)
-                {
-                    if (byFeeder.TryGetValue(feeder, out FeederMonthTotals? t))
-                        rows.Add(new MonthSummaryRow(month.Key, t.Feeder, t.TotalKwh, t.Active, t.Inactive, false));
-                }
-                rows.Add(new MonthSummaryRow(month.Key, AllFeeders, month.Sum(t => t.TotalKwh), month.Sum(t => t.Active), month.Sum(t => t.Inactive), true));
-            }
-            return rows;
-        }
+        public static IReadOnlyList<int> MonthsWithData(IReadOnlyList<FeederMonthTotals> totals) =>
+            totals.Select(t => t.Month.Month).Distinct().Order().ToList();
+
+        public static IReadOnlyList<MonitoringSection> Sections(IReadOnlyList<string> feeders, IReadOnlyList<FeederMonthTotals> totals, IReadOnlyList<MonitoringMeasure> measures) =>
+            measures.Select(m => new MonitoringSection(m, SectionTitle(m), IsKwh(m), ByMonth(feeders, totals, m))).ToList();
 
         public static IReadOnlyList<FeederMonthsRow> ByMonth(IReadOnlyList<string> feeders, IReadOnlyList<FeederMonthTotals> totals, MonitoringMeasure measure)
         {

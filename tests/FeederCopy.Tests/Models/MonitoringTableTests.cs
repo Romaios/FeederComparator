@@ -13,17 +13,18 @@ namespace FeederCopy.Tests.Models
         ];
 
         [Fact]
-        public void Summary_EachMonthFeedersInOrderThenAllFeeders()
+        public void MonthsWithData_DistinctInOrder() =>
+            Assert.Equal([1, 2], MonitoringTable.MonthsWithData([Totals[2], Totals[0], Totals[1]]));
+
+        [Fact]
+        public void Sections_OneTablePerMeasureInOrder()
         {
-            IReadOnlyList<MonthSummaryRow> rows = MonitoringTable.Summary(["Abuyog", "Bacon"], Totals);
-            Assert.Equal(
-            [
-                new MonthSummaryRow(new BillMonth(2026, 1), "Abuyog", 40, 2, 0, false),
-                new MonthSummaryRow(new BillMonth(2026, 1), "Bacon", 100.5, 2, 1, false),
-                new MonthSummaryRow(new BillMonth(2026, 1), MonitoringTable.AllFeeders, 140.5, 4, 1, true),
-                new MonthSummaryRow(new BillMonth(2026, 2), "Bacon", 120, 3, 0, false),
-                new MonthSummaryRow(new BillMonth(2026, 2), MonitoringTable.AllFeeders, 120, 3, 0, true),
-            ], rows);
+            IReadOnlyList<MonitoringSection> sections = MonitoringTable.Sections(["Abuyog", "Bacon"], Totals, [MonitoringMeasure.TotalKwh, MonitoringMeasure.Inactive]);
+            Assert.Equal(["TOTAL KWH", "CONSUMERS INACTIVE"], sections.Select(s => s.Title));
+            Assert.Equal([true, false], sections.Select(s => s.Kwh));
+            Assert.Equal(["Abuyog", "Bacon", MonitoringTable.AllFeeders], sections[1].Rows.Select(r => r.Feeder));
+            Assert.Equal(1, sections[1].Rows[1].Months[0]);
+            Assert.Equal(140.5, sections[0].Rows[2].Months[0]);
         }
 
         [Fact]

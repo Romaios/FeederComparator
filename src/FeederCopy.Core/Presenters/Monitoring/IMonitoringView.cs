@@ -5,7 +5,7 @@ namespace FeederCopy.Core.Presenters.Monitoring
     public interface IMonitoringView
     {
         void ShowYears(IReadOnlyList<int> years, int selectedYear);
-        void ShowRows(IReadOnlyList<MonthSummaryRow> rows, string summary);
+        void ShowSections(IReadOnlyList<MonitoringSection> sections, IReadOnlyList<int> months, string summary);
         void ShowEmpty(string message);
         void ShowLoading(string message);
         void SetExportEnabled(bool enabled);

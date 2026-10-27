@@ -8,9 +8,11 @@ namespace FeederCopy.Tests.Support
     {
         public IReadOnlyList<int> Years { get; private set; } = [];
         public int SelectedYear { get; private set; }
-        public IReadOnlyList<MonthSummaryRow> Rows { get; private set; } = [];
+        public IReadOnlyList<MonitoringSection> Sections { get; private set; } = [];
+        public IReadOnlyList<int> Months { get; private set; } = [];
         public string? Summary { get; private set; }
         public string? EmptyMessage { get; private set; }
+        public string? LoadingMessage { get; private set; }
         public bool ExportEnabled { get; private set; }
         public string? NextSaveFile { get; set; }
         public List<(string Filter, string DefaultName)> SavePrompts { get; } = [];
@@ -23,26 +25,25 @@ namespace FeederCopy.Tests.Support
             SelectedYear = selectedYear;
         }
 
-        public void ShowRows(IReadOnlyList<MonthSummaryRow> rows, string summary)
+        public void ShowSections(IReadOnlyList<MonitoringSection> sections, IReadOnlyList<int> months, string summary)
         {
-            Rows = rows;
+            Sections = sections;
+            Months = months;
             Summary = summary;
             EmptyMessage = null;
         }
 
         public void ShowEmpty(string message)
         {
-            Rows = [];
+            Sections = [];
             EmptyMessage = message;
         }
 
         public void ShowLoading(string message)
         {
-            Rows = [];
+            Sections = [];
             LoadingMessage = message;
         }
-
-        public string? LoadingMessage { get; private set; }
 
         public void SetExportEnabled(bool enabled) => ExportEnabled = enabled;
 
