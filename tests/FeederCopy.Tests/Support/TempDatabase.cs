@@ -14,9 +14,16 @@ namespace FeederCopy.Tests.Support
             Db = new Database(Server with { Database = Name });
             if (!runScripts)
                 return;
-            using MySqlConnection c = Db.Open();
             foreach (string script in Database.ScriptNames)
-                c.Execute(Database.ScriptText(script));
+                RunScript(script);
+        }
+
+        public void RunScript(string name)
+        {
+            var builder = new MySqlConnectionStringBuilder(Database.ConnectionString(Db.Connection)) { AllowUserVariables = true };
+            using var c = new MySqlConnection(builder.ConnectionString);
+            c.Open();
+            c.Execute(Database.ScriptText(name));
         }
 
         public static DatabaseConnection Server { get; } = new(

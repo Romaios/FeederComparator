@@ -38,12 +38,29 @@ namespace FeederCopy.Tests.Services
             using var temp = new TempDatabase();
             using MySqlConnection c = temp.Db.Open();
             List<string> tables = c.Query<string>("SELECT table_name FROM information_schema.tables WHERE table_schema = DATABASE()").ToList();
-            Assert.Superset(new HashSet<string>(["feeders", "feederconsumers", "readings", "consumerinactivefrom", "networklines", "schemascripts"]),
+            Assert.Superset(new HashSet<string>(["feeders", "feederconsumers", "readings", "consumerinactivefrom", "distributionlines", "schemascripts"]),
                 tables.Select(t => t.ToLowerInvariant()).ToHashSet());
+            Assert.DoesNotContain("networklines", tables.Select(t => t.ToLowerInvariant()));
             List<string> columns = c.Query<string>(
                 "SELECT column_name FROM information_schema.columns WHERE table_schema = DATABASE() AND LOWER(table_name) = 'feederconsumers'").ToList();
             Assert.Contains("X", columns);
             Assert.Contains("Y", columns);
+        }
+
+        [Fact]
+        public void DistributionLinesScript_WorksWhenAlreadyRenamedByHand()
+        {
+            using var temp = new TempDatabase(runScripts: false);
+            temp.RunScript("2026-10-23-01-create-tables");
+            using (MySqlConnection c = temp.Db.Open())
+                c.Execute("RENAME TABLE NetworkLines TO DistributionLines");
+            temp.RunScript("2026-10-27-01-rename-networklines-to-distributionlines");
+            using MySqlConnection check = temp.Db.Open();
+            List<string> indexes = check.Query<string>(
+                "SELECT DISTINCT index_name FROM information_schema.statistics WHERE table_schema = DATABASE() AND LOWER(table_name) = 'distributionlines'").ToList();
+            Assert.Contains("IX_DistributionLines_FromNode", indexes);
+            Assert.Contains("IX_DistributionLines_ToNode", indexes);
+            Assert.True(temp.Db.Check().Ready);
         }
 
         [Fact]
