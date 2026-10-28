@@ -17,6 +17,7 @@ namespace FeederCopy.Core.Presenters.Database
         void SetBusy(bool busy);
         void OpenScriptsFolder();
         string? PickOldDatabase();
+        bool Confirm(string title, string message);
         void ShowImportResult(string message, DatabaseTone tone);
     }
 }

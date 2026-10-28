@@ -132,7 +132,7 @@ namespace FeederCopy.Tests.Presenters
         }
 
         [Fact]
-        public async Task ImportOldData_Refused_ShowsReasonAndLogs_NoDataImported()
+        public async Task ImportOldData_HasFeeders_Refuses_NoDataImported()
         {
             using var temp = new TempDatabase();
             using var old = new OldDatabase();
@@ -144,9 +144,47 @@ namespace FeederCopy.Tests.Presenters
             _view.NextOldDatabase = old.Path;
             await _presenter.OnImportOldDataClickedAsync();
             Assert.Equal(DatabaseTone.Error, _view.ImportResult!.Value.Tone);
-            Assert.EndsWith("The old data can only be copied into an empty database.", _view.ImportResult.Value.Message);
-            Assert.Single(_log.Entries);
+            Assert.Equal($"Database {temp.Name} already has 1 feeder. The old data can only be copied into a database with no feeders.", _view.ImportResult.Value.Message);
+            Assert.Empty(_view.Confirms);
             Assert.Equal(0, imported);
+        }
+
+        [Fact]
+        public async Task ImportOldData_Leftovers_AsksThenReplaces()
+        {
+            using var temp = new TempDatabase();
+            using var old = new OldDatabase();
+            old.Execute("""
+                INSERT INTO Feeders (Id, Name, CreatedAt) VALUES (1, 'Washington', '2026-10-20 08:15:00');
+                INSERT INTO FeederConsumers (FeederId, BusId, ConsumerId, Position, Active) VALUES (1, 'A', 'c1', 0, 0);
+                INSERT INTO ConsumerInactiveFrom (ConsumerId, BillMonth) VALUES ('c1', '202607');
+                """);
+            new ReadingService(temp.Db).SaveMonth(new FeederCopy.Core.Models.Billing.BillMonth(2026, 5), [new FeederCopy.Core.Models.Copy.ReadingRecord("c1", "202605", 1, "Active")]);
+            new FeederService(temp.Db).SetActive("c1", false, new FeederCopy.Core.Models.Billing.BillMonth(2026, 7));
+            _presenter.Load();
+            _presenter.OnSaveClicked(Form(temp.Db.Connection));
+            _view.NextOldDatabase = old.Path;
+            await _presenter.OnImportOldDataClickedAsync();
+            Assert.Equal($"Database {temp.Name} has no feeders, but still has 1 inactive month and 1 saved kWh reading from before.\n\nReplace them with the data in {Path.GetFileName(old.Path)}?", _view.Confirms.Single());
+            Assert.Equal(DatabaseTone.Ok, _view.ImportResult!.Value.Tone);
+            Assert.Empty(new ReadingService(temp.Db).GetMonths());
+        }
+
+        [Fact]
+        public async Task ImportOldData_Leftovers_No_CopiesNothing()
+        {
+            using var temp = new TempDatabase();
+            using var old = new OldDatabase();
+            old.Execute("INSERT INTO Feeders (Id, Name, CreatedAt) VALUES (1, 'Washington', '2026-10-20 08:15:00')");
+            new ReadingService(temp.Db).SaveMonth(new FeederCopy.Core.Models.Billing.BillMonth(2026, 5), [new FeederCopy.Core.Models.Copy.ReadingRecord("c1", "202605", 1, "Active")]);
+            _view.ConfirmAnswer = false;
+            _presenter.Load();
+            _presenter.OnSaveClicked(Form(temp.Db.Connection));
+            _view.NextOldDatabase = old.Path;
+            await _presenter.OnImportOldDataClickedAsync();
+            Assert.Equal(("Nothing was copied.", DatabaseTone.Info), _view.ImportResult);
+            Assert.Empty(new FeederService(temp.Db).GetFeeders());
+            Assert.Single(new ReadingService(temp.Db).GetMonths());
         }
 
         [Fact]

@@ -108,12 +108,34 @@ namespace FeederCopy.Core.Presenters.Database
             if (path is null)
                 return;
 
+            LegacyTarget target;
+            try
+            {
+                target = await Task.Run(_importer.Inspect);
+            }
+            catch (Exception ex)
+            {
+                _log.Error($"Checking database {_database.Connection.Database} before copying old data", ex);
+                _view.ShowImportResult($"Could not check the database. Nothing was copied. {ex.Message}", DatabaseTone.Error);
+                return;
+            }
+            if (target.Feeders > 0)
+            {
+                _view.ShowImportResult(LegacyImporter.HasFeeders(target), DatabaseTone.Error);
+                return;
+            }
+            if (target.HasLeftovers && !_view.Confirm("Copy old data", $"{LegacyImporter.Leftovers(target)}\n\nReplace them with the data in {Path.GetFileName(path)}?"))
+            {
+                _view.ShowImportResult("Nothing was copied.", DatabaseTone.Info);
+                return;
+            }
+
             _view.SetBusy(true);
             _view.ShowImportResult($"Copying the old data from {Path.GetFileName(path)}… A big file can take about a minute.", DatabaseTone.Info);
             LegacyImportResult result;
             try
             {
-                result = await Task.Run(() => _importer.Import(path));
+                result = await Task.Run(() => _importer.Import(path, target.HasLeftovers));
             }
             catch (LegacyImportException ex)
             {

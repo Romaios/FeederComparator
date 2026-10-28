@@ -49,7 +49,7 @@ namespace FeederCopy.Core.Models.Monitoring
 
         public static bool IsKwh(MonitoringMeasure measure) => measure == MonitoringMeasure.TotalKwh;
 
-        public static string TotalHeader(MonitoringMeasure measure) => IsKwh(measure) ? "Total" : "Average";
+        public const string TotalHeader = "Total";
 
         public static string SummaryFileName(int year) => $"Monitoring {year}.xlsx";
 
@@ -79,7 +79,7 @@ namespace FeederCopy.Core.Models.Monitoring
                 var months = new double?[12];
                 foreach (FeederMonthTotals t in totals.Where(t => string.Equals(t.Feeder, feeder, StringComparison.OrdinalIgnoreCase)))
                     months[t.Month.Month - 1] = Value(t, measure);
-                rows.Add(new FeederMonthsRow(feeder, months, Total(months, measure), false));
+                rows.Add(new FeederMonthsRow(feeder, months, Total(months), false));
             }
 
             var all = new double?[12];
@@ -88,17 +88,12 @@ namespace FeederCopy.Core.Models.Monitoring
                 List<double> values = rows.Where(r => r.Months[m].HasValue).Select(r => r.Months[m]!.Value).ToList();
                 all[m] = values.Count > 0 ? values.Sum() : null;
             }
-            rows.Add(new FeederMonthsRow(AllFeeders, all, Total(all, measure), true));
+            rows.Add(new FeederMonthsRow(AllFeeders, all, Total(all), true));
             return rows;
         }
 
-        private static double? Total(IReadOnlyList<double?> months, MonitoringMeasure measure)
-        {
-            List<double> values = months.Where(v => v.HasValue).Select(v => v!.Value).ToList();
-            if (values.Count == 0)
-                return null;
-            return IsKwh(measure) ? values.Sum() : values.Average();
-        }
+        private static double? Total(IReadOnlyList<double?> months) =>
+            months.Any(v => v.HasValue) ? months.Sum(v => v ?? 0) : null;
 
         private static IReadOnlyList<string> FeederOrder(IReadOnlyList<string> feeders, IReadOnlyList<FeederMonthTotals> totals)
         {

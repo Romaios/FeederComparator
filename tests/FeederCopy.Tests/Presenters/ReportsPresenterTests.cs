@@ -79,10 +79,10 @@ namespace FeederCopy.Tests.Presenters
             await _presenter.OnShownAsync();
             await _presenter.OnFilterChangedAsync(2026, 2);
             Assert.Equal("Inactive consumers by feeder · 2026", _view.Title);
-            Assert.Equal("Average", _view.TotalHeader);
+            Assert.Equal("Total", _view.TotalHeader);
             Assert.False(_view.Kwh);
             Assert.Equal([1, 0], _view.Rows[1].Months.Take(2));
-            Assert.Equal(0.5, _view.Rows[1].Total);
+            Assert.Equal(1, _view.Rows[1].Total);
         }
 
         [Fact]
@@ -126,7 +126,7 @@ namespace FeederCopy.Tests.Presenters
             Assert.True(kwh.Cell(4, 4).IsEmpty());
             Assert.Equal(25, kwh.Cell(4, 14).GetDouble());
             Assert.Equal(MonitoringTable.AllFeeders, kwh.Cell(5, 1).GetString());
-            Assert.Equal("Average", workbook.Worksheet("Inactive consumers").Cell(2, 14).GetString());
+            Assert.Equal("Total", workbook.Worksheet("Inactive consumers").Cell(2, 14).GetString());
         }
     }
 }

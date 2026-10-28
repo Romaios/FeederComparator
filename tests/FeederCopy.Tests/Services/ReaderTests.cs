@@ -1,3 +1,5 @@
+using FeederCopy.Core.Models.Import;
+using FeederCopy.Core.Models.Settings;
 using FeederCopy.Core.Services.Import;
 
 namespace FeederCopy.Tests.Services
@@ -66,13 +68,36 @@ namespace FeederCopy.Tests.Services
             Assert.Equal(["A", "c1"], rows[1]);
         }
 
+        private static string OldXls => Path.Combine(AppContext.BaseDirectory, "TestData", "feeder-list-old.xls");
+
         [Fact]
-        public void Factory_BinaryXls_ThrowsSaveAsHint()
+        public void BinaryXls_ReadsEverySheetKeepingLeadingZeros()
         {
-            string path = TestFiles.TempPath(".xls");
-            File.WriteAllBytes(path, [0xD0, 0xCF, 0x11, 0xE0, 0, 0, 0, 0]);
-            var ex = Assert.Throws<InvalidDataException>(() => TableReaderFactory.For(path));
-            Assert.Contains("Save As", ex.Message);
+            IReadOnlyList<TableSheet> sheets = TableReaderFactory.For(OldXls).ReadSheets(OldXls);
+            Assert.IsType<XlsReader>(TableReaderFactory.For(OldXls));
+            Assert.Equal(["Washington", "Brooklyn"], sheets.Select(s => s.Name));
+            Assert.Equal(["Bus ID", "Consumer ID", "kWh"], sheets[0].Rows[0]);
+            Assert.Equal(["BUS-1", "0101001", "12.5"], sheets[0].Rows[1]);
+            Assert.Equal(["BUS-1", "0101002", null], sheets[0].Rows[2]);
+            Assert.Equal(["Ñipa bus", "101003", "7"], sheets[0].Rows[3]);
+            Assert.Equal(["B", "0202001"], sheets[1].Rows[1]);
+        }
+
+        [Fact]
+        public void BinaryXls_ReadRows_IsTheFirstSheet()
+        {
+            List<IReadOnlyList<string?>> rows = TableReaderFactory.For(OldXls).ReadRows(OldXls).ToList();
+            Assert.Equal(4, rows.Count);
+            Assert.Equal("0101001", rows[1][1]);
+        }
+
+        [Fact]
+        public void BinaryXls_FeederWorkbookImports()
+        {
+            ParsedWorkbook workbook = FeederListParser.ReadWorkbook(OldXls, new FeederColumns { BusId = "Bus ID", ConsumerId = "Consumer ID", Status = "Status" });
+            Assert.Empty(workbook.Problems);
+            Assert.Equal(["Washington", "Brooklyn"], workbook.Feeders.Select(f => f.Name));
+            Assert.Equal(["0101001", "0101002", "101003"], workbook.Feeders[0].Entries.Select(e => e.ConsumerId));
         }
 
         [Fact]
@@ -80,7 +105,7 @@ namespace FeederCopy.Tests.Services
         {
             string path = TestFiles.WriteRawText("hello", ".txt");
             var ex = Assert.Throws<InvalidDataException>(() => TableReaderFactory.For(path));
-            Assert.Equal("Unsupported file format. Expected an .xls XML spreadsheet, an .xlsx workbook, or a .csv file.", ex.Message);
+            Assert.Equal("Unsupported file format. Expected an .xls or .xlsx workbook, an .xls XML spreadsheet, or a .csv file.", ex.Message);
         }
     }
 }

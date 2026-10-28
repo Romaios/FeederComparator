@@ -51,7 +51,7 @@ namespace FeederCopy.Tests.Services
         public void Import_CopiesFeedersConsumersStatusesAndReadings()
         {
             SeedOld();
-            LegacyImportResult result = _importer.Import(_old.Path);
+            LegacyImportResult result = _importer.Import(_old.Path, false);
 
             Assert.Equal(new LegacyImportResult(2, 4, 2, 2, 5), result);
             IReadOnlyList<FeederSummary> feeders = _feeders.GetFeeders();
@@ -75,7 +75,7 @@ namespace FeederCopy.Tests.Services
         {
             SeedOld();
             byte[] before = File.ReadAllBytes(_old.Path);
-            _importer.Import(_old.Path);
+            _importer.Import(_old.Path, false);
             Assert.Equal(before, File.ReadAllBytes(_old.Path));
         }
 
@@ -84,10 +84,59 @@ namespace FeederCopy.Tests.Services
         {
             SeedOld();
             _feeders.CreateFeeder("Queens", [new ConsumerEntry("A", "c9")]);
-            var ex = Assert.Throws<LegacyImportException>(() => _importer.Import(_old.Path));
-            Assert.Equal($"Database {_temp.Name} already has 1 feeder. The old data can only be copied into an empty database.", ex.Message);
+            var ex = Assert.Throws<LegacyImportException>(() => _importer.Import(_old.Path, false));
+            Assert.Equal($"Database {_temp.Name} already has 1 feeder. The old data can only be copied into a database with no feeders.", ex.Message);
             Assert.Equal(["Queens"], _feeders.GetFeeders().Select(f => f.Name));
             Assert.Empty(_readings.GetMonths());
+        }
+
+        private void SeedLeftovers()
+        {
+            using MySqlConnection c = _temp.Db.Open();
+            c.Execute("""
+                INSERT INTO ConsumerInactiveFrom (ConsumerId, BillMonth) VALUES ('c2', '202605'), ('c8', '202601');
+                INSERT INTO Readings (ConsumerId, BillMonth, Kwh, Status) VALUES ('c1', '202606', 99, 'Active'), ('c8', '202512', 5, 'Active');
+                """);
+        }
+
+        [Fact]
+        public void Inspect_CountsFeedersAndLeftovers()
+        {
+            SeedLeftovers();
+            Assert.Equal(new LegacyTarget(_temp.Name, 0, 2, 2), _importer.Inspect());
+        }
+
+        [Fact]
+        public void Import_Leftovers_NotReplaced_RefusesAndKeepsThem()
+        {
+            SeedOld();
+            SeedLeftovers();
+            var ex = Assert.Throws<LegacyImportException>(() => _importer.Import(_old.Path, false));
+            Assert.Equal($"Database {_temp.Name} has no feeders, but still has 2 inactive months and 2 saved kWh readings from before. Nothing was copied.", ex.Message);
+            Assert.Empty(_feeders.GetFeeders());
+            Assert.Equal(new LegacyTarget(_temp.Name, 0, 2, 2), _importer.Inspect());
+        }
+
+        [Fact]
+        public void Import_Leftovers_Replaced_CopiesOnlyTheOldFile()
+        {
+            SeedOld();
+            SeedLeftovers();
+            Assert.Equal(new LegacyImportResult(2, 4, 2, 2, 5), _importer.Import(_old.Path, true));
+            Assert.Equal(new BillMonth(2026, 7), _feeders.GetInactiveFrom()["c2"]);
+            Assert.Equal([new BillMonth(2026, 6), new BillMonth(2026, 7)], _readings.GetMonths());
+            Assert.Equal(12.5, _readings.GetMonth(new BillMonth(2026, 6)).Single(r => r.ConsumerId == "c1").Kwh);
+            Assert.Equal(new LegacyTarget(_temp.Name, 2, 1, 5), _importer.Inspect());
+        }
+
+        [Fact]
+        public void Import_Leftovers_ReplacedButCopyFails_KeepsThem()
+        {
+            SeedOld();
+            SeedLeftovers();
+            _old.Execute("INSERT INTO Readings (ConsumerId, BillMonth, Kwh, Status) VALUES ('c3', '2026071', 1, 'Active')");
+            Assert.ThrowsAny<MySqlException>(() => _importer.Import(_old.Path, true));
+            Assert.Equal(new LegacyTarget(_temp.Name, 0, 2, 2), _importer.Inspect());
         }
 
         [Fact]
@@ -95,7 +144,7 @@ namespace FeederCopy.Tests.Services
         {
             SeedOld();
             _old.Execute("INSERT INTO Readings (ConsumerId, BillMonth, Kwh, Status) VALUES ('c3', '2026071', 1, 'Active')");
-            Assert.ThrowsAny<MySqlException>(() => _importer.Import(_old.Path));
+            Assert.ThrowsAny<MySqlException>(() => _importer.Import(_old.Path, false));
             Assert.Empty(_feeders.GetFeeders());
             Assert.Empty(_feeders.GetAllConsumers());
             Assert.Empty(_readings.GetMonths());
@@ -109,7 +158,7 @@ namespace FeederCopy.Tests.Services
                 INSERT INTO Feeders (Id, Name, CreatedAt) VALUES (1, 'Washington', '2026-10-20 08:15:00');
                 INSERT INTO FeederConsumers (FeederId, BusId, ConsumerId, Position) VALUES (1, 'A', 'c1', 0), (1, 'A', 'c2', 1);
                 """);
-            Assert.Equal(new LegacyImportResult(1, 2, 0, 0, 0), _importer.Import(oldest.Path));
+            Assert.Equal(new LegacyImportResult(1, 2, 0, 0, 0), _importer.Import(oldest.Path, false));
             Assert.All(_feeders.GetAllConsumers(), c => Assert.True(c.Entry.Active));
         }
 
@@ -124,7 +173,7 @@ namespace FeederCopy.Tests.Services
                     c.Open();
                     c.Execute("CREATE TABLE Something (Id INTEGER)");
                 }
-                var ex = Assert.Throws<LegacyImportException>(() => _importer.Import(path));
+                var ex = Assert.Throws<LegacyImportException>(() => _importer.Import(path, false));
                 Assert.StartsWith($"{Path.GetFileName(path)} is not a database from Feeder kWh Copy 1.x.", ex.Message);
             }
             finally
@@ -139,7 +188,7 @@ namespace FeederCopy.Tests.Services
             string path = TestFiles.WriteRawText("these are not the rows you are looking for", ".db");
             try
             {
-                var ex = Assert.Throws<LegacyImportException>(() => _importer.Import(path));
+                var ex = Assert.Throws<LegacyImportException>(() => _importer.Import(path, false));
                 Assert.StartsWith($"{Path.GetFileName(path)} could not be read as an old Feeder kWh Copy database.", ex.Message);
             }
             finally
@@ -151,7 +200,7 @@ namespace FeederCopy.Tests.Services
         [Fact]
         public void Import_MissingFile_SaysSo()
         {
-            var ex = Assert.Throws<LegacyImportException>(() => _importer.Import(@"C:\nowhere\feeders.db"));
+            var ex = Assert.Throws<LegacyImportException>(() => _importer.Import(@"C:\nowhere\feeders.db", false));
             Assert.Equal(@"The file was not found: C:\nowhere\feeders.db", ex.Message);
         }
     }

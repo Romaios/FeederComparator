@@ -370,6 +370,15 @@ namespace FeederCopy.Tests.Support
         }
 
         public void ShowImportResult(string message, DatabaseTone tone) => ImportResult = (message, tone);
+
+        public bool ConfirmAnswer { get; set; } = true;
+        public List<string> Confirms { get; } = [];
+
+        public bool Confirm(string title, string message)
+        {
+            Confirms.Add(message);
+            return ConfirmAnswer;
+        }
     }
 
     internal sealed class FakeDatabaseSettingsStore : IDatabaseSettingsStore

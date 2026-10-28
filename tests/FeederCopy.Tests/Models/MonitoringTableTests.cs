@@ -44,14 +44,13 @@ namespace FeederCopy.Tests.Models
         }
 
         [Fact]
-        public void ByMonth_Counts_AverageAcrossMonths()
+        public void ByMonth_Counts_SumAcrossMonths()
         {
             IReadOnlyList<FeederMonthsRow> rows = MonitoringTable.ByMonth(["Bacon"], Totals, MonitoringMeasure.Active);
             Assert.Equal(["Bacon", "Abuyog", MonitoringTable.AllFeeders], rows.Select(r => r.Feeder));
-            Assert.Equal(2.5, rows[0].Total);
+            Assert.Equal(5, rows[0].Total);
             Assert.Equal(4, rows[2].Months[0]);
-            Assert.Equal("Average", MonitoringTable.TotalHeader(MonitoringMeasure.Active));
-            Assert.Equal("Total", MonitoringTable.TotalHeader(MonitoringMeasure.TotalKwh));
+            Assert.Equal("Total", MonitoringTable.TotalHeader);
         }
 
         [Theory]

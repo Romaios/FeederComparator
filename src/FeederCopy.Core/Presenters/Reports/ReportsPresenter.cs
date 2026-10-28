@@ -166,7 +166,7 @@ namespace FeederCopy.Core.Presenters.Reports
             }
             IReadOnlyList<FeederMonthsRow> rows = MonitoringTable.ByMonth(_feederNames, _totals, _measure);
             int months = _totals.Select(t => t.Month).Distinct().Count();
-            _view.ShowRows($"{MonitoringTable.Label(_measure)} by feeder · {year}", MonitoringTable.TotalHeader(_measure), MonitoringTable.IsKwh(_measure),
+            _view.ShowRows($"{MonitoringTable.Label(_measure)} by feeder · {year}", MonitoringTable.TotalHeader, MonitoringTable.IsKwh(_measure),
                 rows, $"{year} · {Text.Count(months, "month", "months")} transferred");
             _view.SetExportEnabled(true);
         }

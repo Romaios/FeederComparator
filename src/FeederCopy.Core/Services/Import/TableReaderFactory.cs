@@ -17,7 +17,7 @@ namespace FeederCopy.Core.Services.Import
             if (bytes.StartsWith("PK"u8))
                 return new XlsxReader();
             if (bytes.StartsWith(BinaryExcelSignature))
-                throw new InvalidDataException("This is an old binary Excel (.xls) file. Open it in Excel and use Save As → Excel Workbook (.xlsx), then use that file.");
+                return new XlsReader();
 
             string text = Encoding.UTF8.GetString(bytes).TrimStart('﻿', ' ', '\t', '\r', '\n');
             if (text.StartsWith('<'))
@@ -25,7 +25,7 @@ namespace FeederCopy.Core.Services.Import
             if (Path.GetExtension(path).Equals(".csv", StringComparison.OrdinalIgnoreCase))
                 return new CsvFileReader();
 
-            throw new InvalidDataException("Unsupported file format. Expected an .xls XML spreadsheet, an .xlsx workbook, or a .csv file.");
+            throw new InvalidDataException("Unsupported file format. Expected an .xls or .xlsx workbook, an .xls XML spreadsheet, or a .csv file.");
         }
     }
 }

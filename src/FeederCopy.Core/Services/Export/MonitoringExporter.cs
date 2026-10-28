@@ -65,7 +65,7 @@ namespace FeederCopy.Core.Services.Export
 
         private static void WriteMonths(IXLWorksheet sheet, int year, MonitoringMeasure measure, IReadOnlyList<FeederMonthsRow> rows)
         {
-            List<string> headers = ["Feeder", .. MonitoringTable.MonthHeaders, MonitoringTable.TotalHeader(measure)];
+            List<string> headers = ["Feeder", .. MonitoringTable.MonthHeaders, MonitoringTable.TotalHeader];
             SheetWriter.Title(sheet, $"{MonitoringTable.Label(measure)} {year}", headers.Count);
             SheetWriter.Headers(sheet, headers);
 

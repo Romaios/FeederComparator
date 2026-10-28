@@ -60,6 +60,8 @@ namespace FeederCopy.App.Forms.Database
         public string? PickOldDatabase() =>
             Dialogs.PickOpenFile((IWin32Window?)FindForm() ?? this, "Choose the feeders.db file from the old program folder", "Old program data (feeders.db)|*.db|All files (*.*)|*.*");
 
+        public bool Confirm(string title, string message) => Dialogs.Confirm((IWin32Window?)FindForm() ?? this, title, message);
+
         public void ShowImportResult(string message, DatabaseTone tone)
         {
             lblImportResult.Text = message;

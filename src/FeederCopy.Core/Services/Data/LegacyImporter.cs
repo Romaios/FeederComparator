@@ -8,11 +8,17 @@ namespace FeederCopy.Core.Services.Data
 {
     public sealed record LegacyImportResult(int Feeders, int Consumers, int Inactive, int Months, int Readings);
 
+    public sealed record LegacyTarget(string Database, int Feeders, int InactiveMonths, int Readings)
+    {
+        public bool HasLeftovers => InactiveMonths > 0 || Readings > 0;
+    }
+
     public sealed class LegacyImportException(string message) : Exception(message);
 
     public interface ILegacyImporter
     {
-        LegacyImportResult Import(string path);
+        LegacyTarget Inspect();
+        LegacyImportResult Import(string path, bool replaceLeftovers);
     }
 
     public sealed class LegacyImporter : ILegacyImporter
@@ -23,7 +29,13 @@ namespace FeederCopy.Core.Services.Data
 
         public LegacyImporter(Database database) => _database = database;
 
-        public LegacyImportResult Import(string path)
+        public LegacyTarget Inspect()
+        {
+            using MySqlConnection c = _database.Open();
+            return Inspect(c, null);
+        }
+
+        public LegacyImportResult Import(string path, bool replaceLeftovers)
         {
             if (!File.Exists(path))
                 throw new LegacyImportException($"The file was not found: {path}");
@@ -31,9 +43,16 @@ namespace FeederCopy.Core.Services.Data
 
             using MySqlConnection c = _database.Open();
             using MySqlTransaction tx = c.BeginTransaction();
-            long existing = c.ExecuteScalar<long>("SELECT COUNT(*) FROM Feeders", transaction: tx);
-            if (existing > 0)
-                throw new LegacyImportException($"Database {_database.Connection.Database} already has {Text.Count((int)existing, "feeder", "feeders")}. The old data can only be copied into an empty database.");
+            LegacyTarget target = Inspect(c, tx);
+            if (target.Feeders > 0)
+                throw new LegacyImportException(HasFeeders(target));
+            if (target.HasLeftovers)
+            {
+                if (!replaceLeftovers)
+                    throw new LegacyImportException(Leftovers(target) + " Nothing was copied.");
+                c.Execute("DELETE FROM Readings", transaction: tx);
+                c.Execute("DELETE FROM ConsumerInactiveFrom", transaction: tx);
+            }
 
             var feederIds = new Dictionary<long, long>();
             foreach (OldFeeder feeder in old.Feeders)
@@ -55,6 +74,19 @@ namespace FeederCopy.Core.Services.Data
                 old.Readings.Select(r => r.BillMonth).Distinct(StringComparer.Ordinal).Count(),
                 old.Readings.Count);
         }
+
+        public static string HasFeeders(LegacyTarget target) =>
+            $"Database {target.Database} already has {Text.Count(target.Feeders, "feeder", "feeders")}. The old data can only be copied into a database with no feeders.";
+
+        public static string Leftovers(LegacyTarget target) =>
+            $"Database {target.Database} has no feeders, but still has {Text.Count(target.InactiveMonths, "inactive month", "inactive months")} and {Text.Count(target.Readings, "saved kWh reading", "saved kWh readings")} from before.";
+
+        private LegacyTarget Inspect(MySqlConnection c, MySqlTransaction? tx) =>
+            new(
+                _database.Connection.Database,
+                (int)c.ExecuteScalar<long>("SELECT COUNT(*) FROM Feeders", transaction: tx),
+                (int)c.ExecuteScalar<long>("SELECT COUNT(*) FROM ConsumerInactiveFrom", transaction: tx),
+                (int)c.ExecuteScalar<long>("SELECT COUNT(*) FROM Readings", transaction: tx));
 
         private static OldData Read(string path)
         {
