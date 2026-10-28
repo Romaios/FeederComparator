@@ -33,6 +33,7 @@ namespace FeederCopy.Tests.Support
         public int Checks { get; private set; }
         public UpdateSettings? CheckedWith { get; private set; }
         public UpdateOffer? Applied { get; private set; }
+        public Action? DuringApply { get; set; }
 
         public Task<UpdateOffer?> CheckAsync(UpdateSettings settings, CancellationToken cancellationToken)
         {
@@ -51,7 +52,11 @@ namespace FeederCopy.Tests.Support
             return Task.CompletedTask;
         }
 
-        public void ApplyAndRestart(UpdateOffer offer) => Applied = offer;
+        public void ApplyAndRestart(UpdateOffer offer)
+        {
+            DuringApply?.Invoke();
+            Applied = offer;
+        }
     }
 
     internal sealed class FakeUpdateSettingsStore : IUpdateSettingsStore

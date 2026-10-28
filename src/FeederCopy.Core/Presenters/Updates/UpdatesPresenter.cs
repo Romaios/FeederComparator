@@ -11,6 +11,7 @@ namespace FeederCopy.Core.Presenters.Updates
         private readonly IUpdateSettingsStore _store;
         private readonly IErrorLog _log;
         private readonly Func<DateTime> _clock;
+        private readonly Func<TimeSpan, Task> _delay;
         private UpdateSettings _settings = UpdateSettings.Empty;
         private UpdateOffer? _offer;
         private CancellationTokenSource? _download;
@@ -20,16 +21,18 @@ namespace FeederCopy.Core.Presenters.Updates
         private DateTime _downloadStartedAt;
         private int _lastPercent;
 
-        public UpdatesPresenter(IUpdatesView view, IUpdateService service, IUpdateSettingsStore store, IErrorLog log, Func<DateTime>? clock = null)
+        public UpdatesPresenter(IUpdatesView view, IUpdateService service, IUpdateSettingsStore store, IErrorLog log, Func<DateTime>? clock = null, Func<TimeSpan, Task>? delay = null)
         {
             _view = view;
             _service = service;
             _store = store;
             _log = log;
             _clock = clock ?? (() => DateTime.UtcNow);
+            _delay = delay ?? Task.Delay;
         }
 
         public const int StallWarningSeconds = 20;
+        private static readonly TimeSpan FullBarPause = TimeSpan.FromSeconds(1);
         private const string DownloadingMessage = "Keep the program open. It will close and reopen by itself when the update is ready.";
 
         public event Action<string>? UpdateAvailable;
@@ -159,6 +162,8 @@ namespace FeederCopy.Core.Presenters.Updates
             }
 
             ShowStage(UpdateStage.Applying);
+            _view.ShowProgress(100, $"Downloaded {Megabytes(offer.SizeBytes)}. Installing…");
+            await _delay(FullBarPause);
             try
             {
                 _service.ApplyAndRestart(offer);

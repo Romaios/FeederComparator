@@ -13,8 +13,13 @@ namespace FeederCopy.Tests.Presenters
         private readonly FakeErrorLog _log = new();
         private readonly UpdatesPresenter _presenter;
         private DateTime _now = new(2026, 10, 8, 9, 0, 0, DateTimeKind.Utc);
+        private readonly List<TimeSpan> _pauses = [];
 
-        public UpdatesPresenterTests() => _presenter = new UpdatesPresenter(_view, _service, _store, _log, () => _now);
+        public UpdatesPresenterTests() => _presenter = new UpdatesPresenter(_view, _service, _store, _log, () => _now, pause =>
+        {
+            _pauses.Add(pause);
+            return Task.CompletedTask;
+        });
 
         [Fact]
         public void A_plain_folder_copy_says_updates_need_the_installer()
@@ -162,6 +167,30 @@ namespace FeederCopy.Tests.Presenters
             Assert.Same(Offer, _service.Applied);
             Assert.Equal((0, $"{0.0:0.0} MB of {50.0:0.0} MB (0%)"), _view.Progress[0]);
             Assert.Equal([UpdateStage.Downloading, UpdateStage.Applying], _view.Screens.Skip(3).Select(s => s.Stage));
+        }
+
+        [Fact]
+        public async Task Download_done_fills_the_bar_and_pauses_before_installing()
+        {
+            _store.Stored = Configured;
+            _service.Offer = Offer;
+            _presenter.Load();
+            await _presenter.OnCheckClickedAsync();
+            (int Percent, string Detail)? atInstall = null;
+            int pausesAtInstall = -1;
+            _service.DuringApply = () =>
+            {
+                atInstall = _view.Progress[^1];
+                pausesAtInstall = _pauses.Count;
+            };
+
+            await _presenter.OnUpdateNowClickedAsync();
+
+            Assert.Equal((100, $"Downloaded {50.0:0.0} MB. Installing…"), atInstall);
+            Assert.Equal(1, pausesAtInstall);
+            Assert.Equal([TimeSpan.FromSeconds(1)], _pauses);
+            Assert.Equal(UpdateStage.Applying, _view.Screen.Stage);
+            Assert.True(_view.Screen.ShowProgress);
         }
 
         [Fact]
