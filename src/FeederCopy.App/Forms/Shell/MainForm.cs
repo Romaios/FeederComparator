@@ -53,7 +53,7 @@ namespace FeederCopy.App.Forms.Shell
 
             _totals = new FeederTotalsCache(services.Readings);
             _settings = new SettingsPresenter(settingsView, services.Settings);
-            _database = new DatabasePresenter(settingsView.DatabaseCard, services.DatabaseSettings, services.Database, services.Log);
+            _database = new DatabasePresenter(settingsView.DatabaseCard, services.DatabaseSettings, services.Database, new LegacyImporter(services.Database), services.Log);
             _feeders = new FeedersPresenter(feedersView, services.Feeders, () => _settings.Current, services.Log);
             _copy = new CopyPresenter(copyView, services.Feeders, services.Readings, services.AsBilled, services.Exporter,
                 () => _settings.Current, _settings.RememberExportStyle, services.Log);
@@ -84,6 +84,7 @@ namespace FeederCopy.App.Forms.Shell
             _busSort.Sorted += _consumers.OnFeedersChanged;
             _updates.UpdateAvailable += ShowUpdateOffer;
             _database.Connected += LoadData;
+            _database.DataImported += LoadData;
 
             settingsView.Attach(_settings);
             settingsView.DatabaseCard.Attach(_database);

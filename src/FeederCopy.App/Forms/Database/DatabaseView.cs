@@ -57,6 +57,32 @@ namespace FeederCopy.App.Forms.Database
                 Update();
         }
 
+        public string? PickOldDatabase() =>
+            Dialogs.PickOpenFile((IWin32Window?)FindForm() ?? this, "Choose the feeders.db file from the old program folder", "Old program data (feeders.db)|*.db|All files (*.*)|*.*");
+
+        public void ShowImportResult(string message, DatabaseTone tone)
+        {
+            lblImportResult.Text = message;
+            lblImportResult.Visible = true;
+            switch (tone)
+            {
+                case DatabaseTone.Ok:
+                    AppTheme.StyleSuccessLabel(lblImportResult);
+                    break;
+                case DatabaseTone.Error:
+                    AppTheme.StyleErrorLabel(lblImportResult);
+                    break;
+                case DatabaseTone.Warning:
+                    AppTheme.StyleWarningLabel(lblImportResult);
+                    break;
+                default:
+                    AppTheme.StyleMutedLabel(lblImportResult);
+                    break;
+            }
+            if (tone == DatabaseTone.Info)
+                Update();
+        }
+
         public void OpenScriptsFolder()
         {
             string folder = Path.Combine(AppContext.BaseDirectory, ScriptsFolder);
@@ -82,6 +108,10 @@ namespace FeederCopy.App.Forms.Database
             AppTheme.StyleOutlineButton(btnTest);
             AppTheme.StyleOutlineButton(btnScripts);
             AppTheme.StyleMutedLabel(lblStatus);
+            AppTheme.StyleFieldLabel(lblOldTitle);
+            AppTheme.StyleMutedLabel(lblOldIntro);
+            AppTheme.StyleOutlineButton(btnImportOld);
+            AppTheme.StyleMutedLabel(lblImportResult);
         }
 
         private void btnSave_Click(object? sender, EventArgs e) => _presenter?.OnSaveClicked(ReadForm());
@@ -89,5 +119,11 @@ namespace FeederCopy.App.Forms.Database
         private void btnTest_Click(object? sender, EventArgs e) => _presenter?.OnTestClicked(ReadForm());
 
         private void btnScripts_Click(object? sender, EventArgs e) => _presenter?.OnOpenScriptsClicked();
+
+        private async void btnImportOld_Click(object? sender, EventArgs e)
+        {
+            if (_presenter is not null)
+                await _presenter.OnImportOldDataClickedAsync();
+        }
     }
 }

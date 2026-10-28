@@ -358,6 +358,18 @@ namespace FeederCopy.Tests.Support
         public void SetBusy(bool busy) { }
 
         public void OpenScriptsFolder() => ScriptsOpened++;
+
+        public string? NextOldDatabase { get; set; }
+        public int OldDatabasePrompts { get; private set; }
+        public (string Message, DatabaseTone Tone)? ImportResult { get; private set; }
+
+        public string? PickOldDatabase()
+        {
+            OldDatabasePrompts++;
+            return NextOldDatabase;
+        }
+
+        public void ShowImportResult(string message, DatabaseTone tone) => ImportResult = (message, tone);
     }
 
     internal sealed class FakeDatabaseSettingsStore : IDatabaseSettingsStore

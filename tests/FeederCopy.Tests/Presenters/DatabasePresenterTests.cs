@@ -14,7 +14,7 @@ namespace FeederCopy.Tests.Presenters
 
         public DatabasePresenterTests()
         {
-            _presenter = new DatabasePresenter(_view, _store, _database, _log);
+            _presenter = new DatabasePresenter(_view, _store, _database, new LegacyImporter(_database), _log);
             _presenter.Connected += () => _connected++;
         }
 
@@ -99,6 +99,65 @@ namespace FeederCopy.Tests.Presenters
         {
             _presenter.OnOpenScriptsClicked();
             Assert.Equal(1, _view.ScriptsOpened);
+        }
+
+        [Fact]
+        public async Task ImportOldData_NotConnected_SaysConnectFirst_AsksForNoFile()
+        {
+            await _presenter.OnImportOldDataClickedAsync();
+            Assert.Equal(0, _view.OldDatabasePrompts);
+            Assert.Equal(DatabaseTone.Warning, _view.ImportResult!.Value.Tone);
+            Assert.StartsWith("Connect to a database with its tables ready first", _view.ImportResult.Value.Message);
+        }
+
+        [Fact]
+        public async Task ImportOldData_Copies_ShowsCounts_RaisesDataImported()
+        {
+            using var temp = new TempDatabase();
+            using var old = new OldDatabase();
+            old.Execute("""
+                INSERT INTO Feeders (Id, Name, CreatedAt) VALUES (1, 'Washington', '2026-10-20 08:15:00');
+                INSERT INTO FeederConsumers (FeederId, BusId, ConsumerId, Position, Active) VALUES (1, 'A', 'c1', 0, 1), (1, 'A', 'c2', 1, 0);
+                INSERT INTO Readings (ConsumerId, BillMonth, Kwh, Status) VALUES ('c1', '202607', 3, 'Active');
+                """);
+            int imported = 0;
+            _presenter.DataImported += () => imported++;
+            _presenter.Load();
+            _presenter.OnSaveClicked(Form(temp.Db.Connection));
+            _view.NextOldDatabase = old.Path;
+            await _presenter.OnImportOldDataClickedAsync();
+            Assert.Equal(("Copied 1 feeder and 2 consumers (1 inactive), with 1 month of saved kWh.", DatabaseTone.Ok), _view.ImportResult);
+            Assert.Equal(1, imported);
+            Assert.Equal(["c1", "c2"], new FeederService(temp.Db).GetAllConsumers().Select(c => c.Entry.ConsumerId));
+        }
+
+        [Fact]
+        public async Task ImportOldData_Refused_ShowsReasonAndLogs_NoDataImported()
+        {
+            using var temp = new TempDatabase();
+            using var old = new OldDatabase();
+            new FeederService(temp.Db).CreateFeeder("Queens", []);
+            int imported = 0;
+            _presenter.DataImported += () => imported++;
+            _presenter.Load();
+            _presenter.OnSaveClicked(Form(temp.Db.Connection));
+            _view.NextOldDatabase = old.Path;
+            await _presenter.OnImportOldDataClickedAsync();
+            Assert.Equal(DatabaseTone.Error, _view.ImportResult!.Value.Tone);
+            Assert.EndsWith("The old data can only be copied into an empty database.", _view.ImportResult.Value.Message);
+            Assert.Single(_log.Entries);
+            Assert.Equal(0, imported);
+        }
+
+        [Fact]
+        public async Task ImportOldData_NoFileChosen_DoesNothing()
+        {
+            using var temp = new TempDatabase();
+            _presenter.Load();
+            _presenter.OnSaveClicked(Form(temp.Db.Connection));
+            await _presenter.OnImportOldDataClickedAsync();
+            Assert.Equal(1, _view.OldDatabasePrompts);
+            Assert.Null(_view.ImportResult);
         }
     }
 }

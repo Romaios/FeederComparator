@@ -1,3 +1,4 @@
+using FeederCopy.Core.Models;
 using FeederCopy.Core.Services.Data;
 using FeederCopy.Core.Services.Logging;
 using FeederCopy.Core.Services.Settings;
@@ -12,17 +13,21 @@ namespace FeederCopy.Core.Presenters.Database
         private readonly IDatabaseView _view;
         private readonly IDatabaseSettingsStore _store;
         private readonly DataStore _database;
+        private readonly ILegacyImporter _importer;
         private readonly IErrorLog _log;
 
-        public DatabasePresenter(IDatabaseView view, IDatabaseSettingsStore store, DataStore database, IErrorLog log)
+        public DatabasePresenter(IDatabaseView view, IDatabaseSettingsStore store, DataStore database, ILegacyImporter importer, IErrorLog log)
         {
             _view = view;
             _store = store;
             _database = database;
+            _importer = importer;
             _log = log;
         }
 
         public event Action? Connected;
+
+        public event Action? DataImported;
 
         public bool IsReady { get; private set; }
 
@@ -91,6 +96,48 @@ namespace FeederCopy.Core.Presenters.Database
         }
 
         public void OnOpenScriptsClicked() => _view.OpenScriptsFolder();
+
+        public async Task OnImportOldDataClickedAsync()
+        {
+            if (!IsReady)
+            {
+                _view.ShowImportResult("Connect to a database with its tables ready first (Save, then Test connection), then copy the old data.", DatabaseTone.Warning);
+                return;
+            }
+            string? path = _view.PickOldDatabase();
+            if (path is null)
+                return;
+
+            _view.SetBusy(true);
+            _view.ShowImportResult($"Copying the old data from {Path.GetFileName(path)}… A big file can take about a minute.", DatabaseTone.Info);
+            LegacyImportResult result;
+            try
+            {
+                result = await Task.Run(() => _importer.Import(path));
+            }
+            catch (LegacyImportException ex)
+            {
+                _log.Error($"Copying old data from {path}", ex);
+                _view.ShowImportResult(ex.Message, DatabaseTone.Error);
+                return;
+            }
+            catch (Exception ex)
+            {
+                _log.Error($"Copying old data from {path}", ex);
+                _view.ShowImportResult($"Could not copy the old data. Nothing was saved. {ex.Message}", DatabaseTone.Error);
+                return;
+            }
+            finally
+            {
+                _view.SetBusy(false);
+            }
+
+            _view.ShowImportResult(
+                $"Copied {Text.Count(result.Feeders, "feeder", "feeders")} and {Text.Count(result.Consumers, "consumer", "consumers")} ({result.Inactive:N0} inactive), "
+                + $"with {Text.Count(result.Months, "month", "months")} of saved kWh.",
+                DatabaseTone.Ok);
+            DataImported?.Invoke();
+        }
 
         private string? CheckCurrent()
         {
