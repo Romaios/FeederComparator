@@ -4,22 +4,13 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
-    services:
-      mysql:
-        image: mysql:8.0
-        env:
-          MYSQL_ROOT_PASSWORD: feedercopy-ci
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1 -pfeedercopy-ci"
-          --health-interval=5s
-          --health-timeout=5s
-          --health-retries=30
+    runs-on: windows-latest
+    env:
+      MYSQL_VERSION: 8.0.40
 
     steps:
       - uses: actions/checkout@v4
@@ -28,16 +19,34 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
+      - name: Start MySQL
+        shell: pwsh
+        run: |
+          $zip = "$env:RUNNER_TEMP\mysql.zip"
+          Invoke-WebRequest "https://cdn.mysql.com/archives/mysql-8.0/mysql-$env:MYSQL_VERSION-winx64.zip" -OutFile $zip
+          tar -xf $zip -C $env:RUNNER_TEMP
+          $bin = "$env:RUNNER_TEMP\mysql-$env:MYSQL_VERSION-winx64\bin"
+          $data = "$env:RUNNER_TEMP\mysql-data"
+          & "$bin\mysqld.exe" --initialize-insecure "--datadir=$data"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Start-Process -FilePath "$bin\mysqld.exe" -ArgumentList "--datadir=$data", "--port=3310", "--bind-address=127.0.0.1", "--mysqlx=0" -WindowStyle Hidden
+          for ($i = 0; $i -lt 60; $i++) {
+            & "$bin\mysqladmin.exe" -h 127.0.0.1 -P 3310 -u root ping 2>$null
+            if ($LASTEXITCODE -eq 0) { exit 0 }
+            Start-Sleep -Seconds 2
+          }
+          exit 1
+
       - name: Test
         env:
           FEEDERCOPY_TEST_MYSQL_HOST: 127.0.0.1
-          FEEDERCOPY_TEST_MYSQL_PORT: 3306
+          FEEDERCOPY_TEST_MYSQL_PORT: 3310
           FEEDERCOPY_TEST_MYSQL_USER: root
-          FEEDERCOPY_TEST_MYSQL_PASSWORD: feedercopy-ci
         run: dotnet test tests/FeederCopy.Tests -c Release
 
   release:
     needs: test
+    if: startsWith(github.ref, 'refs/tags/v')
     runs-on: windows-latest
     permissions:
       contents: write
